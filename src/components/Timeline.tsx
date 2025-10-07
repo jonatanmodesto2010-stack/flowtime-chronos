@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2 } from 'lucide-react';
 import { EventModal } from './EventModal';
+import { ClientInfoModal } from './ClientInfoModal';
 
 interface Event {
   id: number;
@@ -13,17 +15,31 @@ interface Event {
   isNew?: boolean;
 }
 
-interface TimelineProps {
-  events: Event[];
-  updateEvents: (events: Event[]) => void;
-  timelineName: string;
-  onUpdateTimelineName: (newName: string) => void;
+interface ClientInfo {
+  name: string;
+  startDate: string;
+  boletoValue: string;
+  dueDate: string;
 }
 
-export const Timeline = ({ events, updateEvents, timelineName, onUpdateTimelineName }: TimelineProps) => {
+interface TimelineData {
+  id: number;
+  clientInfo: ClientInfo;
+  events: Event[];
+}
+
+interface TimelineProps {
+  timeline: TimelineData;
+  updateEvents: (events: Event[]) => void;
+  updateClientInfo: (info: ClientInfo) => void;
+  onDelete?: () => void;
+}
+
+export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete }: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState(timelineName);
+  const [showClientModal, setShowClientModal] = useState(false);
+  
+  const { events, clientInfo } = timeline;
 
   const handleAddEvent = () => {
     const newId = Date.now();
@@ -91,56 +107,36 @@ export const Timeline = ({ events, updateEvents, timelineName, onUpdateTimelineN
 
   return (
     <div className="w-full">
-      <div className="flex justify-center mb-10">
-        <button 
-          onClick={handleAddEvent} 
-          className="px-6 py-3 font-semibold text-primary-foreground bg-gradient-primary rounded-xl shadow-lg transition-transform hover:scale-105 hover:shadow-xl"
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => setShowClientModal(true)}
+          className="px-6 py-3 bg-gradient-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:scale-105 transition-transform"
         >
-          + Adicionar Evento
+          {clientInfo.name}
         </button>
-      </div>
-      <div className="timeline-container relative flex justify-around items-start w-[90%] max-w-6xl mx-auto py-20 pl-32">
-        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground -translate-y-1/2 z-0" />
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-          {isEditingName ? (
-            <input
-              type="text"
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              onBlur={() => {
-                if (editedName.trim()) {
-                  onUpdateTimelineName(editedName.trim());
-                } else {
-                  setEditedName(timelineName);
-                }
-                setIsEditingName(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (editedName.trim()) {
-                    onUpdateTimelineName(editedName.trim());
-                  } else {
-                    setEditedName(timelineName);
-                  }
-                  setIsEditingName(false);
-                } else if (e.key === 'Escape') {
-                  setEditedName(timelineName);
-                  setIsEditingName(false);
-                }
-              }}
-              className="px-4 py-2 bg-gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-lg outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-          ) : (
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleAddEvent} 
+            className="px-6 py-3 font-semibold text-primary-foreground bg-gradient-primary rounded-xl shadow-lg transition-transform hover:scale-105"
+          >
+            + Adicionar Evento
+          </button>
+          
+          {onDelete && (
             <button
-              onClick={() => setIsEditingName(true)}
-              className="px-4 py-2 bg-gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-lg whitespace-nowrap hover:scale-105 transition-transform cursor-pointer"
-              title="Clique para editar"
+              onClick={onDelete}
+              className="p-3 bg-destructive text-destructive-foreground rounded-xl hover:scale-105 transition-transform"
+              title="Excluir linha de cobrança"
             >
-              {timelineName}
+              <Trash2 size={20} />
             </button>
           )}
         </div>
+      </div>
+
+      <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-20 overflow-x-auto">
+        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
         {events.map((event, index) => (
           <motion.div
             key={event.id}
@@ -200,6 +196,16 @@ export const Timeline = ({ events, updateEvents, timelineName, onUpdateTimelineN
             onSave={handleSaveEvent}
             onDelete={handleDeleteEvent}
             onCancel={() => setEditingEvent(null)}
+          />
+        )}
+        {showClientModal && (
+          <ClientInfoModal
+            clientInfo={clientInfo}
+            onSave={(info) => {
+              updateClientInfo(info);
+              setShowClientModal(false);
+            }}
+            onCancel={() => setShowClientModal(false)}
           />
         )}
       </AnimatePresence>
