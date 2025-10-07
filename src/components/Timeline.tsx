@@ -16,9 +16,10 @@ interface Event {
 interface TimelineProps {
   events: Event[];
   updateEvents: (events: Event[]) => void;
+  timelineName: string;
 }
 
-export const Timeline = ({ events, updateEvents }: TimelineProps) => {
+export const Timeline = ({ events, updateEvents, timelineName }: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   const handleAddEvent = () => {
@@ -95,8 +96,13 @@ export const Timeline = ({ events, updateEvents }: TimelineProps) => {
           + Adicionar Evento
         </button>
       </div>
-      <div className="timeline-container relative flex justify-around items-start w-[90%] max-w-6xl mx-auto py-20">
+      <div className="timeline-container relative flex justify-around items-start w-[90%] max-w-6xl mx-auto py-20 pl-32">
         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground -translate-y-1/2 z-0" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+          <div className="px-4 py-2 bg-gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-lg whitespace-nowrap">
+            {timelineName}
+          </div>
+        </div>
         {events.map((event, index) => (
           <motion.div
             key={event.id}

@@ -202,7 +202,8 @@ const Index = () => {
                 <Timeline 
                   key={activeTimeline.id} 
                   events={activeTimeline.events} 
-                  updateEvents={updateEvents} 
+                  updateEvents={updateEvents}
+                  timelineName={activeTimeline.name}
                 />
               ) : (
                 <div className="text-center py-10 text-muted-foreground">
