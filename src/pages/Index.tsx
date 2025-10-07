@@ -97,6 +97,13 @@ const Index = () => {
     } : t));
   };
 
+  const updateTimelineName = (newName: string) => {
+    setTimelines(timelines.map(t => t.id === activeTimelineId ? {
+      ...t,
+      name: newName
+    } : t));
+  };
+
   const activeTimeline = timelines.find(t => t.id === activeTimelineId);
 
   return (
@@ -204,6 +211,7 @@ const Index = () => {
                   events={activeTimeline.events} 
                   updateEvents={updateEvents}
                   timelineName={activeTimeline.name}
+                  onUpdateTimelineName={updateTimelineName}
                 />
               ) : (
                 <div className="text-center py-10 text-muted-foreground">

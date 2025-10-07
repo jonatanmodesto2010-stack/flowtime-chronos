@@ -17,10 +17,13 @@ interface TimelineProps {
   events: Event[];
   updateEvents: (events: Event[]) => void;
   timelineName: string;
+  onUpdateTimelineName: (newName: string) => void;
 }
 
-export const Timeline = ({ events, updateEvents, timelineName }: TimelineProps) => {
+export const Timeline = ({ events, updateEvents, timelineName, onUpdateTimelineName }: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(timelineName);
 
   const handleAddEvent = () => {
     const newId = Date.now();
@@ -99,9 +102,44 @@ export const Timeline = ({ events, updateEvents, timelineName }: TimelineProps) 
       <div className="timeline-container relative flex justify-around items-start w-[90%] max-w-6xl mx-auto py-20 pl-32">
         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground -translate-y-1/2 z-0" />
         <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-          <div className="px-4 py-2 bg-gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-lg whitespace-nowrap">
-            {timelineName}
-          </div>
+          {isEditingName ? (
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={() => {
+                if (editedName.trim()) {
+                  onUpdateTimelineName(editedName.trim());
+                } else {
+                  setEditedName(timelineName);
+                }
+                setIsEditingName(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (editedName.trim()) {
+                    onUpdateTimelineName(editedName.trim());
+                  } else {
+                    setEditedName(timelineName);
+                  }
+                  setIsEditingName(false);
+                } else if (e.key === 'Escape') {
+                  setEditedName(timelineName);
+                  setIsEditingName(false);
+                }
+              }}
+              className="px-4 py-2 bg-gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-lg outline-none focus:ring-2 focus:ring-primary"
+              autoFocus
+            />
+          ) : (
+            <button
+              onClick={() => setIsEditingName(true)}
+              className="px-4 py-2 bg-gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-lg whitespace-nowrap hover:scale-105 transition-transform cursor-pointer"
+              title="Clique para editar"
+            >
+              {timelineName}
+            </button>
+          )}
         </div>
         {events.map((event, index) => (
           <motion.div
