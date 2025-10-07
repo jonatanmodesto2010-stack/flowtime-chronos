@@ -22,29 +22,39 @@ interface ClientInfo {
   dueDate: string;
 }
 
+interface TimelineLine {
+  id: number;
+  events: Event[];
+}
+
 interface TimelineData {
   id: number;
   clientInfo: ClientInfo;
-  events: Event[];
+  lines: TimelineLine[];
 }
 
 interface TimelineProps {
   timeline: TimelineData;
-  updateEvents: (events: Event[]) => void;
+  updateLine: (lineId: number, events: Event[]) => void;
+  addNewLine: () => void;
+  deleteLine: (lineId: number) => void;
   updateClientInfo: (info: ClientInfo) => void;
   onDelete?: () => void;
-  onAddNewLineBelow?: () => void;
 }
 
-export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete, onAddNewLineBelow }: TimelineProps) => {
+export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateClientInfo, onDelete }: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [editingLineId, setEditingLineId] = useState<number | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   
-  const { events, clientInfo } = timeline;
+  const { lines, clientInfo } = timeline;
 
-  const handleAddEvent = () => {
+  const handleAddEvent = (lineId: number) => {
+    const line = lines.find(l => l.id === lineId);
+    if (!line) return;
+    
     const newId = Date.now();
-    const lastEvent = events[events.length - 1];
+    const lastEvent = line.events[line.events.length - 1];
     const newPosition = lastEvent?.position === 'top' ? 'bottom' : 'top';
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -59,27 +69,42 @@ export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete, o
       status: 'pending',
       isNew: true,
     };
-    updateEvents([...events, newEvent]);
+    updateLine(lineId, [...line.events, newEvent]);
     setEditingEvent(newEvent);
+    setEditingLineId(lineId);
   };
 
   const handleSaveEvent = (updatedEvent: Event) => {
-    updateEvents(events.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+    if (editingLineId === null) return;
+    const line = lines.find(l => l.id === editingLineId);
+    if (!line) return;
+    
+    updateLine(editingLineId, line.events.map(e => e.id === updatedEvent.id ? updatedEvent : e));
     setEditingEvent(null);
+    setEditingLineId(null);
   };
 
   const handleDeleteEvent = (id: number) => {
-    updateEvents(events.filter(e => e.id !== id));
+    if (editingLineId === null) return;
+    const line = lines.find(l => l.id === editingLineId);
+    if (!line) return;
+    
+    updateLine(editingLineId, line.events.filter(e => e.id !== id));
     setEditingEvent(null);
+    setEditingLineId(null);
   };
 
-  const handleEventClick = (event: Event) => {
+  const handleEventClick = (event: Event, lineId: number) => {
     setEditingEvent(event);
+    setEditingLineId(lineId);
   };
 
-  const handleStatusToggle = (e: React.MouseEvent, eventId: number) => {
+  const handleStatusToggle = (e: React.MouseEvent, lineId: number, eventId: number) => {
     e.stopPropagation();
-    const updatedEvents = events.map(event => {
+    const line = lines.find(l => l.id === lineId);
+    if (!line) return;
+    
+    const updatedEvents = line.events.map(event => {
       if (event.id === eventId) {
         const newStatus: 'pending' | 'completed' | 'failed' = event.status === 'pending' ? 'completed' : event.status === 'completed' ? 'failed' : 'pending';
         let newPosition: 'top' | 'bottom' = event.position;
@@ -92,7 +117,7 @@ export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete, o
       }
       return event;
     });
-    updateEvents(updatedEvents);
+    updateLine(lineId, updatedEvents);
   };
 
   const renderStatusIcon = (status: string) => {
@@ -117,26 +142,16 @@ export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete, o
             {clientInfo.name}
           </button>
           
-          {onAddNewLineBelow && (
-            <button
-              onClick={onAddNewLineBelow}
-              className="px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:scale-105 transition-transform"
-              title="Adicionar nova linha de cobrança abaixo desta"
-            >
-              + Nova Linha
-            </button>
-          )}
+          <button
+            onClick={addNewLine}
+            className="px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:scale-105 transition-transform"
+            title="Adicionar nova linha de timeline abaixo"
+          >
+            + Nova Linha
+          </button>
         </div>
         
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleAddEvent} 
-            className="px-6 py-3 font-semibold text-primary-foreground bg-gradient-primary rounded-xl shadow-lg transition-transform hover:scale-105"
-            title="Adiciona um novo evento na timeline deste cliente"
-          >
-            + Adicionar Evento para {clientInfo.name}
-          </button>
-          
           {onDelete && (
             <button
               onClick={onDelete}
@@ -149,58 +164,84 @@ export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete, o
         </div>
       </div>
 
-      <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-20 overflow-x-auto">
-        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
-        {events.map((event, index) => (
-          <motion.div
-            key={event.id}
-            className="relative z-10 w-36 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            layout
-          >
-            <button
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
-              onClick={(e) => handleStatusToggle(e, event.id)}
-            >
-              <AnimatePresence mode="popLayout">
-                <motion.div
-                  key={event.status}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center justify-center"
+      <div className="space-y-8">
+        {lines.map((line, lineIndex) => (
+          <div key={line.id} className="relative">
+            <div className="flex items-center gap-4 mb-4">
+              <button 
+                onClick={() => handleAddEvent(line.id)} 
+                className="px-4 py-2 text-sm font-semibold text-primary-foreground bg-gradient-primary rounded-lg shadow-lg transition-transform hover:scale-105"
+                title="Adiciona um novo evento nesta linha"
+              >
+                + Adicionar Evento
+              </button>
+              
+              {lines.length > 1 && (
+                <button
+                  onClick={() => deleteLine(line.id)}
+                  className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg hover:scale-105 transition-transform"
+                  title="Excluir esta linha"
                 >
-                  {renderStatusIcon(event.status)}
-                </motion.div>
-              </AnimatePresence>
-            </button>
-            <div
-              className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer ${
-                event.position === 'bottom' ? 'top-5' : 'bottom-5'
-              }`}
-              onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
-              title={event.description}
-            >
-              {event.position === 'bottom' ? (
-                <>
-                  <div className="text-sm font-semibold text-foreground mb-2">{event.date}</div>
-                  <div className={`${event.iconSize || 'text-2xl'} transition-transform duration-300 hover:scale-110`}>
-                    {event.icon}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className={`${event.iconSize || 'text-2xl'} mb-2 transition-transform duration-300 hover:scale-110`}>
-                    {event.icon}
-                  </div>
-                  <div className="text-sm font-semibold text-foreground">{event.date}</div>
-                </>
+                  Excluir Linha
+                </button>
               )}
             </div>
-          </motion.div>
+            
+            <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-20 overflow-x-auto">
+              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
+              {line.events.map((event, index) => (
+                <motion.div
+                  key={event.id}
+                  className="relative z-10 w-36 text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  layout
+                >
+                  <button
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                    onClick={(e) => handleStatusToggle(e, line.id, event.id)}
+                  >
+                    <AnimatePresence mode="popLayout">
+                      <motion.div
+                        key={event.status}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center justify-center"
+                      >
+                        {renderStatusIcon(event.status)}
+                      </motion.div>
+                    </AnimatePresence>
+                  </button>
+                  <div
+                    className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer ${
+                      event.position === 'bottom' ? 'top-5' : 'bottom-5'
+                    }`}
+                    onClick={(e) => { e.stopPropagation(); handleEventClick(event, line.id); }}
+                    title={event.description}
+                  >
+                    {event.position === 'bottom' ? (
+                      <>
+                        <div className="text-sm font-semibold text-foreground mb-2">{event.date}</div>
+                        <div className={`${event.iconSize || 'text-2xl'} transition-transform duration-300 hover:scale-110`}>
+                          {event.icon}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className={`${event.iconSize || 'text-2xl'} mb-2 transition-transform duration-300 hover:scale-110`}>
+                          {event.icon}
+                        </div>
+                        <div className="text-sm font-semibold text-foreground">{event.date}</div>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       <AnimatePresence>

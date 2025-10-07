@@ -21,10 +21,15 @@ interface ClientInfo {
   dueDate: string;
 }
 
+interface TimelineLine {
+  id: number;
+  events: Event[];
+}
+
 interface TimelineData {
   id: number;
   clientInfo: ClientInfo;
-  events: Event[];
+  lines: TimelineLine[];
 }
 
 const initialTimelinesData: TimelineData[] = [{
@@ -35,30 +40,33 @@ const initialTimelinesData: TimelineData[] = [{
     boletoValue: '150.00',
     dueDate: '2024-08-25'
   },
-  events: [{
+  lines: [{
     id: 1,
-    icon: '💬',
-    iconSize: 'text-2xl',
-    date: '10/08',
-    description: 'Cobrei o cliente e sem resposta.',
-    position: 'top',
-    status: 'pending'
-  }, {
-    id: 2,
-    icon: '📅',
-    iconSize: 'text-2xl',
-    date: '11/08',
-    description: 'Cliente pediu o boleto.',
-    position: 'bottom',
-    status: 'completed'
-  }, {
-    id: 3,
-    icon: '📄',
-    iconSize: 'text-2xl',
-    date: '15/08',
-    description: 'Enviei o boleto para o cliente.',
-    position: 'top',
-    status: 'pending'
+    events: [{
+      id: 1,
+      icon: '💬',
+      iconSize: 'text-2xl',
+      date: '10/08',
+      description: 'Cobrei o cliente e sem resposta.',
+      position: 'top',
+      status: 'pending'
+    }, {
+      id: 2,
+      icon: '📅',
+      iconSize: 'text-2xl',
+      date: '11/08',
+      description: 'Cliente pediu o boleto.',
+      position: 'bottom',
+      status: 'completed'
+    }, {
+      id: 3,
+      icon: '📄',
+      iconSize: 'text-2xl',
+      date: '15/08',
+      description: 'Enviei o boleto para o cliente.',
+      position: 'top',
+      status: 'pending'
+    }]
   }]
 }];
 
@@ -101,45 +109,21 @@ const Index = () => {
         boletoValue: '0.00',
         dueDate: today
       },
-      events: [{
+      lines: [{
         id: Date.now() + 1,
-        icon: '📋',
-        iconSize: 'text-2xl',
-        date: '--/--',
-        description: 'Novo evento',
-        position: 'top',
-        status: 'pending'
+        events: [{
+          id: Date.now() + 2,
+          icon: '📋',
+          iconSize: 'text-2xl',
+          date: '--/--',
+          description: 'Novo evento',
+          position: 'top',
+          status: 'pending'
+        }]
       }]
     };
     setTimelines([...timelines, newTimeline]);
     setActiveTimelineId(newTimeline.id);
-  };
-
-  const handleAddTimelineBelow = (currentId: number) => {
-    const today = new Date().toISOString().split('T')[0];
-    const newTimeline: TimelineData = {
-      id: Date.now(),
-      clientInfo: {
-        name: 'NOVO CLIENTE',
-        startDate: today,
-        boletoValue: '0.00',
-        dueDate: today
-      },
-      events: [{
-        id: Date.now() + 1,
-        icon: '📋',
-        iconSize: 'text-2xl',
-        date: '--/--',
-        description: 'Novo evento',
-        position: 'top',
-        status: 'pending'
-      }]
-    };
-    
-    const currentIndex = timelines.findIndex(t => t.id === currentId);
-    const newTimelines = [...timelines];
-    newTimelines.splice(currentIndex + 1, 0, newTimeline);
-    setTimelines(newTimelines);
   };
 
   const handleDeleteTimeline = (e: React.MouseEvent, id: number) => {
@@ -152,10 +136,38 @@ const Index = () => {
     }
   };
 
-  const updateEvents = (updatedEvents: Event[]) => {
-    setTimelines(timelines.map(t => t.id === activeTimelineId ? {
+  const updateLine = (timelineId: number, lineId: number, updatedEvents: Event[]) => {
+    setTimelines(timelines.map(t => t.id === timelineId ? {
       ...t,
-      events: updatedEvents
+      lines: t.lines.map(line => line.id === lineId ? {
+        ...line,
+        events: updatedEvents
+      } : line)
+    } : t));
+  };
+
+  const addNewLine = (timelineId: number) => {
+    setTimelines(timelines.map(t => t.id === timelineId ? {
+      ...t,
+      lines: [...t.lines, {
+        id: Date.now(),
+        events: [{
+          id: Date.now() + 1,
+          icon: '📋',
+          iconSize: 'text-2xl',
+          date: '--/--',
+          description: 'Novo evento',
+          position: 'top',
+          status: 'pending'
+        }]
+      }]
+    } : t));
+  };
+
+  const deleteLine = (timelineId: number, lineId: number) => {
+    setTimelines(timelines.map(t => t.id === timelineId ? {
+      ...t,
+      lines: t.lines.filter(line => line.id !== lineId)
     } : t));
   };
 
@@ -199,12 +211,9 @@ const Index = () => {
               >
                 <Timeline 
                   timeline={timeline}
-                  updateEvents={(events) => {
-                    setTimelines(timelines.map(t => t.id === timeline.id ? {
-                      ...t,
-                      events
-                    } : t));
-                  }}
+                  updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
+                  addNewLine={() => addNewLine(timeline.id)}
+                  deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
                   updateClientInfo={(info) => {
                     setTimelines(timelines.map(t => t.id === timeline.id ? {
                       ...t,
@@ -219,7 +228,6 @@ const Index = () => {
                       }
                     }
                   } : undefined}
-                  onAddNewLineBelow={() => handleAddTimelineBelow(timeline.id)}
                 />
               </motion.div>
             ))}
