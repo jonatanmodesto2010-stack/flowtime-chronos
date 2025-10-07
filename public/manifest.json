@@ -19,7 +19,19 @@
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["injector.js"],
+      "run_at": "document_end"
+    }
+  ],
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ]
 }
