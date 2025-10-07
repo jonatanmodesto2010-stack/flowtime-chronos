@@ -47,14 +47,22 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
   const [editingLineId, setEditingLineId] = useState<number | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   
-  const { lines, clientInfo } = timeline;
+  // Garante que sempre temos arrays válidos
+  const lines = timeline.lines || [];
+  const clientInfo = timeline.clientInfo || {
+    name: 'Cliente',
+    startDate: new Date().toISOString().split('T')[0],
+    boletoValue: '0.00',
+    dueDate: new Date().toISOString().split('T')[0]
+  };
 
   const handleAddEvent = (lineId: number) => {
     const line = lines.find(l => l.id === lineId);
     if (!line) return;
     
     const newId = Date.now();
-    const lastEvent = line.events[line.events.length - 1];
+    const lineEvents = line.events || [];
+    const lastEvent = lineEvents[lineEvents.length - 1];
     const newPosition = lastEvent?.position === 'top' ? 'bottom' : 'top';
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -69,7 +77,7 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
       status: 'pending',
       isNew: true,
     };
-    updateLine(lineId, [...line.events, newEvent]);
+    updateLine(lineId, [...lineEvents, newEvent]);
     setEditingEvent(newEvent);
     setEditingLineId(lineId);
   };
@@ -79,7 +87,8 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
     const line = lines.find(l => l.id === editingLineId);
     if (!line) return;
     
-    updateLine(editingLineId, line.events.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+    const lineEvents = line.events || [];
+    updateLine(editingLineId, lineEvents.map(e => e.id === updatedEvent.id ? updatedEvent : e));
     setEditingEvent(null);
     setEditingLineId(null);
   };
@@ -89,7 +98,8 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
     const line = lines.find(l => l.id === editingLineId);
     if (!line) return;
     
-    updateLine(editingLineId, line.events.filter(e => e.id !== id));
+    const lineEvents = line.events || [];
+    updateLine(editingLineId, lineEvents.filter(e => e.id !== id));
     setEditingEvent(null);
     setEditingLineId(null);
   };
@@ -104,7 +114,8 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
     const line = lines.find(l => l.id === lineId);
     if (!line) return;
     
-    const updatedEvents = line.events.map(event => {
+    const lineEvents = line.events || [];
+    const updatedEvents = lineEvents.map(event => {
       if (event.id === eventId) {
         const newStatus: 'pending' | 'completed' | 'failed' = event.status === 'pending' ? 'completed' : event.status === 'completed' ? 'failed' : 'pending';
         let newPosition: 'top' | 'bottom' = event.position;
@@ -189,7 +200,7 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
             
             <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-20 overflow-x-auto">
               <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
-              {line.events.map((event, index) => (
+              {(line.events || []).map((event, index) => (
                 <motion.div
                   key={event.id}
                   className="relative z-10 w-36 text-center"

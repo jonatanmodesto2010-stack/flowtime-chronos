@@ -70,11 +70,62 @@ const initialTimelinesData: TimelineData[] = [{
   }]
 }];
 
+// Função para migrar dados antigos para nova estrutura
+const migrateOldData = (data: any[]): TimelineData[] => {
+  return data.map(item => {
+    // Se já tem a nova estrutura (lines), retorna como está
+    if (item.lines && Array.isArray(item.lines)) {
+      return item as TimelineData;
+    }
+    
+    // Se tem a estrutura antiga (events direto no timeline), converte
+    if (item.events && Array.isArray(item.events)) {
+      return {
+        id: item.id,
+        clientInfo: item.clientInfo || {
+          name: item.name || 'Cliente',
+          startDate: new Date().toISOString().split('T')[0],
+          boletoValue: '0.00',
+          dueDate: new Date().toISOString().split('T')[0]
+        },
+        lines: [{
+          id: Date.now() + Math.random(),
+          events: item.events
+        }]
+      };
+    }
+    
+    // Se não tem nem events nem lines, cria estrutura vazia
+    return {
+      id: item.id,
+      clientInfo: item.clientInfo || {
+        name: 'Cliente',
+        startDate: new Date().toISOString().split('T')[0],
+        boletoValue: '0.00',
+        dueDate: new Date().toISOString().split('T')[0]
+      },
+      lines: [{
+        id: Date.now() + Math.random(),
+        events: []
+      }]
+    };
+  });
+};
+
 const Index = () => {
   const [theme, setTheme] = useState('light');
   const [timelines, setTimelines] = useState<TimelineData[]>(() => {
     const saved = localStorage.getItem('timelines');
-    return saved ? JSON.parse(saved) : initialTimelinesData;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return migrateOldData(parsed);
+      } catch (e) {
+        console.error('Erro ao carregar dados salvos:', e);
+        return initialTimelinesData;
+      }
+    }
+    return initialTimelinesData;
   });
   const [activeTimelineId, setActiveTimelineId] = useState(() => {
     const saved = localStorage.getItem('activeTimelineId');
