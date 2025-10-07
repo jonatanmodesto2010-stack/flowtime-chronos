@@ -33,9 +33,10 @@ interface TimelineProps {
   updateEvents: (events: Event[]) => void;
   updateClientInfo: (info: ClientInfo) => void;
   onDelete?: () => void;
+  onAddNewLineBelow?: () => void;
 }
 
-export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete }: TimelineProps) => {
+export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete, onAddNewLineBelow }: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   
@@ -108,12 +109,24 @@ export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete }:
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setShowClientModal(true)}
-          className="px-6 py-3 bg-gradient-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:scale-105 transition-transform"
-        >
-          {clientInfo.name}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowClientModal(true)}
+            className="px-6 py-3 bg-gradient-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:scale-105 transition-transform"
+          >
+            {clientInfo.name}
+          </button>
+          
+          {onAddNewLineBelow && (
+            <button
+              onClick={onAddNewLineBelow}
+              className="px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:scale-105 transition-transform"
+              title="Adicionar nova linha de cobrança abaixo desta"
+            >
+              + Nova Linha
+            </button>
+          )}
+        </div>
         
         <div className="flex items-center gap-4">
           <button 

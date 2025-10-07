@@ -115,6 +115,33 @@ const Index = () => {
     setActiveTimelineId(newTimeline.id);
   };
 
+  const handleAddTimelineBelow = (currentId: number) => {
+    const today = new Date().toISOString().split('T')[0];
+    const newTimeline: TimelineData = {
+      id: Date.now(),
+      clientInfo: {
+        name: 'NOVO CLIENTE',
+        startDate: today,
+        boletoValue: '0.00',
+        dueDate: today
+      },
+      events: [{
+        id: Date.now() + 1,
+        icon: '📋',
+        iconSize: 'text-2xl',
+        date: '--/--',
+        description: 'Novo evento',
+        position: 'top',
+        status: 'pending'
+      }]
+    };
+    
+    const currentIndex = timelines.findIndex(t => t.id === currentId);
+    const newTimelines = [...timelines];
+    newTimelines.splice(currentIndex + 1, 0, newTimeline);
+    setTimelines(newTimelines);
+  };
+
   const handleDeleteTimeline = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     if (window.confirm('Tem certeza que deseja excluir esta linha do tempo e todos os seus eventos?')) {
@@ -192,6 +219,7 @@ const Index = () => {
                       }
                     }
                   } : undefined}
+                  onAddNewLineBelow={() => handleAddTimelineBelow(timeline.id)}
                 />
               </motion.div>
             ))}
