@@ -203,7 +203,7 @@ const Index = () => {
               whileTap={{ scale: 0.98 }}
             >
               <Plus size={24} />
-              Adicionar Nova Linha de Cobrança
+              Adicionar Novo Cliente
             </motion.button>
           </div>
         </motion.div>

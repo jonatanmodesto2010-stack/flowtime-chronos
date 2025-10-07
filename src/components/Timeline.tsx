@@ -119,15 +119,16 @@ export const Timeline = ({ timeline, updateEvents, updateClientInfo, onDelete }:
           <button 
             onClick={handleAddEvent} 
             className="px-6 py-3 font-semibold text-primary-foreground bg-gradient-primary rounded-xl shadow-lg transition-transform hover:scale-105"
+            title="Adiciona um novo evento na timeline deste cliente"
           >
-            + Adicionar Evento
+            + Adicionar Evento para {clientInfo.name}
           </button>
           
           {onDelete && (
             <button
               onClick={onDelete}
               className="p-3 bg-destructive text-destructive-foreground rounded-xl hover:scale-105 transition-transform"
-              title="Excluir linha de cobrança"
+              title="Excluir esta linha de cobrança completa"
             >
               <Trash2 size={20} />
             </button>
