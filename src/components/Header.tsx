@@ -1,4 +1,5 @@
 import { Sun, Moon, Menu, LogOut } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -31,40 +32,57 @@ export const Header = ({ theme, onToggleTheme, onToggleSidebar }: HeaderProps) =
   };
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
+    <motion.header 
+      className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40 backdrop-blur-sm"
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="flex items-center gap-4">
         {onToggleSidebar && (
-          <button
+          <motion.button
             onClick={onToggleSidebar}
             className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             aria-label="Toggle sidebar"
           >
             <Menu size={24} />
-          </button>
+          </motion.button>
         )}
-        <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+        <motion.h1 
+          className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           Time Line - ISP Manager
-        </h1>
+        </motion.h1>
       </div>
 
       <div className="flex items-center gap-3">
-        <button
+        <motion.button
           onClick={onToggleTheme}
-          className="p-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+          className="p-2 bg-primary text-primary-foreground rounded-lg transition-colors"
+          whileHover={{ scale: 1.1, rotate: 180 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
           aria-label="Toggle theme"
         >
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-        </button>
+        </motion.button>
         
-        <button
+        <motion.button
           onClick={handleLogout}
           className="p-2 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
           aria-label="Logout"
           title="Sair"
         >
           <LogOut size={20} />
-        </button>
+        </motion.button>
       </div>
-    </header>
+    </motion.header>
   );
 };

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { Timeline } from '@/components/Timeline';
+import { TimelineSkeleton } from '@/components/TimelineSkeleton';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
@@ -389,10 +390,31 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-foreground mb-2">Carregando...</div>
-          <div className="text-muted-foreground">Buscando suas timelines</div>
+      <div className="min-h-screen flex flex-col w-full bg-background">
+        <Header 
+          theme={theme} 
+          onToggleTheme={toggleTheme}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        />
+        
+        <div className="flex flex-1 w-full">
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          
+          <main className="flex-1 p-6 overflow-auto">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              className="max-w-7xl mx-auto space-y-6"
+            >
+              <div className="mb-6">
+                <div className="h-9 w-80 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-5 w-96 bg-muted animate-pulse rounded" />
+              </div>
+              
+              <TimelineSkeleton />
+              <TimelineSkeleton />
+            </motion.div>
+          </main>
         </div>
       </div>
     );
@@ -426,32 +448,49 @@ const Index = () => {
             </div>
 
             <div className="space-y-6">
-              {timelines.map(timeline => (
-                <motion.div
-                  key={timeline.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-card border border-border rounded-xl p-6 shadow-lg"
-                >
-                  <Timeline 
-                    timeline={timeline}
-                    updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
-                    addNewLine={() => addNewLine(timeline.id)}
-                    deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
-                    updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
-                    onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
-                  />
-                </motion.div>
-              ))}
+              <AnimatePresence mode="popLayout">
+                {timelines.map((timeline, index) => (
+                  <motion.div
+                    key={timeline.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ 
+                      duration: 0.3,
+                      delay: index * 0.1,
+                      ease: "easeOut"
+                    }}
+                    layout
+                    className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    <Timeline 
+                      timeline={timeline}
+                      updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
+                      addNewLine={() => addNewLine(timeline.id)}
+                      deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
+                      updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
+                      onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
               <motion.button
                 onClick={handleAddTimeline}
                 disabled={operationLoading.addTimeline}
-                className="w-full py-4 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: operationLoading.addTimeline ? 1 : 1.01 }}
-                whileTap={{ scale: operationLoading.addTimeline ? 1 : 0.99 }}
+                className="w-full py-4 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: operationLoading.addTimeline ? 1 : 1.02, y: -2 }}
+                whileTap={{ scale: operationLoading.addTimeline ? 1 : 0.98 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: timelines.length * 0.1 + 0.2 }}
               >
-                <Plus size={24} />
+                <motion.div
+                  animate={operationLoading.addTimeline ? { rotate: 360 } : {}}
+                  transition={{ duration: 1, repeat: operationLoading.addTimeline ? Infinity : 0, ease: "linear" }}
+                >
+                  <Plus size={24} />
+                </motion.div>
                 {operationLoading.addTimeline ? 'Criando...' : 'Adicionar Novo Cliente'}
               </motion.button>
             </div>

@@ -53,13 +53,15 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       onClick={onCancel}
     >
       <motion.div
         className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-md p-6 relative"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.9, y: -20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ type: "spring", duration: 0.4 }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -148,18 +150,22 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button
+          <motion.button
             onClick={handleSave}
-            className="flex-1 px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg hover:scale-105 transition-transform shadow-lg"
+            className="flex-1 px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg shadow-lg transition-all"
+            whileHover={{ scale: 1.03, y: -1 }}
+            whileTap={{ scale: 0.97 }}
           >
             Salvar
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={onCancel}
-            className="px-6 py-3 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-colors"
+            className="px-6 py-3 bg-secondary text-secondary-foreground font-semibold rounded-lg transition-all"
+            whileHover={{ scale: 1.03, y: -1 }}
+            whileTap={{ scale: 0.97 }}
           >
             Cancelar
-          </button>
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>

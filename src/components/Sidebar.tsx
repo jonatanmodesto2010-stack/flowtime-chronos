@@ -50,47 +50,66 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 overflow-y-auto">
           <div className="space-y-2">
-            {menuItems.map((item) => (
-              <button
+            {menuItems.map((item, index) => (
+              <motion.button
                 key={item.label}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.03, x: 4 }}
+                whileTap={{ scale: 0.98 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   item.active
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-lg'
                     : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <item.icon size={20} />
                 <span className="font-medium">{item.label}</span>
-              </button>
+              </motion.button>
             ))}
           </div>
 
           {/* Quick Filters Section */}
-          <div className="mt-8 pt-8 border-t border-border">
+          <motion.div 
+            className="mt-8 pt-8 border-t border-border"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
             <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-3 px-4">
               Filtros Rápidos
             </h3>
             <div className="space-y-1">
-              <button className="w-full text-left px-4 py-2 text-sm hover:bg-muted rounded-lg transition-colors">
-                ⚫ Criados
-              </button>
-              <button className="w-full text-left px-4 py-2 text-sm hover:bg-muted rounded-lg transition-colors">
-                ✅ Resolvidos
-              </button>
-              <button className="w-full text-left px-4 py-2 text-sm hover:bg-muted rounded-lg transition-colors">
-                ❌ Sem Resposta
-              </button>
+              {['⚫ Criados', '✅ Resolvidos', '❌ Sem Resposta'].map((filter, index) => (
+                <motion.button
+                  key={filter}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                  whileHover={{ scale: 1.02, x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
+                >
+                  {filter}
+                </motion.button>
+              ))}
             </div>
-          </div>
+          </motion.div>
         </nav>
 
         {/* Footer Info */}
-        <div className="p-4 border-t border-border">
+        <motion.div 
+          className="p-4 border-t border-border"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+        >
           <div className="text-xs text-muted-foreground">
             <p className="font-semibold mb-1">Sistema de Gestão ISP</p>
             <p>v1.0.0 - 2025</p>
           </div>
-        </div>
+        </motion.div>
       </motion.aside>
     </>
   );

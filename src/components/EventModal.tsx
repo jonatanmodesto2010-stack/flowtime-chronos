@@ -84,6 +84,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -92,9 +93,11 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
       }}
     >
       <motion.div
-        initial={{ opacity: 0, y: -50, scale: 0.9 }}
+        initial={{ opacity: 0, y: -30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="w-full max-w-sm p-6 bg-card border-2 border-primary/20 rounded-2xl shadow-xl"
+        exit={{ opacity: 0, y: 30, scale: 0.95 }}
+        transition={{ type: "spring", duration: 0.4 }}
+        className="w-full max-w-sm p-6 bg-card border-2 border-primary/20 rounded-2xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col gap-3">
@@ -190,25 +193,31 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
           </div>
           
           <div className="flex gap-2 mt-2">
-            <button 
+            <motion.button 
               onClick={handleSave} 
-              className="flex-1 py-2 text-sm font-semibold text-primary-foreground bg-gradient-primary rounded-lg transition-transform hover:scale-105 hover:bg-gradient-hover"
+              className="flex-1 py-2 text-sm font-semibold text-primary-foreground bg-gradient-primary rounded-lg transition-all"
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
             >
               Salvar
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
               onClick={handleCancel} 
-              className="flex-1 py-2 text-sm font-semibold bg-secondary text-secondary-foreground rounded-lg transition-colors hover:bg-secondary/80"
+              className="flex-1 py-2 text-sm font-semibold bg-secondary text-secondary-foreground rounded-lg transition-all"
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
             >
               Cancelar
-            </button>
+            </motion.button>
           </div>
-          <button 
+          <motion.button 
             onClick={handleDelete} 
-            className="w-full py-2 text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg transition-colors hover:bg-destructive/20 mt-1"
+            className="w-full py-2 text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg transition-all mt-1"
+            whileHover={{ scale: 1.02, y: -1 }}
+            whileTap={{ scale: 0.98 }}
           >
             Excluir
-          </button>
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>
