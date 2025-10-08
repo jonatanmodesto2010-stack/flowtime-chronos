@@ -286,7 +286,7 @@ export const Timeline = ({
               )}
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
-                <div className="timeline-container relative flex items-center gap-4 w-full mx-auto py-24 min-h-[200px] px-4">
+                <div className="timeline-container relative flex items-center gap-8 w-full mx-auto py-24 min-h-[200px] px-4">
                   {/* Linha central de ponta a ponta */}
                   <div 
                     className="absolute top-1/2 h-0.5 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4"
@@ -295,7 +295,7 @@ export const Timeline = ({
                   {(line.events || []).map((event, index) => (
                     <motion.div
                       key={event.id}
-                      className="relative z-10 text-center flex-shrink-0"
+                      className="relative z-10 text-center flex-shrink-0 min-w-[80px]"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
