@@ -1,5 +1,19 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const iconOptions = [
   { value: '💬', label: '💬 Mensagem' },
@@ -29,10 +43,30 @@ interface EventModalProps {
 
 export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProps) => {
   const [formData, setFormData] = useState(event);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     setFormData(event);
+    // Try to parse the date if it's in DD/MM format
+    if (event.date && event.date !== '--/--') {
+      const [day, month] = event.date.split('/');
+      if (day && month) {
+        const currentYear = new Date().getFullYear();
+        const date = new Date(currentYear, parseInt(month) - 1, parseInt(day));
+        if (!isNaN(date.getTime())) {
+          setSelectedDate(date);
+        }
+      }
+    }
   }, [event]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const formattedDate = format(date, 'dd/MM', { locale: ptBR });
+      setSelectedDate(date);
+      setFormData({ ...formData, date: formattedDate });
+    }
+  };
 
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -76,35 +110,60 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
     >
       <motion.div
         variants={modalVariants}
-        className="w-full max-w-sm p-6 bg-card border-2 border-purple-500/20 dark:border-purple-500/30 rounded-2xl shadow-xl"
+        className="w-full max-w-sm p-6 bg-card border border-border rounded-2xl shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground">Ícone</label>
-            <select 
-              value={formData.icon} 
-              onChange={(e) => setFormData({ ...formData, icon: e.target.value })} 
-              className="w-full p-2 mt-1 bg-secondary rounded-md border border-border"
-            >
-              {iconOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Ícone</label>
+            <Select value={formData.icon} onValueChange={(value) => setFormData({ ...formData, icon: value })}>
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {iconOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          
           <div>
-            <label className="text-xs font-semibold text-muted-foreground">Data</label>
-            <input 
-              type="text" 
-              value={formData.date} 
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
-              className="w-full p-2 mt-1 bg-secondary rounded-md border border-border" 
-            />
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Data</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal bg-background",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "dd/MM", { locale: ptBR }) : formData.date || "Selecione a data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
+          
           <div>
-            <label className="text-xs font-semibold text-muted-foreground">Descrição</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Descrição</label>
             <textarea 
               value={formData.description} 
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
-              className="w-full p-2 mt-1 bg-secondary rounded-md border border-border h-20 resize-none"
+              className="w-full p-3 bg-background rounded-md border border-border h-20 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Descreva o evento..."
             />
           </div>
           <div className="flex gap-2 mt-2">
