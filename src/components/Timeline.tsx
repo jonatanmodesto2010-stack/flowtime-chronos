@@ -231,15 +231,15 @@ export const Timeline = ({
               )}
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
-                <div className="timeline-container relative flex items-center w-fit mx-auto py-24 min-h-[200px] gap-2 px-16">
+                <div className="timeline-container relative flex items-center w-fit mx-auto py-24 min-h-[200px] gap-2 px-8">
                   {/* Ponto inicial da linha */}
-                  <div className="absolute left-16 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary z-10" />
+                  <div className="absolute left-8 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary z-10" />
                   
                   {/* Linha central com largura fixa baseada nos eventos */}
                   <div 
                     className="absolute top-1/2 h-0.5 bg-foreground/30 -translate-y-1/2 z-0"
                     style={{
-                      left: '4.5rem',
+                      left: '2.5rem',
                       right: '4.5rem',
                     }}
                   />
