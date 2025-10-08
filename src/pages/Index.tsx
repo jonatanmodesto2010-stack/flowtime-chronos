@@ -6,6 +6,7 @@ import { Timeline } from '@/components/Timeline';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@supabase/supabase-js';
 
@@ -78,7 +79,7 @@ const Index = () => {
   const loadTimelines = async (userId: string) => {
     try {
       setLoading(true);
-      const { data: clientTimelines, error } = await supabase
+      const { data: clientTimelines, error } = await supabaseClient
         .from('client_timelines')
         .select('*')
         .eq('user_id', userId)
@@ -88,8 +89,8 @@ const Index = () => {
 
       if (clientTimelines && clientTimelines.length > 0) {
         const timelinesWithLines = await Promise.all(
-          clientTimelines.map(async (ct) => {
-            const { data: lines, error: linesError } = await supabase
+          clientTimelines.map(async (ct: any) => {
+            const { data: lines, error: linesError } = await supabaseClient
               .from('timeline_lines')
               .select('*')
               .eq('timeline_id', ct.id)
@@ -98,8 +99,8 @@ const Index = () => {
             if (linesError) throw linesError;
 
             const linesWithEvents = await Promise.all(
-              (lines || []).map(async (line) => {
-                const { data: events, error: eventsError } = await supabase
+              (lines || []).map(async (line: any) => {
+                const { data: events, error: eventsError } = await supabaseClient
                   .from('timeline_events')
                   .select('*')
                   .eq('line_id', line.id)
@@ -109,7 +110,7 @@ const Index = () => {
 
                 return {
                   id: line.id,
-                  events: (events || []).map((e) => ({
+                  events: (events || []).map((e: any) => ({
                     id: e.id,
                     icon: e.icon,
                     iconSize: e.icon_size,
@@ -158,7 +159,7 @@ const Index = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      const { data: newTimeline, error: timelineError } = await supabase
+      const { data: newTimeline, error: timelineError } = await supabaseClient
         .from('client_timelines')
         .insert({
           user_id: user.id,
@@ -171,8 +172,9 @@ const Index = () => {
         .single();
 
       if (timelineError) throw timelineError;
+      if (!newTimeline) throw new Error('Falha ao criar timeline');
 
-      const { data: newLine, error: lineError } = await supabase
+      const { data: newLine, error: lineError } = await supabaseClient
         .from('timeline_lines')
         .insert({
           timeline_id: newTimeline.id,
@@ -182,8 +184,9 @@ const Index = () => {
         .single();
 
       if (lineError) throw lineError;
+      if (!newLine) throw new Error('Falha ao criar linha');
 
-      const { error: eventError } = await supabase
+      const { error: eventError } = await supabaseClient
         .from('timeline_events')
         .insert({
           line_id: newLine.id,
@@ -215,7 +218,7 @@ const Index = () => {
 
   const updateLine = async (timelineId: string, lineId: string, events: Event[]) => {
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseClient
         .from('timeline_events')
         .delete()
         .eq('line_id', lineId);
@@ -233,7 +236,7 @@ const Index = () => {
         event_order: index,
       }));
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabaseClient
         .from('timeline_events')
         .insert(eventsToInsert);
 
@@ -254,7 +257,7 @@ const Index = () => {
       const timeline = timelines.find((t) => t.id === timelineId);
       const nextPosition = timeline ? timeline.lines.length : 0;
 
-      const { data: newLine, error: lineError } = await supabase
+      const { data: newLine, error: lineError } = await supabaseClient
         .from('timeline_lines')
         .insert({
           timeline_id: timelineId,
@@ -264,8 +267,9 @@ const Index = () => {
         .single();
 
       if (lineError) throw lineError;
+      if (!newLine) throw new Error('Falha ao criar linha');
 
-      const { error: eventError } = await supabase
+      const { error: eventError } = await supabaseClient
         .from('timeline_events')
         .insert({
           line_id: newLine.id,
@@ -292,7 +296,7 @@ const Index = () => {
 
   const deleteLine = async (timelineId: string, lineId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('timeline_lines')
         .delete()
         .eq('id', lineId);
@@ -311,7 +315,7 @@ const Index = () => {
 
   const updateClientInfo = async (timelineId: string, info: ClientInfo) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('client_timelines')
         .update({
           client_name: info.name,
@@ -337,7 +341,7 @@ const Index = () => {
     if (!window.confirm('Tem certeza que deseja excluir esta linha de cobrança?')) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('client_timelines')
         .delete()
         .eq('id', timelineId);
