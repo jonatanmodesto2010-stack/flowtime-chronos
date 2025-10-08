@@ -12,7 +12,7 @@ const iconOptions = [
 interface Event {
   id: string;
   icon: string;
-  iconSize?: string;
+  iconSize: string;
   date: string;
   description: string;
   position: 'top' | 'bottom';

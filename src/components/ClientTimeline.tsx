@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Event {
   id: string;
   icon: string;
-  iconSize?: string;
+  iconSize: string;
   date: string;
   description: string;
   position: 'top' | 'bottom';
@@ -123,6 +123,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
     const newEvent: Event = {
       id: `temp-${Date.now()}`,
       icon: '💬',
+      iconSize: 'text-2xl',
       date: '--/--',
       description: '',
       position: 'top',

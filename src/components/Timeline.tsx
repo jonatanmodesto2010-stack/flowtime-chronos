@@ -7,7 +7,7 @@ import { ClientInfoModal } from './ClientInfoModal';
 interface Event {
   id: string;
   icon: string;
-  iconSize?: string;
+  iconSize: string;
   date: string;
   description: string;
   position: 'top' | 'bottom';
@@ -78,6 +78,7 @@ export const Timeline = ({
     const newEvent: Event = {
       id: newId,
       icon: '💬',
+      iconSize: 'text-2xl',
       date: dateStr,
       description: 'Novo evento',
       position: newPosition,
