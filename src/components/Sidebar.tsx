@@ -1,4 +1,4 @@
-import { Home, Calendar, Users, BarChart3, Filter, X } from 'lucide-react';
+import { Home, Calendar, Users, Settings, Filter, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -15,8 +15,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { icon: Home, label: 'Time Line', path: '/', active: location.pathname === '/' },
     { icon: Users, label: 'Clientes', path: '/clients', active: location.pathname === '/clients' },
     { icon: Calendar, label: 'Calendário', path: '/calendar', active: location.pathname === '/calendar' },
-    { icon: BarChart3, label: 'Analytics', path: '#', active: false },
-    { icon: Filter, label: 'Filtros', path: '#', active: false },
+    { icon: Settings, label: 'Configurações', path: '/settings', active: location.pathname === '/settings' },
   ];
 
   const handleNavigation = (path: string) => {
