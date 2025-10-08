@@ -229,12 +229,12 @@ export const Timeline = ({
                 </div>
               )}
               
-              <div className="timeline-container relative flex flex-wrap justify-center items-start w-full mx-auto py-24 gap-4">
+              <div className="timeline-container relative flex justify-evenly items-start w-full mx-auto py-24 min-h-[200px]">
                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
                 {(line.events || []).map((event, index) => (
                   <motion.div
                     key={event.id}
-                    className="relative z-10 w-24 text-center flex-shrink-0"
+                    className="relative z-10 text-center flex-shrink-0 min-w-[80px] max-w-[120px]"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
