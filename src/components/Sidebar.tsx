@@ -12,7 +12,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: '/', active: location.pathname === '/' },
+    { icon: Home, label: 'Time Line', path: '/', active: location.pathname === '/' },
     { icon: Users, label: 'Clientes', path: '/clients', active: location.pathname === '/clients' },
     { icon: Calendar, label: 'Calendário', path: '/calendar', active: location.pathname === '/calendar' },
     { icon: BarChart3, label: 'Analytics', path: '#', active: false },

@@ -155,34 +155,30 @@ export const Timeline = ({
   return (
     <div className="w-full">
       <motion.div 
-        className="flex items-center justify-between mb-6"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between mb-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       >
-        <div className="flex items-center gap-3">
-          <motion.button
-            onClick={() => setShowClientModal(true)}
-            className="px-6 py-3 bg-gradient-primary text-primary-foreground font-bold rounded-xl shadow-lg transition-all"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <User className="inline mr-2" size={18} />
-            {clientInfo.name}
-          </motion.button>
-        </div>
+        <motion.button
+          onClick={() => setShowClientModal(true)}
+          className="px-5 py-2.5 bg-gradient-primary text-primary-foreground font-semibold rounded-lg transition-all text-sm"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+        >
+          <User className="inline mr-2" size={16} />
+          {clientInfo.name}
+        </motion.button>
         
         {!readOnly && onDelete && (
-          <div className="flex items-center gap-4">
-            <motion.button
-              onClick={onDelete}
-              className="p-3 bg-destructive text-destructive-foreground rounded-xl transition-all"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              title="Excluir esta linha de cobrança completa"
-            >
-              <Trash2 size={20} />
-            </motion.button>
-          </div>
+          <motion.button
+            onClick={onDelete}
+            className="p-2 bg-destructive/10 text-destructive rounded-lg transition-all hover:bg-destructive/20"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Excluir cliente"
+          >
+            <Trash2 size={18} />
+          </motion.button>
         )}
       </motion.div>
 
@@ -220,18 +216,18 @@ export const Timeline = ({
                 </div>
               )}
               
-              <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-20 overflow-x-auto">
+              <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-16 overflow-x-auto">
                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
                 {(line.events || []).map((event, index) => (
                   <div
                     key={event.id}
-                    className="relative z-10 w-36 text-center"
+                    className="relative z-10 w-32 text-center"
                   >
                     <button
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
                       onClick={(e) => handleStatusToggle(e, line.id, event.id)}
                     >
-                      <div className="flex items-center justify-center">
+                      <div className="flex items-center justify-center scale-90">
                         {renderStatusIcon(event.status)}
                       </div>
                     </button>
@@ -247,19 +243,19 @@ export const Timeline = ({
                     >
                       {event.position === 'bottom' ? (
                         <>
-                          <div className="text-sm font-semibold text-foreground mb-2">
+                          <div className="text-xs font-semibold text-foreground mb-2">
                             {event.date}
                           </div>
-                          <div className={`${event.iconSize || 'text-2xl'}`}>
+                          <div className={`${event.iconSize || 'text-xl'}`}>
                             {event.icon}
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
+                          <div className={`${event.iconSize || 'text-xl'} mb-2`}>
                             {event.icon}
                           </div>
-                          <div className="text-sm font-semibold text-foreground">
+                          <div className="text-xs font-semibold text-foreground">
                             {event.date}
                           </div>
                         </>

@@ -425,21 +425,21 @@ const Index = () => {
         <div className="flex flex-1 w-full">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           
-          <main className="flex-1 p-6 overflow-auto">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              className="max-w-7xl mx-auto space-y-6"
-            >
-              <div className="mb-6">
-                <div className="h-9 w-80 bg-muted animate-pulse rounded mb-2" />
-                <div className="h-5 w-96 bg-muted animate-pulse rounded" />
-              </div>
-              
-              <TimelineSkeleton />
-              <TimelineSkeleton />
-            </motion.div>
-          </main>
+        <main className="flex-1 p-6 overflow-auto">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="max-w-7xl mx-auto space-y-6"
+          >
+            <div className="mb-6">
+              <div className="h-9 w-80 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-5 w-96 bg-muted animate-pulse rounded" />
+            </div>
+            
+            <TimelineSkeleton />
+            <TimelineSkeleton />
+          </motion.div>
+        </main>
         </div>
       </div>
     );
@@ -463,54 +463,41 @@ const Index = () => {
             transition={{ duration: 0.5 }} 
             className="max-w-7xl mx-auto"
           >
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-foreground mb-2">
-                Dashboard de Ocorrências
-              </h2>
-              <p className="text-muted-foreground">
-                Gerencie todas as timelines de atendimento e ocorrências técnicas
-              </p>
-            </div>
-
             <div className="space-y-6">
-              {timelines.map((timeline, index) => (
-                <motion.div
-                  key={timeline.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ 
-                    duration: 0.3,
-                    delay: index * 0.1,
-                    ease: "easeOut"
-                  }}
-                  className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
-                >
-                  <Timeline 
-                    timeline={timeline}
-                    updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
-                    addNewLine={() => addNewLine(timeline.id)}
-                    deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
-                    updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
-                    onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
-                  />
-                </motion.div>
-              ))}
+               {timelines.map((timeline, index) => (
+                 <motion.div
+                   key={timeline.id}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ 
+                     duration: 0.3,
+                     ease: "easeOut"
+                   }}
+                   className="bg-card border border-border rounded-lg p-4"
+                 >
+                   <Timeline 
+                     timeline={timeline}
+                     updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
+                     addNewLine={() => addNewLine(timeline.id)}
+                     deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
+                     updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
+                     onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
+                   />
+                 </motion.div>
+               ))}
 
               <motion.button
                 onClick={handleAddTimeline}
                 disabled={operationLoading.addTimeline}
-                className="w-full py-4 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: operationLoading.addTimeline ? 1 : 1.02, y: -2 }}
+                className="w-full py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: operationLoading.addTimeline ? 1 : 1.02 }}
                 whileTap={{ scale: operationLoading.addTimeline ? 1 : 0.98 }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: timelines.length * 0.1 + 0.2 }}
               >
                 <motion.div
                   animate={operationLoading.addTimeline ? { rotate: 360 } : {}}
                   transition={{ duration: 1, repeat: operationLoading.addTimeline ? Infinity : 0, ease: "linear" }}
                 >
-                  <Plus size={24} />
+                  <Plus size={20} />
                 </motion.div>
                 {operationLoading.addTimeline ? 'Criando...' : 'Adicionar Novo Cliente'}
               </motion.button>
