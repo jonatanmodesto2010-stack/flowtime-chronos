@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Plus, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
 import { Timeline } from '@/components/Timeline';
+import { Header } from '@/components/Header';
+import { Sidebar } from '@/components/Sidebar';
 
 interface Event {
   id: number;
@@ -10,7 +12,7 @@ interface Event {
   date: string;
   description: string;
   position: 'top' | 'bottom';
-  status: 'pending' | 'completed' | 'failed';
+  status: 'created' | 'resolved' | 'no_response';
   isNew?: boolean;
 }
 
@@ -49,7 +51,7 @@ const initialTimelinesData: TimelineData[] = [{
       date: '10/08',
       description: 'Cobrei o cliente e sem resposta.',
       position: 'top',
-      status: 'pending'
+      status: 'created'
     }, {
       id: 2,
       icon: '📅',
@@ -57,7 +59,7 @@ const initialTimelinesData: TimelineData[] = [{
       date: '11/08',
       description: 'Cliente pediu o boleto.',
       position: 'bottom',
-      status: 'completed'
+      status: 'resolved'
     }, {
       id: 3,
       icon: '📄',
@@ -65,7 +67,7 @@ const initialTimelinesData: TimelineData[] = [{
       date: '15/08',
       description: 'Enviei o boleto para o cliente.',
       position: 'top',
-      status: 'pending'
+      status: 'created'
     }]
   }]
 }];
@@ -114,6 +116,7 @@ const migrateOldData = (data: any[]): TimelineData[] => {
 
 const Index = () => {
   const [theme, setTheme] = useState('light');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [timelines, setTimelines] = useState<TimelineData[]>(() => {
     const saved = localStorage.getItem('timelines');
     if (saved) {
@@ -169,7 +172,7 @@ const Index = () => {
           date: '--/--',
           description: 'Novo evento',
           position: 'top',
-          status: 'pending'
+          status: 'created'
         }]
       }]
     };
@@ -209,7 +212,7 @@ const Index = () => {
           date: '--/--',
           description: 'Novo evento',
           position: 'top',
-          status: 'pending'
+          status: 'created'
         }]
       }]
     } : t));
@@ -232,70 +235,77 @@ const Index = () => {
   const activeTimeline = timelines.find(t => t.id === activeTimelineId);
 
   return (
-    <>
-      <button 
-        onClick={toggleTheme} 
-        className="fixed top-5 right-5 w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg z-50 transition-transform hover:scale-110"
-        aria-label="Toggle theme"
-      >
-        {theme === 'light' ? <Moon size={24} /> : <Sun size={24} />}
-      </button>
+    <div className="min-h-screen flex flex-col w-full bg-background">
+      <Header 
+        theme={theme} 
+        onToggleTheme={toggleTheme}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+      />
+      
+      <div className="flex flex-1 w-full">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        
+        <main className="flex-1 p-6 overflow-auto">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5 }} 
+            className="max-w-7xl mx-auto"
+          >
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold text-foreground mb-2">
+                Dashboard de Ocorrências
+              </h2>
+              <p className="text-muted-foreground">
+                Gerencie todas as timelines de atendimento e ocorrências técnicas
+              </p>
+            </div>
 
-      <main className="min-h-screen flex flex-col items-center justify-start p-4 pt-12 bg-background transition-colors duration-300">
-        <motion.div 
-          initial={{ opacity: 0, y: -30 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.8, ease: 'easeOut' }} 
-          className='w-full max-w-7xl'
-        >
-          <h1 className='text-4xl md:text-5xl font-bold text-center mb-8 bg-gradient-primary bg-clip-text text-transparent'>
-            Linha de Cobrança Interativa
-          </h1>
-
-          <div className="space-y-6">
-            {timelines.map(timeline => (
-              <motion.div
-                key={timeline.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-card border border-border rounded-xl p-6 shadow-lg"
-              >
-                <Timeline 
-                  timeline={timeline}
-                  updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
-                  addNewLine={() => addNewLine(timeline.id)}
-                  deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
-                  updateClientInfo={(info) => {
-                    setTimelines(timelines.map(t => t.id === timeline.id ? {
-                      ...t,
-                      clientInfo: info
-                    } : t));
-                  }}
-                  onDelete={timelines.length > 1 ? () => {
-                    if (window.confirm('Tem certeza que deseja excluir esta linha de cobrança?')) {
-                      setTimelines(timelines.filter(t => t.id !== timeline.id));
-                      if (activeTimelineId === timeline.id && timelines.length > 1) {
-                        setActiveTimelineId(timelines[0].id === timeline.id ? timelines[1].id : timelines[0].id);
+            <div className="space-y-6">
+              {timelines.map(timeline => (
+                <motion.div
+                  key={timeline.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-card border border-border rounded-xl p-6 shadow-lg"
+                >
+                  <Timeline 
+                    timeline={timeline}
+                    updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
+                    addNewLine={() => addNewLine(timeline.id)}
+                    deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
+                    updateClientInfo={(info) => {
+                      setTimelines(timelines.map(t => t.id === timeline.id ? {
+                        ...t,
+                        clientInfo: info
+                      } : t));
+                    }}
+                    onDelete={timelines.length > 1 ? () => {
+                      if (window.confirm('Tem certeza que deseja excluir esta linha de cobrança?')) {
+                        setTimelines(timelines.filter(t => t.id !== timeline.id));
+                        if (activeTimelineId === timeline.id && timelines.length > 1) {
+                          setActiveTimelineId(timelines[0].id === timeline.id ? timelines[1].id : timelines[0].id);
+                        }
                       }
-                    }
-                  } : undefined}
-                />
-              </motion.div>
-            ))}
+                    } : undefined}
+                  />
+                </motion.div>
+              ))}
 
-            <motion.button
-              onClick={handleAddTimeline}
-              className="w-full py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Plus size={24} />
-              Adicionar Novo Cliente
-            </motion.button>
-          </div>
-        </motion.div>
-      </main>
-    </>
+              <motion.button
+                onClick={handleAddTimeline}
+                className="w-full py-4 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Plus size={24} />
+                Adicionar Novo Cliente
+              </motion.button>
+            </div>
+          </motion.div>
+        </main>
+      </div>
+    </div>
   );
 };
 

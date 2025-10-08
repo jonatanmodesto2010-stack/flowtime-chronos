@@ -11,7 +11,7 @@ interface Event {
   date: string;
   description: string;
   position: 'top' | 'bottom';
-  status: 'pending' | 'completed' | 'failed';
+  status: 'created' | 'resolved' | 'no_response';
   isNew?: boolean;
 }
 
@@ -74,7 +74,7 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
       date: dateStr,
       description: 'Novo evento',
       position: newPosition,
-      status: 'pending',
+      status: 'created',
       isNew: true,
     };
     updateLine(lineId, [...lineEvents, newEvent]);
@@ -117,11 +117,13 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
     const lineEvents = line.events || [];
     const updatedEvents = lineEvents.map(event => {
       if (event.id === eventId) {
-        const newStatus: 'pending' | 'completed' | 'failed' = event.status === 'pending' ? 'completed' : event.status === 'completed' ? 'failed' : 'pending';
+        const newStatus: 'created' | 'resolved' | 'no_response' = 
+          event.status === 'created' ? 'resolved' : 
+          event.status === 'resolved' ? 'no_response' : 'created';
         let newPosition: 'top' | 'bottom' = event.position;
-        if (newStatus === 'completed') {
+        if (newStatus === 'resolved') {
           newPosition = 'top';
-        } else if (newStatus === 'failed') {
+        } else if (newStatus === 'no_response') {
           newPosition = 'bottom';
         }
         return { ...event, status: newStatus, position: newPosition };
@@ -133,12 +135,12 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
 
   const renderStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'resolved':
         return <span className="text-xl">✅</span>;
-      case 'failed':
-        return <span className="text-xl">🚫</span>;
+      case 'no_response':
+        return <span className="text-xl">❌</span>;
       default:
-        return <div className="w-2 h-2 bg-foreground rounded-full" />;
+        return <div className="w-3 h-3 bg-[hsl(var(--status-created))] rounded-full" />;
     }
   };
 

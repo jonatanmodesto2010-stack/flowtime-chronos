@@ -9,7 +9,7 @@ interface Event {
   date: string;
   description: string;
   position: 'top' | 'bottom';
-  status: 'pending' | 'completed' | 'failed';
+  status: 'created' | 'resolved' | 'no_response';
   isNew?: boolean;
 }
 
