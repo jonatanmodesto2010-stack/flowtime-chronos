@@ -216,7 +216,7 @@ export const Timeline = ({
             key={line.id} 
             className="relative"
           >
-              {!readOnly && lines.length > 1 && (
+              {!readOnly && (
                 <div className="flex justify-center mb-10">
                   <motion.button 
                     onClick={() => handleAddEvent(line.id)} 
