@@ -161,11 +161,10 @@ export const Timeline = ({
       >
         <div className="flex items-center gap-3">
           <motion.button
-            onClick={() => !readOnly && setShowClientModal(true)}
+            onClick={() => setShowClientModal(true)}
             className="px-6 py-3 bg-gradient-primary text-primary-foreground font-bold rounded-xl shadow-lg transition-all"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            disabled={readOnly}
           >
             <User className="inline mr-2" size={18} />
             {clientInfo.name}
@@ -230,24 +229,19 @@ export const Timeline = ({
                   >
                     <button
                       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
-                      onClick={(e) => !readOnly && handleStatusToggle(e, line.id, event.id)}
-                      disabled={readOnly}
+                      onClick={(e) => handleStatusToggle(e, line.id, event.id)}
                     >
                       <div className="flex items-center justify-center">
                         {renderStatusIcon(event.status)}
                       </div>
                     </button>
                     <div
-                      className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center ${
-                        readOnly ? '' : 'cursor-pointer hover:scale-105'
-                      } transition-transform ${
+                      className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
                         event.position === 'bottom' ? 'top-5' : 'bottom-5'
                       }`}
                       onClick={(e) => {
-                        if (!readOnly) {
-                          e.stopPropagation();
-                          handleEventClick(event, line.id);
-                        }
+                        e.stopPropagation();
+                        handleEventClick(event, line.id);
                       }}
                       title={event.description}
                     >
@@ -278,7 +272,7 @@ export const Timeline = ({
           ))}
       </div>
       <AnimatePresence>
-        {!readOnly && editingEvent && (
+        {editingEvent && (
           <EventModal
             event={editingEvent}
             onSave={handleSaveEvent}
@@ -286,7 +280,7 @@ export const Timeline = ({
             onCancel={() => setEditingEvent(null)}
           />
         )}
-        {!readOnly && showClientModal && (
+        {showClientModal && (
           <ClientInfoModal
             clientInfo={clientInfo}
             onSave={(info) => {
