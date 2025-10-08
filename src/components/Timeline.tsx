@@ -147,7 +147,7 @@ export const Timeline = ({
       case 'no_response':
         return <span className="text-lg">🚫</span>;
       default:
-        return <div className="w-3 h-3 bg-foreground rounded-full" />;
+        return <div className="w-1.5 h-1.5 bg-foreground/20 rounded-full" />;
     }
   };
 
@@ -158,15 +158,43 @@ export const Timeline = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        <motion.button
-          onClick={() => setShowClientModal(true)}
-          className="px-4 py-2 text-foreground font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <User size={16} />
-          {clientInfo.name}
-        </motion.button>
+        <div className="flex items-center gap-2">
+          <motion.button
+            onClick={() => setShowClientModal(true)}
+            className="px-4 py-2 text-foreground font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <User size={16} />
+            {clientInfo.name}
+          </motion.button>
+          
+          {!readOnly && addNewLine && (
+            <>
+              <motion.button
+                onClick={addNewLine}
+                className="px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg transition-transform hover:scale-105 flex items-center gap-1"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Adicionar nova linha"
+              >
+                + Linha
+              </motion.button>
+              
+              {lines.length > 0 && (
+                <motion.button
+                  onClick={() => handleAddEvent(lines[0].id)}
+                  className="px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg transition-transform hover:scale-105 flex items-center gap-1"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Adicionar evento na primeira linha"
+                >
+                  + Evento
+                </motion.button>
+              )}
+            </>
+          )}
+        </div>
         
         {!readOnly && onDelete && (
           <motion.button
@@ -187,7 +215,7 @@ export const Timeline = ({
             key={line.id} 
             className="relative"
           >
-              {!readOnly && (
+              {!readOnly && lines.length > 1 && (
                 <div className="flex justify-center mb-10">
                   <motion.button 
                     onClick={() => handleAddEvent(line.id)} 

@@ -264,7 +264,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
       case 'no_response':
         return <span className="text-lg">🚫</span>;
       default:
-        return <div className="w-3 h-3 bg-foreground rounded-full" />;
+        return <div className="w-1.5 h-1.5 bg-foreground/20 rounded-full" />;
     }
   };
 
