@@ -1,5 +1,1 @@
-[functions.timelines-api]
-verify_jwt = true
-
-[functions.events-api]
-verify_jwt = true
+project_id = "ghheubvkddwggoodbytf"
