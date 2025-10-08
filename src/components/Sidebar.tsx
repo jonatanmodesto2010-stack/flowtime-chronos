@@ -14,7 +14,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/', active: location.pathname === '/' },
     { icon: Users, label: 'Clientes', path: '/clients', active: location.pathname === '/clients' },
-    { icon: Calendar, label: 'Calendário', path: '#', active: false },
+    { icon: Calendar, label: 'Calendário', path: '/calendar', active: location.pathname === '/calendar' },
     { icon: BarChart3, label: 'Analytics', path: '#', active: false },
     { icon: Filter, label: 'Filtros', path: '#', active: false },
   ];

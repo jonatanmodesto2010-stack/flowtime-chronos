@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Plus, Trash2, Edit2, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Trash2, Edit2, Calendar, List } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
+import { ClientTimeline } from '@/components/ClientTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,8 @@ const Clients = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [managingClientId, setManagingClientId] = useState<string | null>(null);
+  const [managingClientName, setManagingClientName] = useState<string>('');
   const [formData, setFormData] = useState({
     client_name: '',
     start_date: new Date().toISOString().split('T')[0],
@@ -367,6 +370,18 @@ const Clients = () => {
                       
                       <div className="flex gap-2 ml-4">
                         <motion.button
+                          onClick={() => {
+                            setManagingClientId(client.id);
+                            setManagingClientName(client.client_name);
+                          }}
+                          className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          title="Gerenciar Timeline"
+                        >
+                          <List size={18} />
+                        </motion.button>
+                        <motion.button
                           onClick={() => handleOpenModal(client)}
                           className="p-2 bg-primary text-primary-foreground rounded-lg"
                           whileHover={{ scale: 1.1 }}
@@ -498,6 +513,20 @@ const Clients = () => {
           </motion.div>
         </motion.div>
       )}
+
+      {/* Timeline Management Modal */}
+      <AnimatePresence>
+        {managingClientId && (
+          <ClientTimeline
+            clientId={managingClientId}
+            clientName={managingClientName}
+            onClose={() => {
+              setManagingClientId(null);
+              setManagingClientName('');
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
