@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CustomDatePicker } from './CustomDatePicker';
+import { eventSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 interface Event {
   id: string;
@@ -39,13 +41,28 @@ const iconSizeOptions = [
 export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProps) => {
   const [formData, setFormData] = useState(event);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     setFormData(event);
   }, [event]);
 
   const handleSave = () => {
-    onSave({ ...formData, isNew: false });
+    try {
+      setErrors({});
+      eventSchema.parse(formData);
+      onSave({ ...formData, isNew: false });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: { [key: string]: string } = {};
+        error.issues.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      }
+    }
   };
 
   const handleDelete = () => {
@@ -87,10 +104,15 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
               <select 
                 value={formData.icon} 
                 onChange={(e) => setFormData({ ...formData, icon: e.target.value })} 
-                className="w-full p-2 bg-muted rounded-lg border border-border text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                className={`w-full p-2 bg-muted rounded-lg border text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring ${
+                  errors.icon ? 'border-destructive' : 'border-border'
+                }`}
               >
                 {iconOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
+              {errors.icon && (
+                <p className="text-xs text-destructive mt-1">{errors.icon}</p>
+              )}
             </div>
             
             <div>
@@ -98,10 +120,15 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
               <select 
                 value={formData.iconSize || 'text-2xl'} 
                 onChange={(e) => setFormData({ ...formData, iconSize: e.target.value })} 
-                className="w-full p-2 bg-muted rounded-lg border border-border text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                className={`w-full p-2 bg-muted rounded-lg border text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring ${
+                  errors.iconSize ? 'border-destructive' : 'border-border'
+                }`}
               >
                 {iconSizeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
+              {errors.iconSize && (
+                <p className="text-xs text-destructive mt-1">{errors.iconSize}</p>
+              )}
             </div>
           </div>
           
@@ -113,7 +140,9 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
                 value={formData.date}
                 readOnly
                 onClick={() => setShowDatePicker(!showDatePicker)}
-                className="w-full p-2 bg-muted rounded-lg border border-border text-foreground cursor-pointer pr-10 focus:outline-none focus:ring-2 focus:ring-ring" 
+                className={`w-full p-2 bg-muted rounded-lg border cursor-pointer pr-10 focus:outline-none focus:ring-2 focus:ring-ring ${
+                  errors.date ? 'border-destructive' : 'border-border'
+                }`}
                 placeholder="DD/MM"
               />
               <button
@@ -129,6 +158,9 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
                 </svg>
               </button>
             </div>
+            {errors.date && (
+              <p className="text-xs text-destructive mt-1">{errors.date}</p>
+            )}
             <AnimatePresence>
               {showDatePicker && (
                 <CustomDatePicker 
@@ -148,8 +180,13 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
             <textarea 
               value={formData.description} 
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
-              className="w-full p-2 bg-muted rounded-lg border border-border h-20 resize-none text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className={`w-full p-2 bg-muted rounded-lg border h-20 resize-none text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
+                errors.description ? 'border-destructive' : 'border-border'
+              }`}
             />
+            {errors.description && (
+              <p className="text-xs text-destructive mt-1">{errors.description}</p>
+            )}
           </div>
           
           <div className="flex gap-2 mt-2">

@@ -1,4 +1,7 @@
-import { Sun, Moon, Menu } from 'lucide-react';
+import { Sun, Moon, Menu, LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface HeaderProps {
   theme: string;
@@ -7,6 +10,26 @@ interface HeaderProps {
 }
 
 export const Header = ({ theme, onToggleTheme, onToggleSidebar }: HeaderProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: 'Erro ao sair',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Logout realizado',
+        description: 'Até logo!',
+      });
+      navigate('/auth');
+    }
+  };
+
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
       <div className="flex items-center gap-4">
@@ -31,6 +54,15 @@ export const Header = ({ theme, onToggleTheme, onToggleSidebar }: HeaderProps) =
           aria-label="Toggle theme"
         >
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
+        
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+          aria-label="Logout"
+          title="Sair"
+        >
+          <LogOut size={20} />
         </button>
       </div>
     </header>

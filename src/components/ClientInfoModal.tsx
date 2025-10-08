@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { clientInfoSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 interface ClientInfo {
   name: string;
@@ -17,14 +19,27 @@ interface ClientInfoModalProps {
 
 export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModalProps) => {
   const [formData, setFormData] = useState<ClientInfo>(clientInfo);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     setFormData(clientInfo);
   }, [clientInfo]);
 
   const handleSave = () => {
-    if (formData.name.trim()) {
+    try {
+      setErrors({});
+      clientInfoSchema.parse(formData);
       onSave(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: { [key: string]: string } = {};
+        error.issues.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      }
     }
   };
 
@@ -68,9 +83,14 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className={`w-full px-4 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                errors.name ? 'border-destructive' : 'border-border'
+              }`}
               placeholder="Digite o nome do cliente"
             />
+            {errors.name && (
+              <p className="text-sm text-destructive mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div>
@@ -81,8 +101,13 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
               type="date"
               value={formData.startDate}
               onChange={(e) => handleChange('startDate', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className={`w-full px-4 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                errors.startDate ? 'border-destructive' : 'border-border'
+              }`}
             />
+            {errors.startDate && (
+              <p className="text-sm text-destructive mt-1">{errors.startDate}</p>
+            )}
           </div>
 
           <div>
@@ -94,9 +119,14 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
               step="0.01"
               value={formData.boletoValue}
               onChange={(e) => handleChange('boletoValue', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className={`w-full px-4 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                errors.boletoValue ? 'border-destructive' : 'border-border'
+              }`}
               placeholder="0.00"
             />
+            {errors.boletoValue && (
+              <p className="text-sm text-destructive mt-1">{errors.boletoValue}</p>
+            )}
           </div>
 
           <div>
@@ -107,8 +137,13 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
               type="date"
               value={formData.dueDate}
               onChange={(e) => handleChange('dueDate', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className={`w-full px-4 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                errors.dueDate ? 'border-destructive' : 'border-border'
+              }`}
             />
+            {errors.dueDate && (
+              <p className="text-sm text-destructive mt-1">{errors.dueDate}</p>
+            )}
           </div>
         </div>
 

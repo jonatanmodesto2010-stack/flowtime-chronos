@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { authSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +15,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,9 +37,17 @@ const Auth = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     setLoading(true);
 
     try {
+      // Validar inputs
+      const validationData = isLogin 
+        ? { email, password }
+        : { email, password, fullName };
+      
+      authSchema.parse(validationData);
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -70,11 +81,21 @@ const Auth = () => {
         setIsLogin(true);
       }
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message,
-        variant: 'destructive',
-      });
+      if (error instanceof z.ZodError) {
+        const fieldErrors: { [key: string]: string } = {};
+        error.issues.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      } else {
+        toast({
+          title: 'Erro',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -108,7 +129,11 @@ const Auth = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
                   placeholder="Seu nome"
+                  className={errors.fullName ? 'border-destructive' : ''}
                 />
+                {errors.fullName && (
+                  <p className="text-sm text-destructive mt-1">{errors.fullName}</p>
+                )}
               </div>
             )}
 
@@ -121,7 +146,11 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="seu@email.com"
+                className={errors.email ? 'border-destructive' : ''}
               />
+              {errors.email && (
+                <p className="text-sm text-destructive mt-1">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -134,7 +163,11 @@ const Auth = () => {
                 required
                 placeholder="••••••••"
                 minLength={6}
+                className={errors.password ? 'border-destructive' : ''}
               />
+              {errors.password && (
+                <p className="text-sm text-destructive mt-1">{errors.password}</p>
+              )}
             </div>
 
             <Button
