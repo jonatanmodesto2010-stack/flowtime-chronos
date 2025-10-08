@@ -262,10 +262,10 @@ export const Timeline = ({
               )}
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
-                <div className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 min-h-[200px] px-0">
+                <div className="timeline-container relative flex items-center gap-4 w-full mx-auto py-24 min-h-[200px] px-4">
                   {/* Linha central de ponta a ponta */}
                   <div 
-                    className="absolute top-1/2 h-0.5 bg-foreground/30 -translate-y-1/2 z-0 left-0 right-0"
+                    className="absolute top-1/2 h-0.5 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4"
                   />
                   
                   {(line.events || []).map((event, index) => (
