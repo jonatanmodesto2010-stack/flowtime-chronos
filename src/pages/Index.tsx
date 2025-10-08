@@ -264,6 +264,9 @@ const Index = () => {
 
       if (insertError) throw insertError;
 
+      // Recarrega os dados do banco para garantir sincronização
+      if (user) await loadTimelines(user.id);
+
       toast({
         title: 'Eventos atualizados',
         description: 'As alterações foram salvas com sucesso.',
