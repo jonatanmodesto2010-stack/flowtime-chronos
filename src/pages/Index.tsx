@@ -485,11 +485,24 @@ const Index = () => {
             transition={{ duration: 0.5 }}
           >
             <Tabs defaultValue="geral" className="w-full">
-              <TabsList className="mb-6">
-                <TabsTrigger value="geral">Geral</TabsTrigger>
-                <TabsTrigger value="filtros">Filtros</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between mb-6">
+                <TabsList>
+                  <TabsTrigger value="geral">Geral</TabsTrigger>
+                  <TabsTrigger value="filtros">Filtros</TabsTrigger>
+                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                </TabsList>
+                
+                <motion.button
+                  onClick={handleAddTimeline}
+                  disabled={operationLoading.addTimeline}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Plus size={18} />
+                  {operationLoading.addTimeline ? 'Criando...' : 'Novo Cliente'}
+                </motion.button>
+              </div>
 
               <TabsContent value="geral" className="space-y-6">
                 {timelines.map((timeline, index) => (
