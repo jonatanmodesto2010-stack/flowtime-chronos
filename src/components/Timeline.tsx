@@ -66,7 +66,10 @@ export const Timeline = ({
 
   const handleAddEvent = (lineId: string) => {
     const line = lines.find(l => l.id === lineId);
-    if (!line) return;
+    if (!line) {
+      console.log('Linha não encontrada:', lineId);
+      return;
+    }
     
     const newId = crypto.randomUUID();
     const lineEvents = line.events || [];
@@ -85,7 +88,12 @@ export const Timeline = ({
       status: 'created',
       isNew: true,
     };
-    updateLine(lineId, [...lineEvents, newEvent]);
+    
+    const updatedEvents = [...lineEvents, newEvent];
+    console.log('Adicionando evento. Total de eventos:', updatedEvents.length);
+    console.log('Novo evento:', newEvent);
+    
+    updateLine(lineId, updatedEvents);
     setEditingEvent(newEvent);
     setEditingLineId(lineId);
   };
