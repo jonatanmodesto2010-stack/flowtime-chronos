@@ -70,8 +70,8 @@ export const Timeline = ({
     
     const lineEvents = line.events || [];
     
-    // Se a linha já tem 33 eventos, criar uma nova linha
-    if (lineEvents.length >= 33) {
+    // Se a linha já tem 28 eventos, criar uma nova linha
+    if (lineEvents.length >= 28) {
       if (addNewLine) {
         addNewLine();
       }
@@ -128,7 +128,7 @@ export const Timeline = ({
         const nextLine = lines[currentLineIndex + 1];
         const totalEvents = updatedEvents.length + (nextLine.events?.length || 0);
         
-        if (totalEvents <= 33) {
+        if (totalEvents <= 28) {
           const mergedEvents = [...updatedEvents, ...(nextLine.events || [])];
           updateLine(editingLineId, mergedEvents);
           
@@ -147,7 +147,7 @@ export const Timeline = ({
         const prevLine = lines[currentLineIndex - 1];
         const totalEvents = (prevLine.events?.length || 0) + updatedEvents.length;
         
-        if (totalEvents <= 33) {
+        if (totalEvents <= 28) {
           const mergedEvents = [...(prevLine.events || []), ...updatedEvents];
           updateLine(prevLine.id, mergedEvents);
           
@@ -289,7 +289,7 @@ export const Timeline = ({
                 <div className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 min-h-[200px] px-4">
                   {/* Contador de eventos */}
                   <div className="absolute top-[-4px] right-2 px-3 py-1 bg-accent rounded-lg text-xs font-semibold text-foreground z-30">
-                    {(line.events || []).length} / 33
+                    {(line.events || []).length} / 28
                   </div>
                   
                   {/* Linha central de ponta a ponta */}
