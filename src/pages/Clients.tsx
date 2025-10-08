@@ -8,6 +8,7 @@ import { ClientTimeline } from '@/components/ClientTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { clientInfoSchema } from '@/lib/validations';
 import { z } from 'zod';
 import type { User } from '@supabase/supabase-js';
@@ -27,6 +28,7 @@ const Clients = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { organizationId } = useUserRole();
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
@@ -51,7 +53,6 @@ const Clients = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        loadClients(session.user.id);
       } else {
         navigate('/auth');
       }
@@ -60,7 +61,6 @@ const Clients = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        loadClients(session.user.id);
       } else {
         navigate('/auth');
       }
@@ -69,13 +69,21 @@ const Clients = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const loadClients = async (userId: string) => {
+  useEffect(() => {
+    if (organizationId) {
+      loadClients();
+    }
+  }, [organizationId]);
+
+  const loadClients = async () => {
+    if (!organizationId) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabaseClient
         .from('client_timelines')
         .select('*')
-        .eq('user_id', userId)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -133,7 +141,7 @@ const Clients = () => {
         dueDate: formData.due_date,
       });
 
-      if (!user) return;
+      if (!user || !organizationId) return;
 
       if (editingClient) {
         const { error } = await supabaseClient
@@ -157,6 +165,7 @@ const Clients = () => {
           .from('client_timelines')
           .insert({
             user_id: user.id,
+            organization_id: organizationId,
             client_name: formData.client_name,
             start_date: formData.start_date,
             boleto_value: parseFloat(formData.boleto_value),
@@ -184,7 +193,7 @@ const Clients = () => {
         });
       }
 
-      loadClients(user.id);
+      loadClients();
       handleCloseModal();
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -226,7 +235,7 @@ const Clients = () => {
         description: 'Cliente removido com sucesso.',
       });
 
-      if (user) loadClients(user.id);
+      loadClients();
     } catch (error: any) {
       toast({
         title: 'Erro ao excluir',

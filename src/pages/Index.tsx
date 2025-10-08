@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 
 interface Event {
@@ -50,6 +51,7 @@ const Index = () => {
   const [operationLoading, setOperationLoading] = useState<Record<string, boolean>>({});
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const { organizationId } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -63,7 +65,6 @@ const Index = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        loadTimelines(session.user.id);
       } else {
         navigate('/auth');
       }
@@ -72,7 +73,6 @@ const Index = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        loadTimelines(session.user.id);
       } else {
         navigate('/auth');
       }
@@ -81,13 +81,21 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const loadTimelines = async (userId: string) => {
+  useEffect(() => {
+    if (organizationId) {
+      loadTimelines();
+    }
+  }, [organizationId]);
+
+  const loadTimelines = async () => {
+    if (!organizationId) return;
+    
     try {
       setLoading(true);
       const { data: clientTimelines, error } = await supabaseClient
         .from('client_timelines')
         .select('*')
-        .eq('user_id', userId)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -207,7 +215,7 @@ const Index = () => {
 
       if (eventError) throw eventError;
 
-      loadTimelines(user.id);
+      loadTimelines();
 
       toast({
         title: 'Cliente adicionado',
@@ -270,7 +278,7 @@ const Index = () => {
       });
     } catch (error: any) {
       // Em caso de erro, recarrega os dados corretos
-      if (user) loadTimelines(user.id);
+      loadTimelines();
       
       toast({
         title: 'Erro ao atualizar eventos',
@@ -312,7 +320,7 @@ const Index = () => {
 
       if (eventError) throw eventError;
 
-      if (user) loadTimelines(user.id);
+      loadTimelines();
 
       toast({
         title: 'Linha adicionada',
@@ -336,7 +344,7 @@ const Index = () => {
 
       if (error) throw error;
 
-      if (user) loadTimelines(user.id);
+      loadTimelines();
 
       toast({
         title: 'Linha excluída',
@@ -380,7 +388,7 @@ const Index = () => {
       });
     } catch (error: any) {
       // Em caso de erro, recarrega os dados corretos
-      if (user) loadTimelines(user.id);
+      loadTimelines();
       
       toast({
         title: 'Erro ao atualizar cliente',
@@ -401,7 +409,7 @@ const Index = () => {
 
       if (error) throw error;
 
-      if (user) loadTimelines(user.id);
+      loadTimelines();
 
       toast({
         title: 'Timeline excluída',
