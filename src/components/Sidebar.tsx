@@ -1,5 +1,6 @@
-import { Home, Calendar, Map, BarChart3, Filter, X } from 'lucide-react';
+import { Home, Calendar, Users, BarChart3, Filter, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -7,13 +8,23 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const menuItems = [
-    { icon: Home, label: 'Dashboard', active: true },
-    { icon: Calendar, label: 'Calendário', active: false },
-    { icon: Map, label: 'Mapas', active: false },
-    { icon: BarChart3, label: 'Analytics', active: false },
-    { icon: Filter, label: 'Filtros', active: false },
+    { icon: Home, label: 'Dashboard', path: '/', active: location.pathname === '/' },
+    { icon: Users, label: 'Clientes', path: '/clients', active: location.pathname === '/clients' },
+    { icon: Calendar, label: 'Calendário', path: '#', active: false },
+    { icon: BarChart3, label: 'Analytics', path: '#', active: false },
+    { icon: Filter, label: 'Filtros', path: '#', active: false },
   ];
+
+  const handleNavigation = (path: string) => {
+    if (path !== '#') {
+      navigate(path);
+      onClose();
+    }
+  };
 
   return (
     <>
@@ -53,6 +64,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             {menuItems.map((item, index) => (
               <motion.button
                 key={item.label}
+                onClick={() => handleNavigation(item.path)}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
