@@ -189,17 +189,11 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
       </motion.div>
 
       <div className="space-y-8">
-        <AnimatePresence mode="popLayout">
-          {lines.map((line, lineIndex) => (
-            <motion.div 
-              key={line.id} 
-              className="relative"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ delay: lineIndex * 0.1 }}
-              layout
-            >
+        {lines.map((line, lineIndex) => (
+          <div 
+            key={line.id} 
+            className="relative"
+          >
               <div className="flex items-center gap-4 mb-4">
                 <motion.button 
                   onClick={() => handleAddEvent(line.id)} 
@@ -227,99 +221,52 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
               </div>
               
               <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-20 overflow-x-auto">
-                <motion.div 
-                  className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.8, delay: lineIndex * 0.1 }}
-                />
-                <AnimatePresence mode="popLayout">
-                  {(line.events || []).map((event, index) => (
-                    <motion.div
-                      key={event.id}
-                      className="relative z-10 w-36 text-center"
-                      initial={{ opacity: 0, scale: 0.8, y: event.position === 'bottom' ? -20 : 20 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ 
-                        duration: 0.4, 
-                        delay: index * 0.1,
-                        type: "spring",
-                        stiffness: 200
-                      }}
-                      layout
+                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
+                {(line.events || []).map((event, index) => (
+                  <div
+                    key={event.id}
+                    className="relative z-10 w-36 text-center"
+                  >
+                    <button
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                      onClick={(e) => handleStatusToggle(e, line.id, event.id)}
                     >
-                      <motion.button
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 transition-all"
-                        onClick={(e) => handleStatusToggle(e, line.id, event.id)}
-                        whileHover={{ scale: 1.3 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <AnimatePresence mode="wait">
-                          <motion.div
-                            key={event.status}
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            exit={{ scale: 0, rotate: 180 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex items-center justify-center"
-                          >
-                            {renderStatusIcon(event.status)}
-                          </motion.div>
-                        </AnimatePresence>
-                      </motion.button>
-                      <motion.div
-                        className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer ${
-                          event.position === 'bottom' ? 'top-5' : 'bottom-5'
-                        }`}
-                        onClick={(e) => { e.stopPropagation(); handleEventClick(event, line.id); }}
-                        title={event.description}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {event.position === 'bottom' ? (
-                          <>
-                            <motion.div 
-                              className="text-sm font-semibold text-foreground mb-2"
-                              initial={{ opacity: 0, y: -5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.1 + 0.2 }}
-                            >
-                              {event.date}
-                            </motion.div>
-                            <motion.div 
-                              className={`${event.iconSize || 'text-2xl'}`}
-                              whileHover={{ rotate: [0, -10, 10, -10, 0], transition: { duration: 0.5 } }}
-                            >
-                              {event.icon}
-                            </motion.div>
-                          </>
-                        ) : (
-                          <>
-                            <motion.div 
-                              className={`${event.iconSize || 'text-2xl'} mb-2`}
-                              whileHover={{ rotate: [0, -10, 10, -10, 0], transition: { duration: 0.5 } }}
-                            >
-                              {event.icon}
-                            </motion.div>
-                            <motion.div 
-                              className="text-sm font-semibold text-foreground"
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.1 + 0.2 }}
-                            >
-                              {event.date}
-                            </motion.div>
-                          </>
-                        )}
-                      </motion.div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                      <div className="flex items-center justify-center">
+                        {renderStatusIcon(event.status)}
+                      </div>
+                    </button>
+                    <div
+                      className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
+                        event.position === 'bottom' ? 'top-5' : 'bottom-5'
+                      }`}
+                      onClick={(e) => { e.stopPropagation(); handleEventClick(event, line.id); }}
+                      title={event.description}
+                    >
+                      {event.position === 'bottom' ? (
+                        <>
+                          <div className="text-sm font-semibold text-foreground mb-2">
+                            {event.date}
+                          </div>
+                          <div className={`${event.iconSize || 'text-2xl'}`}>
+                            {event.icon}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
+                            {event.icon}
+                          </div>
+                          <div className="text-sm font-semibold text-foreground">
+                            {event.date}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </motion.div>
+            </div>
           ))}
-        </AnimatePresence>
       </div>
       <AnimatePresence>
         {editingEvent && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { Timeline } from '@/components/Timeline';
 import { TimelineSkeleton } from '@/components/TimelineSkeleton';
@@ -222,6 +222,20 @@ const Index = () => {
   };
 
   const updateLine = async (timelineId: string, lineId: string, events: Event[]) => {
+    // Atualização otimista - atualiza o estado local imediatamente
+    setTimelines(prevTimelines =>
+      prevTimelines.map(timeline =>
+        timeline.id === timelineId
+          ? {
+              ...timeline,
+              lines: timeline.lines.map(line =>
+                line.id === lineId ? { ...line, events } : line
+              ),
+            }
+          : timeline
+      )
+    );
+
     try {
       const { error: deleteError } = await supabaseClient
         .from('timeline_events')
@@ -247,13 +261,14 @@ const Index = () => {
 
       if (insertError) throw insertError;
 
-      if (user) loadTimelines(user.id);
-
       toast({
         title: 'Eventos atualizados',
         description: 'As alterações foram salvas com sucesso.',
       });
     } catch (error: any) {
+      // Em caso de erro, recarrega os dados corretos
+      if (user) loadTimelines(user.id);
+      
       toast({
         title: 'Erro ao atualizar eventos',
         description: error.message,
@@ -334,6 +349,15 @@ const Index = () => {
   };
 
   const updateClientInfo = async (timelineId: string, info: ClientInfo) => {
+    // Atualização otimista
+    setTimelines(prevTimelines =>
+      prevTimelines.map(timeline =>
+        timeline.id === timelineId
+          ? { ...timeline, clientInfo: info }
+          : timeline
+      )
+    );
+
     try {
       const { error } = await supabaseClient
         .from('client_timelines')
@@ -347,13 +371,14 @@ const Index = () => {
 
       if (error) throw error;
 
-      if (user) loadTimelines(user.id);
-
       toast({
         title: 'Cliente atualizado',
         description: 'Informações salvas com sucesso.',
       });
     } catch (error: any) {
+      // Em caso de erro, recarrega os dados corretos
+      if (user) loadTimelines(user.id);
+      
       toast({
         title: 'Erro ao atualizar cliente',
         description: error.message,
@@ -448,32 +473,28 @@ const Index = () => {
             </div>
 
             <div className="space-y-6">
-              <AnimatePresence mode="popLayout">
-                {timelines.map((timeline, index) => (
-                  <motion.div
-                    key={timeline.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ 
-                      duration: 0.3,
-                      delay: index * 0.1,
-                      ease: "easeOut"
-                    }}
-                    layout
-                    className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
-                  >
-                    <Timeline 
-                      timeline={timeline}
-                      updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
-                      addNewLine={() => addNewLine(timeline.id)}
-                      deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
-                      updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
-                      onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              {timelines.map((timeline, index) => (
+                <motion.div
+                  key={timeline.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.3,
+                    delay: index * 0.1,
+                    ease: "easeOut"
+                  }}
+                  className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <Timeline 
+                    timeline={timeline}
+                    updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
+                    addNewLine={() => addNewLine(timeline.id)}
+                    deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
+                    updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
+                    onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
+                  />
+                </motion.div>
+              ))}
 
               <motion.button
                 onClick={handleAddTimeline}
