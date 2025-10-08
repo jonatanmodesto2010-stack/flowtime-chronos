@@ -216,7 +216,7 @@ export const Timeline = ({
                 </div>
               )}
               
-              <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-16 overflow-x-auto">
+              <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-24 overflow-x-auto">
                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
                 {(line.events || []).map((event, index) => (
                   <div

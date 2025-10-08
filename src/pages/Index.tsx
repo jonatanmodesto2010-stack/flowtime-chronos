@@ -485,22 +485,6 @@ const Index = () => {
                    />
                  </motion.div>
                ))}
-
-              <motion.button
-                onClick={handleAddTimeline}
-                disabled={operationLoading.addTimeline}
-                className="w-full py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: operationLoading.addTimeline ? 1 : 1.02 }}
-                whileTap={{ scale: operationLoading.addTimeline ? 1 : 0.98 }}
-              >
-                <motion.div
-                  animate={operationLoading.addTimeline ? { rotate: 360 } : {}}
-                  transition={{ duration: 1, repeat: operationLoading.addTimeline ? Infinity : 0, ease: "linear" }}
-                >
-                  <Plus size={20} />
-                </motion.div>
-                {operationLoading.addTimeline ? 'Criando...' : 'Adicionar Novo Cliente'}
-              </motion.button>
             </div>
           </motion.div>
         </main>
