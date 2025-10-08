@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { Timeline } from '@/components/Timeline';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { User } from '@supabase/supabase-js';
 
 interface Event {
-  id: number;
+  id: string;
   icon: string;
   iconSize: string;
   date: string;
@@ -24,116 +28,24 @@ interface ClientInfo {
 }
 
 interface TimelineLine {
-  id: number;
+  id: string;
   events: Event[];
 }
 
 interface TimelineData {
-  id: number;
+  id: string;
   clientInfo: ClientInfo;
   lines: TimelineLine[];
 }
 
-const initialTimelinesData: TimelineData[] = [{
-  id: 1,
-  clientInfo: {
-    name: 'Cliente Exemplo',
-    startDate: '2024-08-10',
-    boletoValue: '150.00',
-    dueDate: '2024-08-25'
-  },
-  lines: [{
-    id: 1,
-    events: [{
-      id: 1,
-      icon: '💬',
-      iconSize: 'text-2xl',
-      date: '10/08',
-      description: 'Cobrei o cliente e sem resposta.',
-      position: 'top',
-      status: 'created'
-    }, {
-      id: 2,
-      icon: '📅',
-      iconSize: 'text-2xl',
-      date: '11/08',
-      description: 'Cliente pediu o boleto.',
-      position: 'bottom',
-      status: 'resolved'
-    }, {
-      id: 3,
-      icon: '📄',
-      iconSize: 'text-2xl',
-      date: '15/08',
-      description: 'Enviei o boleto para o cliente.',
-      position: 'top',
-      status: 'created'
-    }]
-  }]
-}];
-
-// Função para migrar dados antigos para nova estrutura
-const migrateOldData = (data: any[]): TimelineData[] => {
-  return data.map(item => {
-    // Se já tem a nova estrutura (lines), retorna como está
-    if (item.lines && Array.isArray(item.lines)) {
-      return item as TimelineData;
-    }
-    
-    // Se tem a estrutura antiga (events direto no timeline), converte
-    if (item.events && Array.isArray(item.events)) {
-      return {
-        id: item.id,
-        clientInfo: item.clientInfo || {
-          name: item.name || 'Cliente',
-          startDate: new Date().toISOString().split('T')[0],
-          boletoValue: '0.00',
-          dueDate: new Date().toISOString().split('T')[0]
-        },
-        lines: [{
-          id: Date.now() + Math.random(),
-          events: item.events
-        }]
-      };
-    }
-    
-    // Se não tem nem events nem lines, cria estrutura vazia
-    return {
-      id: item.id,
-      clientInfo: item.clientInfo || {
-        name: 'Cliente',
-        startDate: new Date().toISOString().split('T')[0],
-        boletoValue: '0.00',
-        dueDate: new Date().toISOString().split('T')[0]
-      },
-      lines: [{
-        id: Date.now() + Math.random(),
-        events: []
-      }]
-    };
-  });
-};
-
 const Index = () => {
   const [theme, setTheme] = useState('light');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [timelines, setTimelines] = useState<TimelineData[]>(() => {
-    const saved = localStorage.getItem('timelines');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return migrateOldData(parsed);
-      } catch (e) {
-        console.error('Erro ao carregar dados salvos:', e);
-        return initialTimelinesData;
-      }
-    }
-    return initialTimelinesData;
-  });
-  const [activeTimelineId, setActiveTimelineId] = useState(() => {
-    const saved = localStorage.getItem('activeTimelineId');
-    return saved ? parseInt(saved) : 1;
-  });
+  const [timelines, setTimelines] = useState<TimelineData[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -142,97 +54,321 @@ const Index = () => {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('timelines', JSON.stringify(timelines));
-  }, [timelines]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        loadTimelines(session.user.id);
+      } else {
+        navigate('/auth');
+      }
+    });
 
-  useEffect(() => {
-    localStorage.setItem('activeTimelineId', activeTimelineId.toString());
-  }, [activeTimelineId]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        loadTimelines(session.user.id);
+      } else {
+        navigate('/auth');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const loadTimelines = async (userId: string) => {
+    try {
+      setLoading(true);
+      const { data: clientTimelines, error } = await supabase
+        .from('client_timelines')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (clientTimelines && clientTimelines.length > 0) {
+        const timelinesWithLines = await Promise.all(
+          clientTimelines.map(async (ct) => {
+            const { data: lines, error: linesError } = await supabase
+              .from('timeline_lines')
+              .select('*')
+              .eq('timeline_id', ct.id)
+              .order('position', { ascending: true });
+
+            if (linesError) throw linesError;
+
+            const linesWithEvents = await Promise.all(
+              (lines || []).map(async (line) => {
+                const { data: events, error: eventsError } = await supabase
+                  .from('timeline_events')
+                  .select('*')
+                  .eq('line_id', line.id)
+                  .order('event_order', { ascending: true });
+
+                if (eventsError) throw eventsError;
+
+                return {
+                  id: line.id,
+                  events: (events || []).map((e) => ({
+                    id: e.id,
+                    icon: e.icon,
+                    iconSize: e.icon_size,
+                    date: e.event_date,
+                    description: e.description || '',
+                    position: e.position as 'top' | 'bottom',
+                    status: e.status as 'created' | 'resolved' | 'no_response',
+                  })),
+                };
+              })
+            );
+
+            return {
+              id: ct.id,
+              clientInfo: {
+                name: ct.client_name,
+                startDate: ct.start_date,
+                boletoValue: ct.boleto_value?.toString() || '0.00',
+                dueDate: ct.due_date || ct.start_date,
+              },
+              lines: linesWithEvents,
+            };
+          })
+        );
+
+        setTimelines(timelinesWithLines);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar timelines',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  const handleAddTimeline = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const newTimeline: TimelineData = {
-      id: Date.now(),
-      clientInfo: {
-        name: 'NOVO CLIENTE',
-        startDate: today,
-        boletoValue: '0.00',
-        dueDate: today
-      },
-      lines: [{
-        id: Date.now() + 1,
-        events: [{
-          id: Date.now() + 2,
-          icon: '📋',
-          iconSize: 'text-2xl',
-          date: '--/--',
+  const handleAddTimeline = async () => {
+    if (!user) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data: newTimeline, error: timelineError } = await supabase
+        .from('client_timelines')
+        .insert({
+          user_id: user.id,
+          client_name: 'NOVO CLIENTE',
+          start_date: today,
+          boleto_value: 0,
+          due_date: today,
+        })
+        .select()
+        .single();
+
+      if (timelineError) throw timelineError;
+
+      const { data: newLine, error: lineError } = await supabase
+        .from('timeline_lines')
+        .insert({
+          timeline_id: newTimeline.id,
+          position: 0,
+        })
+        .select()
+        .single();
+
+      if (lineError) throw lineError;
+
+      const { error: eventError } = await supabase
+        .from('timeline_events')
+        .insert({
+          line_id: newLine.id,
+          event_date: '--/--',
           description: 'Novo evento',
           position: 'top',
-          status: 'created'
-        }]
-      }]
-    };
-    setTimelines([...timelines, newTimeline]);
-    setActiveTimelineId(newTimeline.id);
-  };
+          status: 'created',
+          icon: '📋',
+          icon_size: 'text-2xl',
+          event_order: 0,
+        });
 
-  const handleDeleteTimeline = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    if (window.confirm('Tem certeza que deseja excluir esta linha do tempo e todos os seus eventos?')) {
-      setTimelines(timelines.filter(t => t.id !== id));
-      if (activeTimelineId === id && timelines.length > 1) {
-        setActiveTimelineId(timelines[0].id === id ? timelines[1].id : timelines[0].id);
-      }
+      if (eventError) throw eventError;
+
+      loadTimelines(user.id);
+
+      toast({
+        title: 'Cliente adicionado',
+        description: 'Nova linha de cobrança criada com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao adicionar cliente',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
-  const updateLine = (timelineId: number, lineId: number, updatedEvents: Event[]) => {
-    setTimelines(timelines.map(t => t.id === timelineId ? {
-      ...t,
-      lines: t.lines.map(line => line.id === lineId ? {
-        ...line,
-        events: updatedEvents
-      } : line)
-    } : t));
+  const updateLine = async (timelineId: string, lineId: string, events: Event[]) => {
+    try {
+      const { error: deleteError } = await supabase
+        .from('timeline_events')
+        .delete()
+        .eq('line_id', lineId);
+
+      if (deleteError) throw deleteError;
+
+      const eventsToInsert = events.map((e, index) => ({
+        line_id: lineId,
+        event_date: e.date,
+        description: e.description,
+        position: e.position,
+        status: e.status,
+        icon: e.icon,
+        icon_size: e.iconSize,
+        event_order: index,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('timeline_events')
+        .insert(eventsToInsert);
+
+      if (insertError) throw insertError;
+
+      if (user) loadTimelines(user.id);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar eventos',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
-  const addNewLine = (timelineId: number) => {
-    setTimelines(timelines.map(t => t.id === timelineId ? {
-      ...t,
-      lines: [...t.lines, {
-        id: Date.now(),
-        events: [{
-          id: Date.now() + 1,
-          icon: '📋',
-          iconSize: 'text-2xl',
-          date: '--/--',
+  const addNewLine = async (timelineId: string) => {
+    try {
+      const timeline = timelines.find((t) => t.id === timelineId);
+      const nextPosition = timeline ? timeline.lines.length : 0;
+
+      const { data: newLine, error: lineError } = await supabase
+        .from('timeline_lines')
+        .insert({
+          timeline_id: timelineId,
+          position: nextPosition,
+        })
+        .select()
+        .single();
+
+      if (lineError) throw lineError;
+
+      const { error: eventError } = await supabase
+        .from('timeline_events')
+        .insert({
+          line_id: newLine.id,
+          event_date: '--/--',
           description: 'Novo evento',
           position: 'top',
-          status: 'created'
-        }]
-      }]
-    } : t));
+          status: 'created',
+          icon: '📋',
+          icon_size: 'text-2xl',
+          event_order: 0,
+        });
+
+      if (eventError) throw eventError;
+
+      if (user) loadTimelines(user.id);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao adicionar linha',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
-  const deleteLine = (timelineId: number, lineId: number) => {
-    setTimelines(timelines.map(t => t.id === timelineId ? {
-      ...t,
-      lines: t.lines.filter(line => line.id !== lineId)
-    } : t));
+  const deleteLine = async (timelineId: string, lineId: string) => {
+    try {
+      const { error } = await supabase
+        .from('timeline_lines')
+        .delete()
+        .eq('id', lineId);
+
+      if (error) throw error;
+
+      if (user) loadTimelines(user.id);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao excluir linha',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
-  const updateClientInfo = (newInfo: ClientInfo) => {
-    setTimelines(timelines.map(t => t.id === activeTimelineId ? {
-      ...t,
-      clientInfo: newInfo
-    } : t));
+  const updateClientInfo = async (timelineId: string, info: ClientInfo) => {
+    try {
+      const { error } = await supabase
+        .from('client_timelines')
+        .update({
+          client_name: info.name,
+          start_date: info.startDate,
+          boleto_value: parseFloat(info.boletoValue),
+          due_date: info.dueDate,
+        })
+        .eq('id', timelineId);
+
+      if (error) throw error;
+
+      if (user) loadTimelines(user.id);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar cliente',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
-  const activeTimeline = timelines.find(t => t.id === activeTimelineId);
+  const handleDeleteTimeline = async (timelineId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta linha de cobrança?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('client_timelines')
+        .delete()
+        .eq('id', timelineId);
+
+      if (error) throw error;
+
+      if (user) loadTimelines(user.id);
+
+      toast({
+        title: 'Timeline excluída',
+        description: 'Linha de cobrança removida com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao excluir timeline',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-foreground mb-2">Carregando...</div>
+          <div className="text-muted-foreground">Buscando suas timelines</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
@@ -274,20 +410,8 @@ const Index = () => {
                     updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
                     addNewLine={() => addNewLine(timeline.id)}
                     deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
-                    updateClientInfo={(info) => {
-                      setTimelines(timelines.map(t => t.id === timeline.id ? {
-                        ...t,
-                        clientInfo: info
-                      } : t));
-                    }}
-                    onDelete={timelines.length > 1 ? () => {
-                      if (window.confirm('Tem certeza que deseja excluir esta linha de cobrança?')) {
-                        setTimelines(timelines.filter(t => t.id !== timeline.id));
-                        if (activeTimelineId === timeline.id && timelines.length > 1) {
-                          setActiveTimelineId(timelines[0].id === timeline.id ? timelines[1].id : timelines[0].id);
-                        }
-                      }
-                    } : undefined}
+                    updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
+                    onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
                   />
                 </motion.div>
               ))}

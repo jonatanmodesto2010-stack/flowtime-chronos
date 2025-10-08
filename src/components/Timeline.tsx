@@ -5,7 +5,7 @@ import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 
 interface Event {
-  id: number;
+  id: string;
   icon: string;
   iconSize: string;
   date: string;
@@ -23,31 +23,30 @@ interface ClientInfo {
 }
 
 interface TimelineLine {
-  id: number;
+  id: string;
   events: Event[];
 }
 
 interface TimelineData {
-  id: number;
+  id: string;
   clientInfo: ClientInfo;
   lines: TimelineLine[];
 }
 
 interface TimelineProps {
   timeline: TimelineData;
-  updateLine: (lineId: number, events: Event[]) => void;
+  updateLine: (lineId: string, events: Event[]) => void;
   addNewLine: () => void;
-  deleteLine: (lineId: number) => void;
+  deleteLine: (lineId: string) => void;
   updateClientInfo: (info: ClientInfo) => void;
   onDelete?: () => void;
 }
 
 export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateClientInfo, onDelete }: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [editingLineId, setEditingLineId] = useState<number | null>(null);
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   
-  // Garante que sempre temos arrays válidos
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
     name: 'Cliente',
@@ -56,11 +55,11 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
     dueDate: new Date().toISOString().split('T')[0]
   };
 
-  const handleAddEvent = (lineId: number) => {
+  const handleAddEvent = (lineId: string) => {
     const line = lines.find(l => l.id === lineId);
     if (!line) return;
     
-    const newId = Date.now();
+    const newId = crypto.randomUUID();
     const lineEvents = line.events || [];
     const lastEvent = lineEvents[lineEvents.length - 1];
     const newPosition = lastEvent?.position === 'top' ? 'bottom' : 'top';
@@ -93,7 +92,7 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
     setEditingLineId(null);
   };
 
-  const handleDeleteEvent = (id: number) => {
+  const handleDeleteEvent = (id: string) => {
     if (editingLineId === null) return;
     const line = lines.find(l => l.id === editingLineId);
     if (!line) return;
@@ -104,12 +103,12 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
     setEditingLineId(null);
   };
 
-  const handleEventClick = (event: Event, lineId: number) => {
+  const handleEventClick = (event: Event, lineId: string) => {
     setEditingEvent(event);
     setEditingLineId(lineId);
   };
 
-  const handleStatusToggle = (e: React.MouseEvent, lineId: number, eventId: number) => {
+  const handleStatusToggle = (e: React.MouseEvent, lineId: string, eventId: string) => {
     e.stopPropagation();
     const line = lines.find(l => l.id === lineId);
     if (!line) return;

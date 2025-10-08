@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CustomDatePicker } from './CustomDatePicker';
 
 interface Event {
-  id: number;
+  id: string;
   icon: string;
   iconSize: string;
   date: string;
@@ -16,8 +16,8 @@ interface Event {
 interface EventModalProps {
   event: Event;
   onSave: (event: Event) => void;
-  onDelete: (id: number) => void;
-  onCancel: (e: React.MouseEvent) => void;
+  onDelete: (id: string) => void;
+  onCancel: () => void;
 }
 
 const iconOptions = [
@@ -44,24 +44,21 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
     setFormData(event);
   }, [event]);
 
-  const handleSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSave = () => {
     onSave({ ...formData, isNew: false });
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDelete = () => {
     if (window.confirm('Tem certeza que deseja excluir este evento?')) {
       onDelete(event.id);
     }
   };
 
-  const handleCancel = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCancel = () => {
     if (event.isNew) {
       onDelete(event.id);
     } else {
-      onCancel(e);
+      onCancel();
     }
   };
 
@@ -73,7 +70,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
-          onCancel(e);
+          handleCancel();
         }
       }}
     >
