@@ -475,14 +475,15 @@ const Index = () => {
                    }}
                    className="bg-card border border-border rounded-lg p-4"
                  >
-                   <Timeline 
-                     timeline={timeline}
-                     updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
-                     addNewLine={() => addNewLine(timeline.id)}
-                     deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
-                     updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
-                     onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
-                   />
+                    <Timeline 
+                      timeline={timeline}
+                      updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
+                      addNewLine={() => addNewLine(timeline.id)}
+                      deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
+                      updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
+                      onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
+                      readOnly={false}
+                    />
                  </motion.div>
                ))}
             </div>

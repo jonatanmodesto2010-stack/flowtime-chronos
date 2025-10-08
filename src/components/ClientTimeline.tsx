@@ -397,7 +397,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                           className="relative z-10 w-32 text-center"
                         >
                           <button
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
                             onClick={() => handleStatusToggle(line.id, event.id)}
                           >
                             <div className="flex items-center justify-center">

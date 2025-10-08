@@ -240,7 +240,7 @@ export const Timeline = ({
                     layout
                   >
                     <button
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-110 transition-transform"
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
                       onClick={(e) => handleStatusToggle(e, line.id, event.id)}
                     >
                       <AnimatePresence mode="popLayout">
