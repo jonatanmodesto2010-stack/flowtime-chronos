@@ -161,11 +161,11 @@ export const Timeline = ({
       >
         <motion.button
           onClick={() => setShowClientModal(true)}
-          className="px-5 py-2.5 bg-gradient-primary text-primary-foreground font-semibold rounded-lg transition-all text-sm"
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
+          className="px-4 py-2 text-foreground font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <User className="inline mr-2" size={16} />
+          <User size={16} />
           {clientInfo.name}
         </motion.button>
         
@@ -221,7 +221,7 @@ export const Timeline = ({
                 {(line.events || []).map((event, index) => (
                   <div
                     key={event.id}
-                    className="relative z-10 w-32 text-center"
+                    className="relative z-10 w-24 text-center flex-shrink-0"
                   >
                     <button
                       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
@@ -232,7 +232,7 @@ export const Timeline = ({
                       </div>
                     </button>
                     <div
-                      className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
+                      className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
                         event.position === 'bottom' ? 'top-5' : 'bottom-5'
                       }`}
                       onClick={(e) => {
@@ -243,19 +243,19 @@ export const Timeline = ({
                     >
                       {event.position === 'bottom' ? (
                         <>
-                          <div className="text-xs font-semibold text-foreground mb-2">
+                          <div className="text-xs font-semibold text-foreground mb-1 whitespace-nowrap">
                             {event.date}
                           </div>
-                          <div className={`${event.iconSize || 'text-xl'}`}>
+                          <div className={`${event.iconSize || 'text-3xl'} leading-none`}>
                             {event.icon}
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className={`${event.iconSize || 'text-xl'} mb-2`}>
+                          <div className={`${event.iconSize || 'text-3xl'} mb-1 leading-none`}>
                             {event.icon}
                           </div>
-                          <div className="text-xs font-semibold text-foreground">
+                          <div className="text-xs font-semibold text-foreground whitespace-nowrap">
                             {event.date}
                           </div>
                         </>
