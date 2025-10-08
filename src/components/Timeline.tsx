@@ -117,7 +117,29 @@ export const Timeline = ({
     if (!line) return;
     
     const lineEvents = line.events || [];
-    updateLine(editingLineId, lineEvents.filter(e => e.id !== id));
+    const updatedEvents = lineEvents.filter(e => e.id !== id);
+    
+    // Atualiza a linha com os eventos restantes
+    updateLine(editingLineId, updatedEvents);
+    
+    // Se houver múltiplas linhas e a linha atual + próxima linha cabem em 33 eventos, consolidar
+    const currentLineIndex = lines.findIndex(l => l.id === editingLineId);
+    if (lines.length > 1 && currentLineIndex < lines.length - 1) {
+      const nextLine = lines[currentLineIndex + 1];
+      const totalEvents = updatedEvents.length + (nextLine.events?.length || 0);
+      
+      if (totalEvents <= 33) {
+        // Mesclar as linhas
+        const mergedEvents = [...updatedEvents, ...(nextLine.events || [])];
+        updateLine(editingLineId, mergedEvents);
+        
+        // Deletar a próxima linha
+        if (deleteLine) {
+          deleteLine(nextLine.id);
+        }
+      }
+    }
+    
     setEditingEvent(null);
     setEditingLineId(null);
   };
