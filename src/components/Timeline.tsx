@@ -259,6 +259,16 @@ export const Timeline = ({
                   + Evento
                 </motion.button>
               )}
+              
+              <motion.div
+                className="px-3 py-2 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg flex items-center gap-2 text-xs font-semibold"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <span>💰</span>
+                <span>R$ {parseFloat(clientInfo.boletoValue || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </motion.div>
             </>
           )}
         </div>
