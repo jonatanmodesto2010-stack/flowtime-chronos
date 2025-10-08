@@ -45,6 +45,7 @@ const Index = () => {
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [operationLoading, setOperationLoading] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -156,6 +157,7 @@ const Index = () => {
   const handleAddTimeline = async () => {
     if (!user) return;
 
+    setOperationLoading(prev => ({ ...prev, addTimeline: true }));
     try {
       const today = new Date().toISOString().split('T')[0];
       
@@ -213,6 +215,8 @@ const Index = () => {
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setOperationLoading(prev => ({ ...prev, addTimeline: false }));
     }
   };
 
@@ -243,6 +247,11 @@ const Index = () => {
       if (insertError) throw insertError;
 
       if (user) loadTimelines(user.id);
+
+      toast({
+        title: 'Eventos atualizados',
+        description: 'As alterações foram salvas com sucesso.',
+      });
     } catch (error: any) {
       toast({
         title: 'Erro ao atualizar eventos',
@@ -285,6 +294,11 @@ const Index = () => {
       if (eventError) throw eventError;
 
       if (user) loadTimelines(user.id);
+
+      toast({
+        title: 'Linha adicionada',
+        description: 'Nova linha criada com sucesso.',
+      });
     } catch (error: any) {
       toast({
         title: 'Erro ao adicionar linha',
@@ -304,6 +318,11 @@ const Index = () => {
       if (error) throw error;
 
       if (user) loadTimelines(user.id);
+
+      toast({
+        title: 'Linha excluída',
+        description: 'Linha removida com sucesso.',
+      });
     } catch (error: any) {
       toast({
         title: 'Erro ao excluir linha',
@@ -328,6 +347,11 @@ const Index = () => {
       if (error) throw error;
 
       if (user) loadTimelines(user.id);
+
+      toast({
+        title: 'Cliente atualizado',
+        description: 'Informações salvas com sucesso.',
+      });
     } catch (error: any) {
       toast({
         title: 'Erro ao atualizar cliente',
@@ -422,12 +446,13 @@ const Index = () => {
 
               <motion.button
                 onClick={handleAddTimeline}
-                className="w-full py-4 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+                disabled={operationLoading.addTimeline}
+                className="w-full py-4 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: operationLoading.addTimeline ? 1 : 1.01 }}
+                whileTap={{ scale: operationLoading.addTimeline ? 1 : 0.99 }}
               >
                 <Plus size={24} />
-                Adicionar Novo Cliente
+                {operationLoading.addTimeline ? 'Criando...' : 'Adicionar Novo Cliente'}
               </motion.button>
             </div>
           </motion.div>
