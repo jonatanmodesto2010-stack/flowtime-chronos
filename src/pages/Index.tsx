@@ -429,7 +429,7 @@ const Index = () => {
           <motion.div 
             initial={{ opacity: 0, y: -20 }} 
             animate={{ opacity: 1, y: 0 }} 
-            className="max-w-7xl mx-auto space-y-6"
+            className="space-y-6"
           >
             <div className="mb-6">
               <div className="h-9 w-80 bg-muted animate-pulse rounded mb-2" />
@@ -460,8 +460,7 @@ const Index = () => {
           <motion.div 
             initial={{ opacity: 0, y: -20 }} 
             animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.5 }} 
-            className="max-w-7xl mx-auto"
+            transition={{ duration: 0.5 }}
           >
             <div className="space-y-6">
                {timelines.map((timeline, index) => (
