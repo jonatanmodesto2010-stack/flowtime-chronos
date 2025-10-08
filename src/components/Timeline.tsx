@@ -295,7 +295,7 @@ export const Timeline = ({
                   {(line.events || []).map((event, index) => (
                     <motion.div
                       key={event.id}
-                      className="relative z-10 text-center flex-shrink-0 min-w-[80px] -ml-[40px] first:ml-0"
+                      className="relative z-10 text-center flex-shrink-0 min-w-[80px] -ml-[43px] first:ml-0"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
