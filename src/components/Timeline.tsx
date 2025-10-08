@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Trash2 } from 'lucide-react';
+import { User, Trash2, Pencil } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 
@@ -224,6 +224,16 @@ export const Timeline = ({
           >
             <User size={16} />
             {clientInfo.name}
+          </motion.button>
+          
+          <motion.button
+            onClick={() => setShowClientModal(true)}
+            className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Editar informações do cliente"
+          >
+            <Pencil size={16} />
           </motion.button>
           
           {!readOnly && addNewLine && (
