@@ -225,11 +225,9 @@ const Index = () => {
   };
 
   const updateLine = async (timelineId: string, lineId: string, events: Event[]) => {
-    console.log('UpdateLine chamado. TimelineId:', timelineId, 'LineId:', lineId, 'Eventos:', events.length);
-    
     // Atualização otimista - atualiza o estado local imediatamente
-    setTimelines(prevTimelines => {
-      const updated = prevTimelines.map(timeline =>
+    setTimelines(prevTimelines =>
+      prevTimelines.map(timeline =>
         timeline.id === timelineId
           ? {
               ...timeline,
@@ -238,10 +236,8 @@ const Index = () => {
               ),
             }
           : timeline
-      );
-      console.log('Estado atualizado otimisticamente');
-      return updated;
-    });
+      )
+    );
 
     try {
       const { error: deleteError } = await supabaseClient
@@ -261,8 +257,6 @@ const Index = () => {
         icon_size: e.iconSize,
         event_order: index,
       }));
-
-      console.log('Inserindo eventos no banco:', eventsToInsert.length);
       
       const { error: insertError } = await supabaseClient
         .from('timeline_events')
@@ -270,14 +264,11 @@ const Index = () => {
 
       if (insertError) throw insertError;
 
-      console.log('Eventos salvos com sucesso');
-
       toast({
         title: 'Eventos atualizados',
         description: 'As alterações foram salvas com sucesso.',
       });
     } catch (error: any) {
-      console.error('Erro ao atualizar eventos:', error);
       // Em caso de erro, recarrega os dados corretos
       if (user) loadTimelines(user.id);
       

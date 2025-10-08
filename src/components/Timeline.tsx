@@ -66,10 +66,7 @@ export const Timeline = ({
 
   const handleAddEvent = (lineId: string) => {
     const line = lines.find(l => l.id === lineId);
-    if (!line) {
-      console.log('Linha não encontrada:', lineId);
-      return;
-    }
+    if (!line) return;
     
     const newId = crypto.randomUUID();
     const lineEvents = line.events || [];
@@ -89,11 +86,7 @@ export const Timeline = ({
       isNew: true,
     };
     
-    const updatedEvents = [...lineEvents, newEvent];
-    console.log('Adicionando evento. Total de eventos:', updatedEvents.length);
-    console.log('Novo evento:', newEvent);
-    
-    updateLine(lineId, updatedEvents);
+    updateLine(lineId, [...lineEvents, newEvent]);
     setEditingEvent(newEvent);
     setEditingLineId(lineId);
   };
@@ -237,9 +230,9 @@ export const Timeline = ({
                 </div>
               )}
               
-              <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
-                <div className="timeline-container relative flex items-center w-fit mx-auto py-24 min-h-[200px] gap-8 px-8">
-                  <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
+              <div className="overflow-x-auto overflow-y-visible scrollbar-hide -mx-4 px-4">
+                <div className="timeline-container relative flex items-center w-full min-w-fit mx-auto py-24 min-h-[200px] gap-8">
+                  <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
                   {(line.events || []).map((event, index) => (
                     <motion.div
                       key={event.id}
