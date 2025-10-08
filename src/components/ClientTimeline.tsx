@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Event {
   id: string;
   icon: string;
-  iconSize: string;
+  iconSize?: string;
   date: string;
   description: string;
   position: 'top' | 'bottom';
@@ -123,7 +123,6 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
     const newEvent: Event = {
       id: `temp-${Date.now()}`,
       icon: '💬',
-      iconSize: 'text-2xl',
       date: '--/--',
       description: '',
       position: 'top',
@@ -261,11 +260,11 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
   const renderStatusIcon = (status: string) => {
     switch (status) {
       case 'resolved':
-        return <span className="text-xl">✅</span>;
+        return <span className="text-lg">✅</span>;
       case 'no_response':
-        return <span className="text-xl">❌</span>;
+        return <span className="text-lg">🚫</span>;
       default:
-        return <div className="w-3 h-3 bg-[hsl(var(--status-created))] rounded-full" />;
+        return <div className="w-3 h-3 bg-foreground rounded-full" />;
     }
   };
 

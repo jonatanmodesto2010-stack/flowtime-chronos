@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, User } from 'lucide-react';
+import { User, Trash2 } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 
 interface Event {
   id: string;
   icon: string;
-  iconSize: string;
+  iconSize?: string;
   date: string;
   description: string;
   position: 'top' | 'bottom';
@@ -78,7 +78,6 @@ export const Timeline = ({
     const newEvent: Event = {
       id: newId,
       icon: '💬',
-      iconSize: 'text-2xl',
       date: dateStr,
       description: 'Novo evento',
       position: newPosition,
@@ -144,11 +143,11 @@ export const Timeline = ({
   const renderStatusIcon = (status: string) => {
     switch (status) {
       case 'resolved':
-        return <span className="text-xl">✅</span>;
+        return <span className="text-lg">✅</span>;
       case 'no_response':
-        return <span className="text-xl">❌</span>;
+        return <span className="text-lg">🚫</span>;
       default:
-        return <div className="w-3 h-3 bg-[hsl(var(--status-created))] rounded-full" />;
+        return <div className="w-3 h-3 bg-foreground rounded-full" />;
     }
   };
 
@@ -189,47 +188,45 @@ export const Timeline = ({
             className="relative"
           >
               {!readOnly && (
-                <div className="flex items-center gap-4 mb-4">
+                <div className="flex justify-center mb-10">
                   <motion.button 
                     onClick={() => handleAddEvent(line.id)} 
-                    className="px-4 py-2 text-sm font-semibold text-primary-foreground bg-gradient-primary rounded-lg shadow-lg transition-all"
-                    whileHover={{ scale: 1.05, y: -1 }}
+                    className="px-6 py-3 font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-lg transition-transform hover:scale-105 hover:shadow-xl"
+                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    title="Adiciona um novo evento nesta linha"
                   >
-                    <Plus className="inline mr-1" size={16} />
-                    Adicionar Evento
+                    + Adicionar Evento
                   </motion.button>
-                  
-                  {lines.length > 1 && deleteLine && (
-                    <motion.button
-                      onClick={() => deleteLine(line.id)}
-                      className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg transition-all"
-                      whileHover={{ scale: 1.05, y: -1 }}
-                      whileTap={{ scale: 0.95 }}
-                      title="Excluir esta linha"
-                    >
-                      <Trash2 className="inline mr-1" size={16} />
-                      Excluir Linha
-                    </motion.button>
-                  )}
                 </div>
               )}
               
               <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-24 overflow-x-auto">
                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
                 {(line.events || []).map((event, index) => (
-                  <div
+                  <motion.div
                     key={event.id}
                     className="relative z-10 w-24 text-center flex-shrink-0"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    layout
                   >
                     <button
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-110 transition-transform"
                       onClick={(e) => handleStatusToggle(e, line.id, event.id)}
                     >
-                      <div className="flex items-center justify-center scale-90">
-                        {renderStatusIcon(event.status)}
-                      </div>
+                      <AnimatePresence mode="popLayout">
+                        <motion.div
+                          key={event.status}
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-center"
+                        >
+                          {renderStatusIcon(event.status)}
+                        </motion.div>
+                      </AnimatePresence>
                     </button>
                     <div
                       className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
@@ -243,16 +240,16 @@ export const Timeline = ({
                     >
                       {event.position === 'bottom' ? (
                         <>
-                          <div className="text-xs font-semibold text-foreground mb-1 whitespace-nowrap">
+                          <div className="text-xs font-semibold text-foreground mb-2 whitespace-nowrap">
                             {event.date}
                           </div>
-                          <div className={`${event.iconSize || 'text-3xl'} leading-none`}>
+                          <div className="text-4xl leading-none">
                             {event.icon}
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className={`${event.iconSize || 'text-3xl'} mb-1 leading-none`}>
+                          <div className="text-4xl mb-2 leading-none">
                             {event.icon}
                           </div>
                           <div className="text-xs font-semibold text-foreground whitespace-nowrap">
@@ -261,7 +258,7 @@ export const Timeline = ({
                         </>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
