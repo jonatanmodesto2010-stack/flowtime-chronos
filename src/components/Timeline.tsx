@@ -231,18 +231,18 @@ export const Timeline = ({
               )}
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
-                <div className="timeline-container relative flex items-center w-fit mx-auto py-24 min-h-[200px] gap-1 px-4">
-                  {/* Linha central com largura fixa baseada nos eventos */}
+                <div className="timeline-container relative flex items-center w-fit mx-auto py-24 min-h-[200px] gap-1 px-1">
+                  {/* Linha central de ponta a ponta */}
                   <div 
                     className="absolute top-1/2 h-0.5 bg-foreground/30 -translate-y-1/2 z-0"
                     style={{
-                      left: '1rem',
-                      right: '4.5rem',
+                      left: '0.25rem',
+                      right: '0.25rem',
                     }}
                   />
                   
                   {/* Ponto final da linha */}
-                  <div className="absolute right-16 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary z-10" />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary z-10" />
                   
                   {(line.events || []).map((event, index) => (
                     <motion.div
