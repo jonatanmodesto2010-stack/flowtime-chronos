@@ -36,13 +36,22 @@ interface TimelineData {
 interface TimelineProps {
   timeline: TimelineData;
   updateLine: (lineId: string, events: Event[]) => void;
-  addNewLine: () => void;
-  deleteLine: (lineId: string) => void;
+  addNewLine?: () => void;
+  deleteLine?: (lineId: string) => void;
   updateClientInfo: (info: ClientInfo) => void;
   onDelete?: () => void;
+  readOnly?: boolean;
 }
 
-export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateClientInfo, onDelete }: TimelineProps) => {
+export const Timeline = ({ 
+  timeline, 
+  updateLine, 
+  addNewLine, 
+  deleteLine, 
+  updateClientInfo, 
+  onDelete,
+  readOnly = true 
+}: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
@@ -152,29 +161,19 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
       >
         <div className="flex items-center gap-3">
           <motion.button
-            onClick={() => setShowClientModal(true)}
+            onClick={() => !readOnly && setShowClientModal(true)}
             className="px-6 py-3 bg-gradient-primary text-primary-foreground font-bold rounded-xl shadow-lg transition-all"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
+            disabled={readOnly}
           >
             <User className="inline mr-2" size={18} />
             {clientInfo.name}
           </motion.button>
-          
-          <motion.button
-            onClick={addNewLine}
-            className="px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg transition-all"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            title="Adicionar nova linha de timeline abaixo"
-          >
-            <Plus className="inline mr-1" size={18} />
-            Nova Linha
-          </motion.button>
         </div>
         
-        <div className="flex items-center gap-4">
-          {onDelete && (
+        {!readOnly && onDelete && (
+          <div className="flex items-center gap-4">
             <motion.button
               onClick={onDelete}
               className="p-3 bg-destructive text-destructive-foreground rounded-xl transition-all"
@@ -184,8 +183,8 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
             >
               <Trash2 size={20} />
             </motion.button>
-          )}
-        </div>
+          </div>
+        )}
       </motion.div>
 
       <div className="space-y-8">
@@ -194,31 +193,33 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
             key={line.id} 
             className="relative"
           >
-              <div className="flex items-center gap-4 mb-4">
-                <motion.button 
-                  onClick={() => handleAddEvent(line.id)} 
-                  className="px-4 py-2 text-sm font-semibold text-primary-foreground bg-gradient-primary rounded-lg shadow-lg transition-all"
-                  whileHover={{ scale: 1.05, y: -1 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Adiciona um novo evento nesta linha"
-                >
-                  <Plus className="inline mr-1" size={16} />
-                  Adicionar Evento
-                </motion.button>
-                
-                {lines.length > 1 && (
-                  <motion.button
-                    onClick={() => deleteLine(line.id)}
-                    className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg transition-all"
+              {!readOnly && (
+                <div className="flex items-center gap-4 mb-4">
+                  <motion.button 
+                    onClick={() => handleAddEvent(line.id)} 
+                    className="px-4 py-2 text-sm font-semibold text-primary-foreground bg-gradient-primary rounded-lg shadow-lg transition-all"
                     whileHover={{ scale: 1.05, y: -1 }}
                     whileTap={{ scale: 0.95 }}
-                    title="Excluir esta linha"
+                    title="Adiciona um novo evento nesta linha"
                   >
-                    <Trash2 className="inline mr-1" size={16} />
-                    Excluir Linha
+                    <Plus className="inline mr-1" size={16} />
+                    Adicionar Evento
                   </motion.button>
-                )}
-              </div>
+                  
+                  {lines.length > 1 && deleteLine && (
+                    <motion.button
+                      onClick={() => deleteLine(line.id)}
+                      className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg transition-all"
+                      whileHover={{ scale: 1.05, y: -1 }}
+                      whileTap={{ scale: 0.95 }}
+                      title="Excluir esta linha"
+                    >
+                      <Trash2 className="inline mr-1" size={16} />
+                      Excluir Linha
+                    </motion.button>
+                  )}
+                </div>
+              )}
               
               <div className="timeline-container relative flex justify-around items-start w-full mx-auto py-20 overflow-x-auto">
                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
@@ -229,17 +230,25 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
                   >
                     <button
                       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground flex items-center justify-center z-20 hover:scale-125 transition-transform"
-                      onClick={(e) => handleStatusToggle(e, line.id, event.id)}
+                      onClick={(e) => !readOnly && handleStatusToggle(e, line.id, event.id)}
+                      disabled={readOnly}
                     >
                       <div className="flex items-center justify-center">
                         {renderStatusIcon(event.status)}
                       </div>
                     </button>
                     <div
-                      className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
+                      className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center ${
+                        readOnly ? '' : 'cursor-pointer hover:scale-105'
+                      } transition-transform ${
                         event.position === 'bottom' ? 'top-5' : 'bottom-5'
                       }`}
-                      onClick={(e) => { e.stopPropagation(); handleEventClick(event, line.id); }}
+                      onClick={(e) => {
+                        if (!readOnly) {
+                          e.stopPropagation();
+                          handleEventClick(event, line.id);
+                        }
+                      }}
                       title={event.description}
                     >
                       {event.position === 'bottom' ? (
@@ -269,7 +278,7 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
           ))}
       </div>
       <AnimatePresence>
-        {editingEvent && (
+        {!readOnly && editingEvent && (
           <EventModal
             event={editingEvent}
             onSave={handleSaveEvent}
@@ -277,7 +286,7 @@ export const Timeline = ({ timeline, updateLine, addNewLine, deleteLine, updateC
             onCancel={() => setEditingEvent(null)}
           />
         )}
-        {showClientModal && (
+        {!readOnly && showClientModal && (
           <ClientInfoModal
             clientInfo={clientInfo}
             onSave={(info) => {
