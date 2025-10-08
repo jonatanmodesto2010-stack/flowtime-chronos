@@ -68,8 +68,17 @@ export const Timeline = ({
     const line = lines.find(l => l.id === lineId);
     if (!line) return;
     
-    const newId = crypto.randomUUID();
     const lineEvents = line.events || [];
+    
+    // Se a linha já tem 33 eventos, criar uma nova linha
+    if (lineEvents.length >= 33) {
+      if (addNewLine) {
+        addNewLine();
+      }
+      return;
+    }
+    
+    const newId = crypto.randomUUID();
     const lastEvent = lineEvents[lineEvents.length - 1];
     const newPosition = lastEvent?.position === 'top' ? 'bottom' : 'top';
     const today = new Date();
