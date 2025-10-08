@@ -6,6 +6,7 @@ import { Timeline } from '@/components/Timeline';
 import { TimelineSkeleton } from '@/components/TimelineSkeleton';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +48,8 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [operationLoading, setOperationLoading] = useState<Record<string, boolean>>({});
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -462,18 +465,25 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.5 }}
           >
-            <div className="space-y-6">
-               {timelines.map((timeline, index) => (
-                 <motion.div
-                   key={timeline.id}
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{ 
-                     duration: 0.3,
-                     ease: "easeOut"
-                   }}
-                   className="bg-card border border-border rounded-lg p-4"
-                 >
+            <Tabs defaultValue="geral" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="geral">Geral</TabsTrigger>
+                <TabsTrigger value="filtros">Filtros</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="geral" className="space-y-6">
+                {timelines.map((timeline, index) => (
+                  <motion.div
+                    key={timeline.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: 0.3,
+                      ease: "easeOut"
+                    }}
+                    className="bg-card border border-border rounded-lg p-4"
+                  >
                     <Timeline 
                       timeline={timeline}
                       updateLine={(lineId, events) => updateLine(timeline.id, lineId, events)}
@@ -483,9 +493,114 @@ const Index = () => {
                       onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
                       readOnly={false}
                     />
-                 </motion.div>
-               ))}
-            </div>
+                  </motion.div>
+                ))}
+              </TabsContent>
+
+              <TabsContent value="filtros" className="space-y-6">
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h2 className="text-2xl font-bold mb-6">Filtros</h2>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Status</label>
+                      <select 
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="created">Criado</option>
+                        <option value="resolved">Resolvido</option>
+                        <option value="no_response">Sem resposta</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Período</label>
+                      <select 
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="today">Hoje</option>
+                        <option value="week">Esta semana</option>
+                        <option value="month">Este mês</option>
+                      </select>
+                    </div>
+
+                    <div className="pt-4">
+                      <p className="text-sm text-muted-foreground">
+                        Filtros ativos: <span className="font-medium">{statusFilter !== 'all' || dateFilter !== 'all' ? 'Sim' : 'Nenhum'}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-6">
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h2 className="text-2xl font-bold mb-6">Analytics</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-1">Total de Clientes</p>
+                      <p className="text-3xl font-bold">{timelines.length}</p>
+                    </div>
+                    
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-1">Total de Eventos</p>
+                      <p className="text-3xl font-bold">
+                        {timelines.reduce((acc, t) => 
+                          acc + t.lines.reduce((lineAcc, line) => lineAcc + line.events.length, 0), 0
+                        )}
+                      </p>
+                    </div>
+                    
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-1">Eventos Resolvidos</p>
+                      <p className="text-3xl font-bold">
+                        {timelines.reduce((acc, t) => 
+                          acc + t.lines.reduce((lineAcc, line) => 
+                            lineAcc + line.events.filter(e => e.status === 'resolved').length, 0
+                          ), 0
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Detalhamento por Cliente</h3>
+                    {timelines.map(timeline => {
+                      const totalEvents = timeline.lines.reduce((acc, line) => acc + line.events.length, 0);
+                      const resolvedEvents = timeline.lines.reduce((acc, line) => 
+                        acc + line.events.filter(e => e.status === 'resolved').length, 0
+                      );
+                      const percentage = totalEvents > 0 ? Math.round((resolvedEvents / totalEvents) * 100) : 0;
+                      
+                      return (
+                        <div key={timeline.id} className="bg-muted/50 rounded-lg p-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium">{timeline.clientInfo.name}</span>
+                            <span className="text-sm text-muted-foreground">{percentage}% concluído</span>
+                          </div>
+                          <div className="w-full bg-background rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-purple-600 to-pink-500 h-2 rounded-full transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {resolvedEvents} de {totalEvents} eventos resolvidos
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </motion.div>
         </main>
       </div>
