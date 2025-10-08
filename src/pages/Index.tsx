@@ -177,6 +177,7 @@ const Index = () => {
         .from('client_timelines')
         .insert({
           user_id: user.id,
+          organization_id: organizationId,
           client_name: 'NOVO CLIENTE',
           start_date: today,
           boleto_value: 0,
@@ -291,6 +292,16 @@ const Index = () => {
   const addNewLine = async (timelineId: string) => {
     try {
       const timeline = timelines.find((t) => t.id === timelineId);
+      
+      if (timeline && timeline.lines.length >= 10) {
+        toast({
+          title: 'Limite atingido',
+          description: 'Você atingiu o máximo de 10 linhas permitidas por cliente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       const nextPosition = timeline ? timeline.lines.length : 0;
 
       const { data: newLine, error: lineError } = await supabaseClient
