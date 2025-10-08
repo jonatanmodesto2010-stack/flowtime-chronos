@@ -119,27 +119,51 @@ export const Timeline = ({
     const lineEvents = line.events || [];
     const updatedEvents = lineEvents.filter(e => e.id !== id);
     
-    // Atualiza a linha com os eventos restantes
-    updateLine(editingLineId, updatedEvents);
-    
-    // Se houver múltiplas linhas e a linha atual + próxima linha cabem em 33 eventos, consolidar
     const currentLineIndex = lines.findIndex(l => l.id === editingLineId);
-    if (lines.length > 1 && currentLineIndex < lines.length - 1) {
-      const nextLine = lines[currentLineIndex + 1];
-      const totalEvents = updatedEvents.length + (nextLine.events?.length || 0);
-      
-      if (totalEvents <= 33) {
-        // Mesclar as linhas
-        const mergedEvents = [...updatedEvents, ...(nextLine.events || [])];
-        updateLine(editingLineId, mergedEvents);
+    
+    // Se houver múltiplas linhas, tentar consolidar
+    if (lines.length > 1) {
+      // Tentar consolidar com a próxima linha primeiro
+      if (currentLineIndex < lines.length - 1) {
+        const nextLine = lines[currentLineIndex + 1];
+        const totalEvents = updatedEvents.length + (nextLine.events?.length || 0);
         
-        // Deletar a próxima linha
-        if (deleteLine) {
-          deleteLine(nextLine.id);
+        if (totalEvents <= 33) {
+          const mergedEvents = [...updatedEvents, ...(nextLine.events || [])];
+          updateLine(editingLineId, mergedEvents);
+          
+          if (deleteLine) {
+            deleteLine(nextLine.id);
+          }
+          
+          setEditingEvent(null);
+          setEditingLineId(null);
+          return;
+        }
+      }
+      
+      // Se não consolidou com a próxima, tentar com a anterior
+      if (currentLineIndex > 0) {
+        const prevLine = lines[currentLineIndex - 1];
+        const totalEvents = (prevLine.events?.length || 0) + updatedEvents.length;
+        
+        if (totalEvents <= 33) {
+          const mergedEvents = [...(prevLine.events || []), ...updatedEvents];
+          updateLine(prevLine.id, mergedEvents);
+          
+          if (deleteLine) {
+            deleteLine(editingLineId);
+          }
+          
+          setEditingEvent(null);
+          setEditingLineId(null);
+          return;
         }
       }
     }
     
+    // Se não consolidou, apenas atualiza a linha atual
+    updateLine(editingLineId, updatedEvents);
     setEditingEvent(null);
     setEditingLineId(null);
   };
