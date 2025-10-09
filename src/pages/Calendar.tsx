@@ -7,6 +7,9 @@ import { Sidebar } from '@/components/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import type { User } from '@supabase/supabase-js';
 
 interface Event {
@@ -25,6 +28,8 @@ const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<Event[]>([]);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -150,6 +155,31 @@ const Calendar = () => {
     return events.some(event => event.client_name === clientName && event.status === 'no_response');
   };
 
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const handleDayClick = (day: number) => {
+    setSelectedDay(day);
+    setIsModalOpen(true);
+  };
+
+  const getStatusCounts = (dayEvents: Event[]) => {
+    const counts = {
+      created: 0,
+      resolved: 0,
+      no_response: 0,
+    };
+    
+    dayEvents.forEach(event => {
+      if (event.status === 'created') counts.created++;
+      else if (event.status === 'resolved') counts.resolved++;
+      else if (event.status === 'no_response') counts.no_response++;
+    });
+    
+    return counts;
+  };
+
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -220,9 +250,14 @@ const Calendar = () => {
                   <ChevronLeft size={24} />
                 </motion.button>
                 
-                <h3 className="text-2xl font-bold text-foreground">
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-2xl font-bold text-foreground">
+                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  </h3>
+                  <Button onClick={goToToday} variant="outline" size="sm">
+                    Hoje
+                  </Button>
+                </div>
                 
                 <motion.button
                   onClick={nextMonth}
@@ -254,6 +289,7 @@ const Calendar = () => {
                 {Array.from({ length: daysInMonth }).map((_, index) => {
                   const day = index + 1;
                   const dayEvents = getEventsForDay(day);
+                  const statusCounts = getStatusCounts(dayEvents);
                   const isToday = 
                     day === new Date().getDate() &&
                     currentDate.getMonth() === new Date().getMonth() &&
@@ -265,11 +301,12 @@ const Calendar = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.01 }}
+                      onClick={() => dayEvents.length > 0 && handleDayClick(day)}
                       className={`aspect-square border rounded-lg p-2 ${
                         isToday 
                           ? 'border-primary bg-primary/10' 
                           : 'border-border bg-card hover:bg-muted'
-                      } transition-colors cursor-pointer`}
+                      } transition-colors ${dayEvents.length > 0 ? 'cursor-pointer' : ''}`}
                     >
                       <div className={`text-sm font-semibold mb-1 ${
                         isToday ? 'text-primary' : 'text-foreground'
@@ -300,6 +337,25 @@ const Calendar = () => {
                               +{dayEvents.length - 2} mais
                             </div>
                           )}
+                          
+                          {/* Status indicators */}
+                          <div className="flex gap-1 mt-1">
+                            {statusCounts.created > 0 && (
+                              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                📝 {statusCounts.created}
+                              </Badge>
+                            )}
+                            {statusCounts.resolved > 0 && (
+                              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                ✅ {statusCounts.resolved}
+                              </Badge>
+                            )}
+                            {statusCounts.no_response > 0 && (
+                              <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
+                                🚫 {statusCounts.no_response}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       )}
                     </motion.div>
@@ -330,6 +386,59 @@ const Calendar = () => {
               </div>
             </div>
           </motion.div>
+
+          {/* Day Details Modal */}
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Eventos do dia {selectedDay} de {monthNames[currentDate.getMonth()]}
+                </DialogTitle>
+              </DialogHeader>
+              
+              {selectedDay && (
+                <div className="space-y-3 mt-4">
+                  {getEventsForDay(selectedDay).map(event => (
+                    <div
+                      key={event.id}
+                      className="p-4 border border-border rounded-lg bg-card hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl">{event.icon}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className={`font-semibold ${
+                              hasNoResponseStatus(event.client_name)
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-foreground'
+                            }`}>
+                              {event.client_name}
+                            </h4>
+                            <Badge variant={
+                              event.status === 'resolved' 
+                                ? 'default' 
+                                : event.status === 'no_response'
+                                ? 'destructive'
+                                : 'secondary'
+                            }>
+                              {event.status === 'created' && '📝 Criado'}
+                              {event.status === 'resolved' && '✅ Resolvido'}
+                              {event.status === 'no_response' && '🚫 Sem Resposta'}
+                            </Badge>
+                          </div>
+                          {event.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {event.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </main>
       </div>
     </div>
