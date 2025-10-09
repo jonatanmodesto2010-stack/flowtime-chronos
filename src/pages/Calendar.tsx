@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search, BarChart3, Grid3x3, CalendarDays } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +35,7 @@ const Calendar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [clientSearch, setClientSearch] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -188,6 +189,33 @@ const Calendar = () => {
 
   const goToToday = () => {
     setCurrentDate(new Date());
+  };
+
+  const getWeekDays = (date: Date) => {
+    const startOfWeek = new Date(date);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day;
+    startOfWeek.setDate(diff);
+    
+    const weekDays = [];
+    for (let i = 0; i < 7; i++) {
+      const weekDay = new Date(startOfWeek);
+      weekDay.setDate(startOfWeek.getDate() + i);
+      weekDays.push(weekDay);
+    }
+    return weekDays;
+  };
+
+  const previousWeek = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7));
+  };
+
+  const nextWeek = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7));
+  };
+
+  const handleEventClick = (clientName: string) => {
+    navigate('/clients', { state: { searchQuery: clientName } });
   };
 
   const handleDayClick = (day: number) => {
@@ -352,7 +380,7 @@ const Calendar = () => {
               {/* Calendar Header */}
               <div className="flex items-center justify-between mb-6">
                 <motion.button
-                  onClick={previousMonth}
+                  onClick={viewMode === 'month' ? previousMonth : previousWeek}
                   className="p-2 hover:bg-muted rounded-lg transition-colors"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -367,10 +395,30 @@ const Calendar = () => {
                   <Button onClick={goToToday} variant="outline" size="sm">
                     Hoje
                   </Button>
+                  <div className="flex gap-1 border border-border rounded-lg p-1">
+                    <Button
+                      onClick={() => setViewMode('month')}
+                      variant={viewMode === 'month' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Grid3x3 size={16} />
+                      Mês
+                    </Button>
+                    <Button
+                      onClick={() => setViewMode('week')}
+                      variant={viewMode === 'week' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <CalendarDays size={16} />
+                      Semana
+                    </Button>
+                  </div>
                 </div>
                 
                 <motion.button
-                  onClick={nextMonth}
+                  onClick={viewMode === 'month' ? nextMonth : nextWeek}
                   className="p-2 hover:bg-muted rounded-lg transition-colors"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -379,99 +427,172 @@ const Calendar = () => {
                 </motion.button>
               </div>
 
-              {/* Day Names */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
-                {dayNames.map(day => (
-                  <div key={day} className="text-center font-semibold text-muted-foreground py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2">
-                {/* Empty cells for days before month starts */}
-                {Array.from({ length: startingDayOfWeek }).map((_, index) => (
-                  <div key={`empty-${index}`} className="aspect-square" />
-                ))}
-                
-                {/* Days of the month */}
-                {Array.from({ length: daysInMonth }).map((_, index) => {
-                  const day = index + 1;
-                  const dayEvents = getEventsForDay(day);
-                  const statusCounts = getStatusCounts(dayEvents);
-                  const isToday = 
-                    day === new Date().getDate() &&
-                    currentDate.getMonth() === new Date().getMonth() &&
-                    currentDate.getFullYear() === new Date().getFullYear();
-
-                  return (
-                    <motion.div
-                      key={day}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.01 }}
-                      onClick={() => dayEvents.length > 0 && handleDayClick(day)}
-                      className={`aspect-square border rounded-lg p-2 ${
-                        isToday 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-border bg-card hover:bg-muted'
-                      } transition-colors ${dayEvents.length > 0 ? 'cursor-pointer' : ''}`}
-                    >
-                      <div className={`text-sm font-semibold mb-1 ${
-                        isToday ? 'text-primary' : 'text-foreground'
-                      }`}>
+              {viewMode === 'month' ? (
+                <>
+                  {/* Day Names */}
+                  <div className="grid grid-cols-7 gap-2 mb-2">
+                    {dayNames.map(day => (
+                      <div key={day} className="text-center font-semibold text-muted-foreground py-2">
                         {day}
                       </div>
-                      
-                      {dayEvents.length > 0 && (
-                        <div className="space-y-1">
-                          {dayEvents.slice(0, 2).map(event => (
-                            <div
-                              key={event.id}
-                              className="text-xs p-1 bg-primary/20 rounded truncate"
-                              title={`${event.client_name}: ${event.description || ''}`}
-                            >
-                              <span className="mr-1">{event.icon}</span>
-                              <span className={`font-medium ${
-                                hasNoResponseStatus(event.client_name) 
-                                  ? 'text-red-600 dark:text-red-400' 
-                                  : ''
-                              }`}>
-                                {event.client_name}
-                              </span>
-                            </div>
-                          ))}
-                          {dayEvents.length > 2 && (
-                            <div className="text-xs text-muted-foreground">
-                              +{dayEvents.length - 2} mais
+                    ))}
+                  </div>
+
+                  {/* Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {/* Empty cells for days before month starts */}
+                    {Array.from({ length: startingDayOfWeek }).map((_, index) => (
+                      <div key={`empty-${index}`} className="aspect-square" />
+                    ))}
+                    
+                    {/* Days of the month */}
+                    {Array.from({ length: daysInMonth }).map((_, index) => {
+                      const day = index + 1;
+                      const dayEvents = getEventsForDay(day);
+                      const statusCounts = getStatusCounts(dayEvents);
+                      const isToday = 
+                        day === new Date().getDate() &&
+                        currentDate.getMonth() === new Date().getMonth() &&
+                        currentDate.getFullYear() === new Date().getFullYear();
+
+                      return (
+                        <motion.div
+                          key={day}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.01 }}
+                          onClick={() => dayEvents.length > 0 && handleDayClick(day)}
+                          className={`aspect-square border rounded-lg p-2 ${
+                            isToday 
+                              ? 'border-primary bg-primary/10' 
+                              : 'border-border bg-card hover:bg-muted'
+                          } transition-colors ${dayEvents.length > 0 ? 'cursor-pointer' : ''}`}
+                        >
+                          <div className={`text-sm font-semibold mb-1 ${
+                            isToday ? 'text-primary' : 'text-foreground'
+                          }`}>
+                            {day}
+                          </div>
+                          
+                          {dayEvents.length > 0 && (
+                            <div className="space-y-1">
+                              {dayEvents.slice(0, 2).map(event => (
+                                <div
+                                  key={event.id}
+                                  className="text-xs p-1 bg-primary/20 rounded truncate"
+                                  title={`${event.client_name}: ${event.description || ''}`}
+                                >
+                                  <span className="mr-1">{event.icon}</span>
+                                  <span className={`font-medium ${
+                                    hasNoResponseStatus(event.client_name) 
+                                      ? 'text-red-600 dark:text-red-400' 
+                                      : ''
+                                  }`}>
+                                    {event.client_name}
+                                  </span>
+                                </div>
+                              ))}
+                              {dayEvents.length > 2 && (
+                                <div className="text-xs text-muted-foreground">
+                                  +{dayEvents.length - 2} mais
+                                </div>
+                              )}
+                              
+                              {/* Status indicators */}
+                              <div className="flex gap-1 mt-1">
+                                {statusCounts.created > 0 && (
+                                  <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                    📝 {statusCounts.created}
+                                  </Badge>
+                                )}
+                                {statusCounts.resolved > 0 && (
+                                  <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                    ✅ {statusCounts.resolved}
+                                  </Badge>
+                                )}
+                                {statusCounts.no_response > 0 && (
+                                  <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
+                                    🚫 {statusCounts.no_response}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           )}
-                          
-                          {/* Status indicators */}
-                          <div className="flex gap-1 mt-1">
-                            {statusCounts.created > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                📝 {statusCounts.created}
-                              </Badge>
-                            )}
-                            {statusCounts.resolved > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                ✅ {statusCounts.resolved}
-                              </Badge>
-                            )}
-                            {statusCounts.no_response > 0 && (
-                              <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
-                                🚫 {statusCounts.no_response}
-                              </Badge>
-                            )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                /* Week View */
+                <div className="space-y-4">
+                  <div className="grid grid-cols-7 gap-2">
+                    {getWeekDays(currentDate).map((weekDay, index) => {
+                      const day = weekDay.getDate();
+                      const month = weekDay.getMonth();
+                      const year = weekDay.getFullYear();
+                      const dateStr = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}`;
+                      const dayEvents = filteredEvents.filter(event => event.event_date === dateStr);
+                      const isToday = 
+                        day === new Date().getDate() &&
+                        month === new Date().getMonth() &&
+                        year === new Date().getFullYear();
+
+                      return (
+                        <div key={index} className="space-y-2">
+                          <div className={`text-center p-2 rounded-lg ${
+                            isToday ? 'bg-primary text-primary-foreground font-bold' : 'bg-muted'
+                          }`}>
+                            <div className="text-xs">{dayNames[weekDay.getDay()]}</div>
+                            <div className="text-lg">{day}</div>
+                          </div>
+                          <div className="space-y-2 min-h-[200px]">
+                            {dayEvents.map(event => (
+                              <motion.div
+                                key={event.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                onClick={() => handleEventClick(event.client_name)}
+                                className="p-2 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-lg">{event.icon}</span>
+                                  <span className={`text-xs font-semibold truncate ${
+                                    hasNoResponseStatus(event.client_name)
+                                      ? 'text-red-600 dark:text-red-400'
+                                      : 'text-foreground'
+                                  }`}>
+                                    {event.client_name}
+                                  </span>
+                                </div>
+                                {event.description && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
+                                    {event.description}
+                                  </p>
+                                )}
+                                <Badge 
+                                  variant={
+                                    event.status === 'resolved' 
+                                      ? 'default' 
+                                      : event.status === 'no_response'
+                                      ? 'destructive'
+                                      : 'secondary'
+                                  }
+                                  className="text-[10px] h-4"
+                                >
+                                  {event.status === 'created' && '📝'}
+                                  {event.status === 'resolved' && '✅'}
+                                  {event.status === 'no_response' && '🚫'}
+                                </Badge>
+                              </motion.div>
+                            ))}
                           </div>
                         </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Events Legend */}
@@ -511,7 +632,8 @@ const Calendar = () => {
                   {getEventsForDay(selectedDay).map(event => (
                     <div
                       key={event.id}
-                      className="p-4 border border-border rounded-lg bg-card hover:bg-muted transition-colors"
+                      onClick={() => handleEventClick(event.client_name)}
+                      className="p-4 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-2xl">{event.icon}</span>
@@ -537,10 +659,13 @@ const Calendar = () => {
                             </Badge>
                           </div>
                           {event.description && (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground mb-2">
                               {event.description}
                             </p>
                           )}
+                          <p className="text-xs text-muted-foreground italic">
+                            Clique para ver a timeline do cliente
+                          </p>
                         </div>
                       </div>
                     </div>
