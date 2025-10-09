@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Timeline } from '@/components/Timeline';
 import { TimelineSkeleton } from '@/components/TimelineSkeleton';
 import { Header } from '@/components/Header';
@@ -51,6 +51,7 @@ const Index = () => {
   const [operationLoading, setOperationLoading] = useState<Record<string, boolean>>({});
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { organizationId } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -492,20 +493,37 @@ const Index = () => {
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
                 
-                <motion.button
-                  onClick={handleAddTimeline}
-                  disabled={operationLoading.addTimeline}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Plus size={18} />
-                  {operationLoading.addTimeline ? 'Criando...' : 'Novo Cliente'}
-                </motion.button>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    <input
+                      type="text"
+                      placeholder="Buscar cliente..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring w-64"
+                    />
+                  </div>
+                  
+                  <motion.button
+                    onClick={handleAddTimeline}
+                    disabled={operationLoading.addTimeline}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Plus size={18} />
+                    {operationLoading.addTimeline ? 'Criando...' : 'Novo Cliente'}
+                  </motion.button>
+                </div>
               </div>
 
               <TabsContent value="geral" className="space-y-6">
-                {timelines.map((timeline, index) => (
+                {timelines
+                  .filter((timeline) =>
+                    timeline.clientInfo.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((timeline, index) => (
                   <motion.div
                     key={timeline.id}
                     initial={{ opacity: 0, y: 20 }}
