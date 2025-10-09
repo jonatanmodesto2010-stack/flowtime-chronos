@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search, BarChart3 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { User } from '@supabase/supabase-js';
 
 interface Event {
@@ -30,6 +33,8 @@ const Calendar = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [clientSearch, setClientSearch] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -146,10 +151,36 @@ const Calendar = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
+      const matchesClient = clientSearch === '' || 
+        event.client_name.toLowerCase().includes(clientSearch.toLowerCase());
+      return matchesStatus && matchesClient;
+    });
+  }, [events, statusFilter, clientSearch]);
+
   const getEventsForDay = (day: number) => {
     const dateStr = `${String(day).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-    return events.filter(event => event.event_date === dateStr);
+    return filteredEvents.filter(event => event.event_date === dateStr);
   };
+
+  const monthlyStats = useMemo(() => {
+    const stats = {
+      total: filteredEvents.length,
+      created: 0,
+      resolved: 0,
+      no_response: 0,
+    };
+    
+    filteredEvents.forEach(event => {
+      if (event.status === 'created') stats.created++;
+      else if (event.status === 'resolved') stats.resolved++;
+      else if (event.status === 'no_response') stats.no_response++;
+    });
+    
+    return stats;
+  }, [filteredEvents]);
 
   const hasNoResponseStatus = (clientName: string) => {
     return events.some(event => event.client_name === clientName && event.status === 'no_response');
@@ -236,6 +267,85 @@ const Calendar = () => {
               <p className="text-muted-foreground">
                 Visualize todos os eventos das suas timelines
               </p>
+            </div>
+
+            {/* Monthly Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <BarChart3 size={16} />
+                    Total de Eventos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">{monthlyStats.total}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    📝 Criados
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">{monthlyStats.created}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    ✅ Resolvidos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">{monthlyStats.resolved}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    🚫 Sem Resposta
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">{monthlyStats.no_response}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-card border border-border rounded-xl p-4 mb-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                    <Input
+                      placeholder="Buscar por cliente..."
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <div className="sm:w-48">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Filtrar por status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="all">Todos os Status</SelectItem>
+                      <SelectItem value="created">📝 Criados</SelectItem>
+                      <SelectItem value="resolved">✅ Resolvidos</SelectItem>
+                      <SelectItem value="no_response">🚫 Sem Resposta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
             <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
