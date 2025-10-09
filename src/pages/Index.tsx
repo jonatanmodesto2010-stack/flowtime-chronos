@@ -25,6 +25,7 @@ interface Event {
 }
 
 interface ClientInfo {
+  clientId?: string;
   name: string;
   startDate: string;
   boletoValue: string;
@@ -140,6 +141,7 @@ const Index = () => {
             return {
               id: ct.id,
               clientInfo: {
+                clientId: ct.client_id || undefined,
                 name: ct.client_name,
                 startDate: ct.start_date,
                 boletoValue: ct.boleto_value?.toString() || '0.00',
@@ -179,6 +181,7 @@ const Index = () => {
         .insert({
           user_id: user.id,
           organization_id: organizationId,
+          client_id: null,
           client_name: 'NOVO CLIENTE',
           start_date: today,
           boleto_value: 0,
@@ -385,6 +388,7 @@ const Index = () => {
       const { error } = await supabaseClient
         .from('client_timelines')
         .update({
+          client_id: info.clientId || null,
           client_name: info.name,
           start_date: info.startDate,
           boleto_value: parseFloat(info.boletoValue),

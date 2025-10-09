@@ -5,6 +5,7 @@ import { clientInfoSchema } from '@/lib/validations';
 import { z } from 'zod';
 
 interface ClientInfo {
+  clientId?: string;
   name: string;
   startDate: string;
   boletoValue: string;
@@ -77,6 +78,19 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
         </h2>
 
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold mb-2 text-foreground">
+              ID do Cliente
+            </label>
+            <input
+              type="text"
+              value={formData.clientId || ''}
+              onChange={(e) => handleChange('clientId' as keyof ClientInfo, e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Ex: 1040"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-semibold mb-2 text-foreground">
               Nome do Cliente

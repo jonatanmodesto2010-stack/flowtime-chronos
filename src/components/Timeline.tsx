@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Trash2, Pencil } from 'lucide-react';
+import { User, Trash2 } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ interface Event {
 }
 
 interface ClientInfo {
+  clientId?: string;
   name: string;
   startDate: string;
   boletoValue: string;
@@ -217,77 +218,68 @@ export const Timeline = ({
   return (
     <div className="w-full">
       <motion.div 
-        className="flex items-center justify-between mb-4"
+        className="flex items-center justify-between mb-4 flex-wrap gap-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Nome clicável com ID do cliente */}
           <motion.button
             onClick={() => setShowClientModal(true)}
-            className={`px-4 py-2 font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2 ${
+            className={`px-3 py-2 font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2 ${
               hasNoResponseEvent ? 'text-red-600 dark:text-red-400' : 'text-foreground'
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <User size={16} />
-            {clientInfo.name}
+            {clientInfo.clientId ? `${clientInfo.clientId} - ${clientInfo.name}` : clientInfo.name}
           </motion.button>
           
-          <Badge className="bg-red-500 text-white hover:bg-red-600">
+          {/* Tag COBRANÇA */}
+          <Badge className="bg-red-500 text-white hover:bg-red-600 px-3 py-1">
             COBRANÇA
           </Badge>
           
-          <motion.button
-            onClick={() => setShowClientModal(true)}
-            className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="Editar informações do cliente"
-          >
-            <Pencil size={16} />
-          </motion.button>
-          
           {!readOnly && addNewLine && (
             <>
+              {/* Botão + Linha */}
               <motion.button
                 onClick={addNewLine}
-                className="px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg transition-transform hover:scale-105 flex items-center gap-1"
+                className="px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all flex items-center gap-1"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 title="Adicionar nova linha"
               >
-                + Linha
+                ✏️ Linha
               </motion.button>
               
+              {/* Botão + Evento */}
               {lines.length > 0 && (
                 <motion.button
                   onClick={() => handleAddEvent(lines[0].id)}
-                  className="px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg transition-transform hover:scale-105 flex items-center gap-1"
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-all flex items-center gap-1"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   title="Adicionar evento na primeira linha"
                 >
-                  + Evento
+                  ➕ Evento
                 </motion.button>
               )}
               
-              <motion.button
+              {/* Badge Valor */}
+              <Badge 
+                className="bg-orange-500 text-white hover:bg-orange-600 px-3 py-1 cursor-pointer"
                 onClick={() => setShowClientModal(true)}
-                className="px-3 py-2 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2 text-xs font-semibold cursor-pointer hover:bg-red-500/20 transition-colors"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 title="Clique para editar o valor"
               >
-                <span>💰</span>
-                <span>R$ {parseFloat(clientInfo.boletoValue || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </motion.button>
+                💰 R$ {parseFloat(clientInfo.boletoValue || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Badge>
             </>
           )}
         </div>
         
+        {/* Lado direito: Lixeira */}
         {!readOnly && onDelete && (
           <motion.button
             onClick={onDelete}
@@ -322,8 +314,8 @@ export const Timeline = ({
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
                 <div className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 min-h-[200px] px-4">
-                  {/* Contador de eventos */}
-                  <div className="absolute top-[-4px] right-2 px-3 py-1 bg-accent rounded-lg text-xs font-semibold text-foreground z-30">
+                  {/* Contador de eventos - Verde */}
+                  <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
                     {(line.events || []).length} / 28
                   </div>
                   

@@ -17,6 +17,7 @@ export type Database = {
       client_timelines: {
         Row: {
           boleto_value: number | null
+          client_id: string | null
           client_name: string
           created_at: string | null
           due_date: string | null
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           boleto_value?: number | null
+          client_id?: string | null
           client_name: string
           created_at?: string | null
           due_date?: string | null
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           boleto_value?: number | null
+          client_id?: string | null
           client_name?: string
           created_at?: string | null
           due_date?: string | null
