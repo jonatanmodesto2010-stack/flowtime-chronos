@@ -46,6 +46,33 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
 
   const selectedRole = watch('role');
 
+  // Função auxiliar para aguardar profile ser criado com retry e backoff exponencial
+  const waitForProfile = async (userId: string, maxAttempts = 10) => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const delay = Math.min(500 * Math.pow(2, attempt), 5000); // Max 5s por tentativa
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, organization_id')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error && !error.message.includes('not found')) {
+        throw error; // Erro real, não retry
+      }
+      
+      if (profile) {
+        return profile; // Sucesso!
+      }
+      
+      console.log(`Aguardando profile ser criado (tentativa ${attempt + 1}/${maxAttempts})...`);
+    }
+    
+    throw new Error('Timeout: Profile não foi criado após múltiplas tentativas. Por favor, tente novamente.');
+  };
+
   const onSubmit = async (data: AddUserFormData) => {
     if (!organizationId) {
       toast({
@@ -91,23 +118,8 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
         throw new Error('Este email já está cadastrado. Use outro email.');
       }
 
-      // Aguardar triggers serem executados (profile criado)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Verificar se o profile foi criado
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        throw new Error(`Erro ao verificar profile: ${profileError.message}`);
-      }
-
-      if (!profile) {
-        throw new Error('Profile não foi criado. Aguarde alguns segundos e tente novamente.');
-      }
+      // Aguardar profile ser criado pelos triggers com retry logic
+      const profile = await waitForProfile(authData.user.id);
 
       // Atualizar organization_id do profile para a organização do admin
       const { error: updateError } = await supabase
