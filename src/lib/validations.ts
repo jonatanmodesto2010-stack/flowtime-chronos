@@ -8,8 +8,11 @@ export const authSchema = z.object({
     .max(255, { message: 'Email muito longo' }),
   password: z
     .string()
-    .min(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
-    .max(100, { message: 'Senha muito longa' }),
+    .min(8, { message: 'Senha deve ter no mínimo 8 caracteres' })
+    .max(100, { message: 'Senha muito longa' })
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, { 
+      message: 'Senha deve conter letras maiúsculas, minúsculas e números' 
+    }),
   fullName: z
     .string()
     .trim()
@@ -89,8 +92,11 @@ export const passwordChangeSchema = z.object({
     .min(6, { message: 'Senha deve ter no mínimo 6 caracteres' }),
   newPassword: z
     .string()
-    .min(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
-    .max(100, { message: 'Senha muito longa' }),
+    .min(8, { message: 'Senha deve ter no mínimo 8 caracteres' })
+    .max(100, { message: 'Senha muito longa' })
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, { 
+      message: 'Senha deve conter letras maiúsculas, minúsculas e números' 
+    }),
   confirmPassword: z
     .string()
     .min(6, { message: 'Senha deve ter no mínimo 6 caracteres' }),

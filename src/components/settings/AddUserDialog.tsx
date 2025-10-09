@@ -12,7 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 
 const addUserSchema = z.object({
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: z
+    .string()
+    .min(8, 'Senha deve ter no mínimo 8 caracteres')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
+      'Senha deve conter letras maiúsculas, minúsculas e números'),
   fullName: z.string().trim().min(1, 'Nome é obrigatório').max(100),
   role: z.enum(['admin', 'member', 'viewer']),
 });
