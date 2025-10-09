@@ -57,6 +57,23 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Helper function to check if a date string matches today
+  const isToday = (dateString: string): boolean => {
+    if (!dateString || dateString === '--/--') return false;
+    
+    const today = new Date();
+    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    
+    return dateString === todayStr;
+  };
+
+  // Helper function to check if a timeline has events scheduled for today
+  const hasEventsToday = (timeline: TimelineData): boolean => {
+    return timeline.lines.some(line => 
+      line.events.some(event => isToday(event.date))
+    );
+  };
+
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
@@ -527,6 +544,15 @@ const Index = () => {
                   .filter((timeline) =>
                     timeline.clientInfo.name.toLowerCase().includes(searchQuery.toLowerCase())
                   )
+                  .sort((a, b) => {
+                    const aHasToday = hasEventsToday(a);
+                    const bHasToday = hasEventsToday(b);
+                    
+                    // Clients with events today come first
+                    if (aHasToday && !bHasToday) return -1;
+                    if (!aHasToday && bHasToday) return 1;
+                    return 0;
+                  })
                   .map((timeline, index) => (
                   <motion.div
                     key={timeline.id}
@@ -536,7 +562,11 @@ const Index = () => {
                       duration: 0.3,
                       ease: "easeOut"
                     }}
-                    className="bg-card border border-border rounded-lg p-4"
+                    className={`bg-card border rounded-lg p-4 ${
+                      hasEventsToday(timeline) 
+                        ? 'border-green-500 border-2 shadow-lg shadow-green-500/20' 
+                        : 'border-border'
+                    }`}
                   >
                     <Timeline 
                       timeline={timeline}
