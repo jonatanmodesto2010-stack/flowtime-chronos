@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, X } from 'lucide-react';
 import { EventModal } from './EventModal';
+import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,40 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
 
   useEffect(() => {
     loadTimeline();
+    
+    // Realtime subscription para sincronização entre usuários
+    const channel = supabase
+      .channel('timeline_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'timeline_events'
+        },
+        (payload) => {
+          console.log('Evento alterado:', payload);
+          loadTimeline();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'timeline_lines',
+          filter: `timeline_id=eq.${clientId}`
+        },
+        (payload) => {
+          console.log('Linha alterada:', payload);
+          loadTimeline();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [clientId]);
 
   const loadTimeline = async () => {

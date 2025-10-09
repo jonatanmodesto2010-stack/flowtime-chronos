@@ -23,7 +23,27 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
 
   useEffect(() => {
     setFormData(clientInfo);
-  }, [clientInfo]);
+    
+    // Proteção contra atualização de página com dados não salvos
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const hasChanges = 
+        formData.name !== clientInfo.name ||
+        formData.startDate !== clientInfo.startDate ||
+        formData.boletoValue !== clientInfo.boletoValue ||
+        formData.dueDate !== clientInfo.dueDate;
+      
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [clientInfo, formData]);
 
   const handleSave = () => {
     try {

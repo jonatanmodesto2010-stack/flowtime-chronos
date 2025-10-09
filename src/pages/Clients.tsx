@@ -68,6 +68,28 @@ const Clients = () => {
   useEffect(() => {
     if (organizationId) {
       loadClients();
+      
+      // Realtime subscription para sincronizar mudanças entre usuários
+      const channel = supabase
+        .channel('client_timelines_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'client_timelines',
+            filter: `organization_id=eq.${organizationId}`
+          },
+          (payload) => {
+            console.log('Mudança detectada:', payload);
+            loadClients();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [organizationId]);
 
@@ -119,6 +141,19 @@ const Clients = () => {
   };
 
   const handleCloseModal = () => {
+    // Verificar se há mudanças não salvas
+    const hasChanges = 
+      formData.client_name !== '' ||
+      formData.boleto_value !== '0.00' ||
+      formData.start_date !== new Date().toISOString().split('T')[0] ||
+      formData.due_date !== new Date().toISOString().split('T')[0];
+    
+    if (hasChanges && !editingClient) {
+      if (!window.confirm('Você tem dados não salvos. Deseja realmente sair sem salvar?')) {
+        return;
+      }
+    }
+    
     setShowModal(false);
     setEditingClient(null);
     setErrors({});
