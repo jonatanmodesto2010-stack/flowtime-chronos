@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Trash2, Pencil } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
+import { Badge } from '@/components/ui/badge';
 
 interface Event {
   id: string;
@@ -225,6 +226,10 @@ export const Timeline = ({
             <User size={16} />
             {clientInfo.name}
           </motion.button>
+          
+          <Badge className="bg-red-500 text-white hover:bg-red-600">
+            COBRANÇA
+          </Badge>
           
           <motion.button
             onClick={() => setShowClientModal(true)}
