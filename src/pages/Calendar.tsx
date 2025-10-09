@@ -146,6 +146,10 @@ const Calendar = () => {
     return events.filter(event => event.event_date === dateStr);
   };
 
+  const hasNoResponseStatus = (clientName: string) => {
+    return events.some(event => event.client_name === clientName && event.status === 'no_response');
+  };
+
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -282,7 +286,13 @@ const Calendar = () => {
                               title={`${event.client_name}: ${event.description || ''}`}
                             >
                               <span className="mr-1">{event.icon}</span>
-                              <span className="font-medium">{event.client_name}</span>
+                              <span className={`font-medium ${
+                                hasNoResponseStatus(event.client_name) 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : ''
+                              }`}>
+                                {event.client_name}
+                              </span>
                             </div>
                           ))}
                           {dayEvents.length > 2 && (
@@ -314,7 +324,7 @@ const Calendar = () => {
                   <span className="text-sm text-muted-foreground">Resolvidos</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">❌</span>
+                  <span className="text-xl">🚫</span>
                   <span className="text-sm text-muted-foreground">Sem Resposta</span>
                 </div>
               </div>
