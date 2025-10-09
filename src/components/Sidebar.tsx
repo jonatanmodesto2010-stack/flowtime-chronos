@@ -1,6 +1,7 @@
 import { Home, Calendar, Users, Settings, Filter, X, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { APP_NAME, getFullVersion } from '@/config/version';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -124,8 +125,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           transition={{ delay: 0.9 }}
         >
           <div className="text-xs text-muted-foreground">
-            <p className="font-semibold mb-1">Sistema de Gestão ISP</p>
-            <p>v1.0.0 - 2025</p>
+            <p className="font-semibold mb-1">{APP_NAME}</p>
+            <p>{getFullVersion()}</p>
           </div>
         </motion.div>
       </motion.aside>
