@@ -142,10 +142,28 @@ const Calendar = () => {
     try {
       setLoading(true);
       
-      const { data: timelines, error: timelinesError } = await supabaseClient
-        .from('client_timelines')
-        .select('id, client_name')
-        .eq('user_id', userId);
+      // Retry logic com timeout para dar tempo do cache atualizar
+      let timelines = null;
+      let timelinesError = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await supabaseClient
+          .from('client_timelines')
+          .select('id, client_name')
+          .eq('user_id', userId);
+        
+        if (!result.error) {
+          timelines = result.data;
+          break;
+        }
+        
+        timelinesError = result.error;
+        
+        // Aguarda 1 segundo antes de tentar novamente
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       if (timelinesError) throw timelinesError;
 
