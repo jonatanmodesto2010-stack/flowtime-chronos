@@ -36,6 +36,7 @@ const Calendar = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [clientSearch, setClientSearch] = useState<string>('');
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -81,8 +82,9 @@ const Calendar = () => {
           schema: 'public',
           table: 'timeline_events'
         },
-        () => {
-          console.log('📅 Evento atualizado - Recarregando calendário...');
+        (payload) => {
+          console.log('📅 Evento atualizado - Recarregando calendário...', payload);
+          console.log('Payload específico:', payload.new || payload.old);
           loadEvents(user.id);
         }
       )
@@ -98,8 +100,9 @@ const Calendar = () => {
           schema: 'public',
           table: 'client_timelines'
         },
-        () => {
-          console.log('👤 Cliente atualizado - Recarregando calendário...');
+        (payload) => {
+          console.log('👤 Cliente atualizado - Recarregando calendário...', payload);
+          console.log('Payload específico:', payload.new || payload.old);
           loadEvents(user.id);
         }
       )
@@ -115,8 +118,9 @@ const Calendar = () => {
           schema: 'public',
           table: 'timeline_lines'
         },
-        () => {
-          console.log('📊 Linha atualizada - Recarregando calendário...');
+        (payload) => {
+          console.log('📊 Linha atualizada - Recarregando calendário...', payload);
+          console.log('Payload específico:', payload.new || payload.old);
           loadEvents(user.id);
         }
       )
@@ -177,6 +181,7 @@ const Calendar = () => {
           });
 
           setEvents(eventsWithClients);
+          setRefreshKey(prev => prev + 1);
         }
       }
     } catch (error: any) {
@@ -220,7 +225,7 @@ const Calendar = () => {
         event.client_name.toLowerCase().includes(clientSearch.toLowerCase());
       return matchesStatus && matchesClient;
     });
-  }, [events, statusFilter, clientSearch]);
+  }, [events, statusFilter, clientSearch, refreshKey]);
 
   const getEventsForDay = (day: number) => {
     const dateStr = `${String(day).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
