@@ -66,10 +66,15 @@ export const UserManagement = () => {
             email = `user-${userRole.user_id.slice(0, 8)}`;
           }
 
+          // profiles pode retornar null ou um objeto
+          const profile = Array.isArray(userRole.profiles) 
+            ? userRole.profiles[0] 
+            : userRole.profiles;
+
           return {
             id: userRole.user_id,
             email,
-            full_name: userRole.profiles.full_name,
+            full_name: profile?.full_name || 'Usuário',
             role: userRole.role,
             user_role_id: userRole.id,
           };
