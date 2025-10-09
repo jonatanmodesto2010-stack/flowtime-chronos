@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,7 +19,7 @@ serve(async (req) => {
     
     const { version, buildVersion, buildTime } = await req.json()
     
-    console.log('Registering new version:', { version, buildVersion, buildTime })
+    console.log('Registering new version:', { version, buildVersion, buildTime });
     
     // Deactivate previous versions
     const { error: updateError } = await supabaseAdmin
@@ -29,7 +28,7 @@ serve(async (req) => {
       .eq('is_active', true)
     
     if (updateError) {
-      console.error('Error deactivating previous versions:', updateError)
+      console.error('Error deactivating old versions:', updateError);
     }
     
     // Register new version
@@ -45,33 +44,24 @@ serve(async (req) => {
       .single()
     
     if (error) {
-      console.error('Error registering new version:', error)
-      return new Response(
-        JSON.stringify({ error: error.message }), 
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-    
-    console.log('Version registered successfully:', data)
-    
-    return new Response(
-      JSON.stringify({ success: true, data }), 
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
-  } catch (error) {
-    console.error('Unexpected error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: errorMessage }), 
-      { 
+      console.error('Error inserting new version:', error);
+      return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+      })
+    }
+    
+    console.log('Version registered successfully:', data);
+    
+    return new Response(JSON.stringify({ success: true, data }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

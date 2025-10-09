@@ -5,24 +5,23 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Generate build version automatically based on timestamp
   const buildTime = new Date().toISOString();
-  const buildVersion = buildTime.replace(/[-:T.Z]/g, '').slice(0, 14); // Format: 20251009143000
-
+  const buildVersion = buildTime.replace(/[-:T.]/g, '').slice(0, 14);
+  
   return {
     server: {
       host: "::",
       port: 8080,
+    },
+    define: {
+      'import.meta.env.VITE_BUILD_TIME': JSON.stringify(buildTime),
+      'import.meta.env.VITE_BUILD_VERSION': JSON.stringify(buildVersion),
     },
     plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
-    },
-    define: {
-      'import.meta.env.VITE_BUILD_TIME': JSON.stringify(buildTime),
-      'import.meta.env.VITE_BUILD_VERSION': JSON.stringify(buildVersion),
     },
   };
 });

@@ -17,7 +17,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   useVersionCheck();
-
+  
   return (
     <BrowserRouter>
       <Routes>
