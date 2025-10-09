@@ -32,12 +32,14 @@ export const useUserRole = (): UserRoleData => {
           .from('user_roles')
           .select('role, organization_id')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
-        setRole(data.role as AppRole);
-        setOrganizationId(data.organization_id);
+        if (data) {
+          setRole(data.role as AppRole);
+          setOrganizationId(data.organization_id);
+        }
       } catch (error) {
         console.error('Error fetching user role:', error);
       } finally {
