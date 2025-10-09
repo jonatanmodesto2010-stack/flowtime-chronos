@@ -5,6 +5,7 @@ import { Plus, Trash2, Edit2, Calendar, List, Search } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientTimeline } from '@/components/ClientTimeline';
+import { ClientInfoModal } from '@/components/ClientInfoModal';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -171,13 +172,15 @@ const Clients = () => {
 
       if (!user || !organizationId) return;
 
+      const boletoValue = formData.boleto_value === '' ? 0 : parseFloat(formData.boleto_value);
+
       if (editingClient) {
         const { error } = await supabaseClient
           .from('client_timelines')
           .update({
             client_name: formData.client_name,
             start_date: formData.start_date,
-            boleto_value: parseFloat(formData.boleto_value),
+            boleto_value: boletoValue,
             due_date: formData.due_date,
           })
           .eq('id', editingClient.id);
@@ -196,7 +199,7 @@ const Clients = () => {
             organization_id: organizationId,
             client_name: formData.client_name,
             start_date: formData.start_date,
-            boleto_value: parseFloat(formData.boleto_value),
+            boleto_value: boletoValue,
             due_date: formData.due_date,
           })
           .select()
@@ -466,107 +469,24 @@ const Clients = () => {
 
       {/* Modal */}
       {showModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-          onClick={handleCloseModal}
-        >
-          <motion.div
-            initial={{ scale: 0.9, y: -20 }}
-            animate={{ scale: 1, y: 0 }}
-            className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-md p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-2xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-              {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2">Nome do Cliente</label>
-                <input
-                  type="text"
-                  value={formData.client_name}
-                  onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary ${
-                    errors.client_name ? 'border-destructive' : 'border-border'
-                  }`}
-                  placeholder="Digite o nome do cliente"
-                />
-                {errors.client_name && (
-                  <p className="text-sm text-destructive mt-1">{errors.client_name}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Data de Início</label>
-                <input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary ${
-                    errors.start_date ? 'border-destructive' : 'border-border'
-                  }`}
-                />
-                {errors.start_date && (
-                  <p className="text-sm text-destructive mt-1">{errors.start_date}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Valor do Boleto (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.boleto_value}
-                  onChange={(e) => setFormData({ ...formData, boleto_value: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary ${
-                    errors.boleto_value ? 'border-destructive' : 'border-border'
-                  }`}
-                  placeholder="0.00"
-                />
-                {errors.boleto_value && (
-                  <p className="text-sm text-destructive mt-1">{errors.boleto_value}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Data de Vencimento</label>
-                <input
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary ${
-                    errors.due_date ? 'border-destructive' : 'border-border'
-                  }`}
-                />
-                {errors.due_date && (
-                  <p className="text-sm text-destructive mt-1">{errors.due_date}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <motion.button
-                onClick={handleSave}
-                className="flex-1 px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg shadow-lg"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                {editingClient ? 'Atualizar' : 'Cadastrar'}
-              </motion.button>
-              <motion.button
-                onClick={handleCloseModal}
-                className="px-6 py-3 bg-secondary text-secondary-foreground font-semibold rounded-lg"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                Cancelar
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
+        <ClientInfoModal
+          clientInfo={{
+            name: formData.client_name,
+            startDate: formData.start_date,
+            boletoValue: formData.boleto_value,
+            dueDate: formData.due_date,
+          }}
+          onSave={(info) => {
+            setFormData({
+              client_name: info.name,
+              start_date: info.startDate,
+              boleto_value: info.boletoValue,
+              due_date: info.dueDate,
+            });
+            handleSave();
+          }}
+          onCancel={handleCloseModal}
+        />
       )}
 
       {/* Timeline Management Modal */}
