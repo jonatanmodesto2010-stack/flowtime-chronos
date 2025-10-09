@@ -217,9 +217,29 @@ export const Timeline = ({
         animate={{ opacity: 1 }}
       >
         <div className="flex items-center gap-2">
+          <motion.button
+            onClick={() => setShowClientModal(true)}
+            className="px-4 py-2 text-foreground font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <User size={16} />
+            {clientInfo.name}
+          </motion.button>
+          
           <Badge className="bg-red-500 text-white hover:bg-red-600">
             COBRANÇA
           </Badge>
+          
+          <motion.button
+            onClick={() => setShowClientModal(true)}
+            className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Editar informações do cliente"
+          >
+            <Pencil size={16} />
+          </motion.button>
           
           {!readOnly && addNewLine && (
             <>
