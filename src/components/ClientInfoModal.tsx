@@ -52,7 +52,7 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [clientInfo, formData]);
+  }, [clientInfo]);
 
   const handleSave = () => {
     try {
