@@ -21,6 +21,7 @@ const iconOptions = [
   { value: '📄', label: '📄 Boleto' },
   { value: '📞', label: '📞 Ligação' },
   { value: '✅', label: '✅ Pago' },
+  { value: '🤝', label: '🤝 Acordo' },
 ];
 
 interface Event {
