@@ -180,6 +180,15 @@ const Calendar = () => {
             };
           });
 
+          console.log('📊 Eventos carregados:', {
+            total: eventsWithClients.length,
+            eventos: eventsWithClients.map(e => ({
+              client: e.client_name,
+              date: e.event_date,
+              status: e.status
+            }))
+          });
+
           setEvents(eventsWithClients);
           setRefreshKey(prev => prev + 1);
         }
@@ -227,9 +236,19 @@ const Calendar = () => {
     });
   }, [events, statusFilter, clientSearch, refreshKey]);
 
-  const getEventsForDay = (day: number) => {
-    const dateStr = `${String(day).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-    return filteredEvents.filter(event => event.event_date === dateStr);
+  const getEventsForDay = (day: number, month?: number) => {
+    const targetMonth = month !== undefined ? month : currentDate.getMonth() + 1;
+    const dateStr = `${String(day).padStart(2, '0')}/${String(targetMonth).padStart(2, '0')}`;
+    const dayEvents = filteredEvents.filter(event => event.event_date === dateStr);
+    
+    console.log(`🔍 Buscando eventos para dia ${day}/${targetMonth}:`, {
+      dateStr,
+      totalFilteredEvents: filteredEvents.length,
+      eventsFound: dayEvents.length,
+      eventos: dayEvents.map(e => ({ client: e.client_name, date: e.event_date, status: e.status }))
+    });
+    
+    return dayEvents;
   };
 
   const monthlyStats = useMemo(() => {
@@ -597,8 +616,7 @@ const Calendar = () => {
                       const day = weekDay.getDate();
                       const month = weekDay.getMonth();
                       const year = weekDay.getFullYear();
-                      const dateStr = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}`;
-                      const dayEvents = filteredEvents.filter(event => event.event_date === dateStr);
+                      const dayEvents = getEventsForDay(day, month + 1);
                       const isToday = 
                         day === new Date().getDate() &&
                         month === new Date().getMonth() &&
