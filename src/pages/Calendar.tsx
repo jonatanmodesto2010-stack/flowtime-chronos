@@ -67,6 +67,69 @@ const Calendar = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Canal para escutar mudanças em timeline_events
+    const eventsChannel = supabase
+      .channel('calendar-events-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'timeline_events'
+        },
+        () => {
+          console.log('📅 Evento atualizado - Recarregando calendário...');
+          loadEvents(user.id);
+        }
+      )
+      .subscribe();
+
+    // Canal para escutar mudanças em client_timelines
+    const timelinesChannel = supabase
+      .channel('calendar-timelines-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'client_timelines'
+        },
+        () => {
+          console.log('👤 Cliente atualizado - Recarregando calendário...');
+          loadEvents(user.id);
+        }
+      )
+      .subscribe();
+
+    // Canal para escutar mudanças em timeline_lines
+    const linesChannel = supabase
+      .channel('calendar-lines-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'timeline_lines'
+        },
+        () => {
+          console.log('📊 Linha atualizada - Recarregando calendário...');
+          loadEvents(user.id);
+        }
+      )
+      .subscribe();
+
+    // Cleanup: remover canais quando o componente desmontar
+    return () => {
+      supabase.removeChannel(eventsChannel);
+      supabase.removeChannel(timelinesChannel);
+      supabase.removeChannel(linesChannel);
+    };
+  }, [user]);
+
   const loadEvents = async (userId: string) => {
     try {
       setLoading(true);
