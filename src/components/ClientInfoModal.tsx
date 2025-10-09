@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { clientInfoSchema } from '@/lib/validations';
 import { z } from 'zod';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface ClientInfo {
   clientId?: string;
@@ -20,6 +27,8 @@ interface ClientInfoModalProps {
 export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModalProps) => {
   const [formData, setFormData] = useState<ClientInfo>(clientInfo);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [dueDateOpen, setDueDateOpen] = useState(false);
 
   useEffect(() => {
     setFormData(clientInfo);
@@ -91,19 +100,6 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-semibold mb-2 text-foreground">
-              ID do Cliente
-            </label>
-            <input
-              type="text"
-              value={formData.clientId || ''}
-              onChange={(e) => handleChange('clientId' as keyof ClientInfo, e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Ex: 1040"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-foreground">
               Nome do Cliente
             </label>
             <input
@@ -124,14 +120,37 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
             <label className="block text-sm font-semibold mb-2 text-foreground">
               Data de Início
             </label>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => handleChange('startDate', e.target.value)}
-              className={`w-full px-4 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.startDate ? 'border-destructive' : 'border-border'
-              }`}
-            />
+            <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal px-4 py-2 h-auto",
+                    !formData.startDate && "text-muted-foreground",
+                    errors.startDate && "border-destructive"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.startDate 
+                    ? format(new Date(formData.startDate), "dd/MM/yyyy", { locale: ptBR })
+                    : "Selecione a data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.startDate ? new Date(formData.startDate) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      handleChange('startDate', date.toISOString().split('T')[0]);
+                      setStartDateOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
             {errors.startDate && (
               <p className="text-sm text-destructive mt-1">{errors.startDate}</p>
             )}
@@ -160,14 +179,37 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
             <label className="block text-sm font-semibold mb-2 text-foreground">
               Data de Vencimento
             </label>
-            <input
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => handleChange('dueDate', e.target.value)}
-              className={`w-full px-4 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.dueDate ? 'border-destructive' : 'border-border'
-              }`}
-            />
+            <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal px-4 py-2 h-auto",
+                    !formData.dueDate && "text-muted-foreground",
+                    errors.dueDate && "border-destructive"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.dueDate 
+                    ? format(new Date(formData.dueDate), "dd/MM/yyyy", { locale: ptBR })
+                    : "Selecione a data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      handleChange('dueDate', date.toISOString().split('T')[0]);
+                      setDueDateOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
             {errors.dueDate && (
               <p className="text-sm text-destructive mt-1">{errors.dueDate}</p>
             )}
@@ -175,6 +217,14 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
         </div>
 
         <div className="flex gap-3 mt-6">
+          <motion.button
+            onClick={onCancel}
+            className="w-full px-6 py-3 bg-muted text-foreground font-semibold rounded-lg shadow-lg transition-all"
+            whileHover={{ scale: 1.03, y: -1 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            Cancelar
+          </motion.button>
           <motion.button
             onClick={handleSave}
             className="w-full px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg shadow-lg transition-all"

@@ -37,7 +37,7 @@ const Clients = () => {
   const [formData, setFormData] = useState({
     client_name: '',
     start_date: new Date().toISOString().split('T')[0],
-    boleto_value: '0.00',
+    boleto_value: '',
     due_date: new Date().toISOString().split('T')[0],
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -124,7 +124,7 @@ const Clients = () => {
       setFormData({
         client_name: client.client_name,
         start_date: client.start_date,
-        boleto_value: client.boleto_value?.toString() || '0.00',
+        boleto_value: client.boleto_value?.toString() || '',
         due_date: client.due_date || client.start_date,
       });
     } else {
@@ -132,7 +132,7 @@ const Clients = () => {
       setFormData({
         client_name: '',
         start_date: new Date().toISOString().split('T')[0],
-        boleto_value: '0.00',
+        boleto_value: '',
         due_date: new Date().toISOString().split('T')[0],
       });
     }

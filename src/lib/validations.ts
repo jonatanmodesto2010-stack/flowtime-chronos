@@ -29,7 +29,9 @@ export const clientInfoSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Data inválida' }),
   boletoValue: z
     .string()
-    .regex(/^\d+(\.\d{1,2})?$/, { message: 'Valor inválido' }),
+    .refine((val) => val === '' || /^\d+(\.\d{1,2})?$/.test(val), { 
+      message: 'Valor inválido' 
+    }),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Data inválida' }),
