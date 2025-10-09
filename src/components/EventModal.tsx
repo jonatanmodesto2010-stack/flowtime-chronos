@@ -33,6 +33,7 @@ interface Event {
   position: 'top' | 'bottom';
   status: 'created' | 'resolved' | 'no_response';
   isNew?: boolean;
+  time?: string;
 }
 
 interface EventModalProps {
@@ -156,6 +157,16 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
                 />
               </PopoverContent>
             </Popover>
+          </div>
+          
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Hora</label>
+            <input
+              type="time"
+              value={formData.time || ''}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+              className="w-full p-3 bg-background rounded-md border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
           
           <div>

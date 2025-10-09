@@ -130,6 +130,7 @@ export type Database = {
           description: string | null
           event_date: string
           event_order: number
+          event_time: string | null
           icon: string
           icon_size: string
           id: string
@@ -143,6 +144,7 @@ export type Database = {
           description?: string | null
           event_date: string
           event_order?: number
+          event_time?: string | null
           icon?: string
           icon_size?: string
           id?: string
@@ -156,6 +158,7 @@ export type Database = {
           description?: string | null
           event_date?: string
           event_order?: number
+          event_time?: string | null
           icon?: string
           icon_size?: string
           id?: string

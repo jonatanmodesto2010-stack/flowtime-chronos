@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search, BarChart3, Grid3x3, CalendarDays } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search, BarChart3, Grid3x3, CalendarDays, Clock } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,12 +15,14 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 
 interface Event {
   id: string;
   client_name: string;
   event_date: string;
+  event_time?: string;
   description: string | null;
   status: string;
   icon: string;
@@ -35,7 +39,7 @@ const Calendar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [clientSearch, setClientSearch] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [viewMode, setViewMode] = useState<'today' | 'month' | 'week'>('month');
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -174,6 +178,7 @@ const Calendar = () => {
               id: event.id,
               client_name: timeline?.client_name || 'Cliente',
               event_date: event.event_date,
+              event_time: event.event_time,
               description: event.description,
               status: event.status,
               icon: event.icon,
@@ -462,57 +467,156 @@ const Calendar = () => {
             </div>
 
             <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-6">
-                <motion.button
-                  onClick={viewMode === 'month' ? previousMonth : previousWeek}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+              {/* View Mode Buttons */}
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <Button
+                  variant={viewMode === 'today' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('today')}
+                  size="lg"
+                  className="min-w-[120px] gap-2"
                 >
-                  <ChevronLeft size={24} />
-                </motion.button>
-                
-                <div className="flex items-center gap-3">
-                  <h3 className="text-2xl font-bold text-foreground">
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                  </h3>
-                  <Button onClick={goToToday} variant="outline" size="sm">
-                    Hoje
-                  </Button>
-                  <div className="flex gap-1 border border-border rounded-lg p-1">
-                    <Button
-                      onClick={() => setViewMode('month')}
-                      variant={viewMode === 'month' ? 'default' : 'ghost'}
-                      size="sm"
-                      className="gap-2"
-                    >
-                      <Grid3x3 size={16} />
-                      Mês
-                    </Button>
-                    <Button
-                      onClick={() => setViewMode('week')}
-                      variant={viewMode === 'week' ? 'default' : 'ghost'}
-                      size="sm"
-                      className="gap-2"
-                    >
-                      <CalendarDays size={16} />
-                      Semana
-                    </Button>
-                  </div>
-                </div>
-                
-                <motion.button
-                  onClick={viewMode === 'month' ? nextMonth : nextWeek}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  <Clock size={18} />
+                  Hoje
+                </Button>
+                <Button
+                  variant={viewMode === 'month' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('month')}
+                  size="lg"
+                  className="min-w-[120px] gap-2"
                 >
-                  <ChevronRight size={24} />
-                </motion.button>
+                  <Grid3x3 size={18} />
+                  Mês
+                </Button>
+                <Button
+                  variant={viewMode === 'week' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('week')}
+                  size="lg"
+                  className="min-w-[120px] gap-2"
+                >
+                  <CalendarDays size={18} />
+                  Semana
+                </Button>
               </div>
 
-              {viewMode === 'month' ? (
+              {/* Calendar Header for Month/Week views */}
+              {viewMode !== 'today' && (
+                <div className="flex items-center justify-between mb-6">
+                  <motion.button
+                    onClick={viewMode === 'month' ? previousMonth : previousWeek}
+                    className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <ChevronLeft size={24} />
+                  </motion.button>
+                  
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-2xl font-bold text-foreground">
+                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </h3>
+                    <Button onClick={goToToday} variant="outline" size="sm">
+                      Ir para Hoje
+                    </Button>
+                  </div>
+                  
+                  <motion.button
+                    onClick={viewMode === 'month' ? nextMonth : nextWeek}
+                    className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <ChevronRight size={24} />
+                  </motion.button>
+                </div>
+              )}
+
+              {viewMode === 'today' ? (
+                /* Today View */
+                <motion.div
+                  key="today-view"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-4"
+                >
+                  <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
+                    Eventos de Hoje - {format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}
+                  </h2>
+                  
+                  {(() => {
+                    const today = new Date();
+                    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
+                    const todayEvents = filteredEvents
+                      .filter(event => event.event_date === todayStr)
+                      .sort((a, b) => {
+                        if (!a.event_time) return 1;
+                        if (!b.event_time) return -1;
+                        return a.event_time.localeCompare(b.event_time);
+                      });
+
+                    if (todayEvents.length === 0) {
+                      return (
+                        <div className="text-center py-16 text-muted-foreground">
+                          <CalendarIcon size={48} className="mx-auto mb-4 opacity-50" />
+                          <p className="text-lg">Nenhum evento para hoje</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3 max-w-3xl mx-auto">
+                        {todayEvents.map((event, idx) => (
+                          <motion.div
+                            key={event.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            onClick={() => handleEventClick(event.client_name)}
+                            className="p-5 border-l-4 rounded-lg cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-card border-border"
+                            style={{
+                              borderLeftColor: 
+                                event.status === 'created' ? 'hsl(var(--primary))' :
+                                event.status === 'resolved' ? '#10b981' :
+                                '#ef4444'
+                            }}
+                          >
+                            <div className="flex items-center gap-4">
+                              <span className="text-4xl">{event.icon}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  {event.event_time && (
+                                    <span className="text-lg font-bold text-primary flex items-center gap-1">
+                                      <Clock size={16} />
+                                      {event.event_time}
+                                    </span>
+                                  )}
+                                  <span className="text-lg font-semibold text-foreground">
+                                    {event.client_name}
+                                  </span>
+                                </div>
+                                {event.description && (
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    {event.description}
+                                  </p>
+                                )}
+                              </div>
+                              <Badge variant={
+                                event.status === 'resolved' ? 'default' :
+                                event.status === 'no_response' ? 'destructive' :
+                                'secondary'
+                              }>
+                                {event.status === 'created' && '📝 Criado'}
+                                {event.status === 'resolved' && '✅ Resolvido'}
+                                {event.status === 'no_response' && '🚫 Sem Resposta'}
+                              </Badge>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </motion.div>
+              ) : viewMode === 'month' ? (
                 <>
                   {/* Day Names */}
                   <div className="grid grid-cols-7 gap-2 mb-2">
@@ -565,9 +669,10 @@ const Calendar = () => {
                                 <div
                                   key={event.id}
                                   className="text-xs p-1 bg-primary/20 rounded truncate"
-                                  title={`${event.client_name}: ${event.description || ''}`}
+                                  title={`${event.event_time ? event.event_time + ' - ' : ''}${event.client_name}: ${event.description || ''}`}
                                 >
                                   <span className="mr-1">{event.icon}</span>
+                                  {event.event_time && <span className="font-semibold">{event.event_time} </span>}
                                   <span className={`font-medium ${
                                     hasNoResponseStatus(event.client_name) 
                                       ? 'text-red-600 dark:text-red-400' 
@@ -641,13 +746,20 @@ const Calendar = () => {
                               >
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-lg">{event.icon}</span>
-                                  <span className={`text-xs font-semibold truncate ${
-                                    hasNoResponseStatus(event.client_name)
-                                      ? 'text-red-600 dark:text-red-400'
-                                      : 'text-foreground'
-                                  }`}>
-                                    {event.client_name}
-                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    {event.event_time && (
+                                      <div className="text-xs font-bold text-primary mb-0.5">
+                                        {event.event_time}
+                                      </div>
+                                    )}
+                                    <span className={`text-xs font-semibold truncate block ${
+                                      hasNoResponseStatus(event.client_name)
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-foreground'
+                                    }`}>
+                                      {event.client_name}
+                                    </span>
+                                  </div>
                                 </div>
                                 {event.description && (
                                   <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
@@ -714,45 +826,53 @@ const Calendar = () => {
               {selectedDay && (
                 <div className="space-y-3 mt-4">
                   {getEventsForDay(selectedDay).map(event => (
-                    <div
-                      key={event.id}
-                      onClick={() => handleEventClick(event.client_name)}
-                      className="p-4 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl">{event.icon}</span>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className={`font-semibold ${
-                              hasNoResponseStatus(event.client_name)
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-foreground'
-                            }`}>
-                              {event.client_name}
-                            </h4>
-                            <Badge variant={
-                              event.status === 'resolved' 
-                                ? 'default' 
-                                : event.status === 'no_response'
-                                ? 'destructive'
-                                : 'secondary'
-                            }>
-                              {event.status === 'created' && '📝 Criado'}
-                              {event.status === 'resolved' && '✅ Resolvido'}
-                              {event.status === 'no_response' && '🚫 Sem Resposta'}
-                            </Badge>
-                          </div>
-                          {event.description && (
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {event.description}
+                      <div
+                        key={event.id}
+                        onClick={() => handleEventClick(event.client_name)}
+                        className="p-4 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{event.icon}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                {event.event_time && (
+                                  <div className="text-sm font-bold text-primary mb-1 flex items-center gap-1">
+                                    <Clock size={14} />
+                                    {event.event_time}
+                                  </div>
+                                )}
+                                <h4 className={`font-semibold ${
+                                  hasNoResponseStatus(event.client_name)
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-foreground'
+                                }`}>
+                                  {event.client_name}
+                                </h4>
+                              </div>
+                              <Badge variant={
+                                event.status === 'resolved' 
+                                  ? 'default' 
+                                  : event.status === 'no_response'
+                                  ? 'destructive'
+                                  : 'secondary'
+                              }>
+                                {event.status === 'created' && '📝 Criado'}
+                                {event.status === 'resolved' && '✅ Resolvido'}
+                                {event.status === 'no_response' && '🚫 Sem Resposta'}
+                              </Badge>
+                            </div>
+                            {event.description && (
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {event.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground italic">
+                              Clique para ver a timeline do cliente
                             </p>
-                          )}
-                          <p className="text-xs text-muted-foreground italic">
-                            Clique para ver a timeline do cliente
-                          </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
                   ))}
                 </div>
               )}
