@@ -119,35 +119,16 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
       }
 
       // Aguardar profile ser criado pelos triggers com retry logic
-      const profile = await waitForProfile(authData.user.id);
+      await waitForProfile(authData.user.id);
 
-      // Atualizar organization_id do profile para a organização do admin
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ organization_id: organizationId })
-        .eq('id', authData.user.id);
+      // Usar a função do banco para adicionar o usuário à organização
+      const { error: roleError } = await supabase.rpc('add_user_to_organization', {
+        _user_id: authData.user.id,
+        _organization_id: organizationId,
+        _role: data.role,
+      });
 
-      if (updateError) throw updateError;
-
-      // Adicionar role escolhida à organização
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          organization_id: organizationId,
-          role: data.role,
-        });
-
-      if (roleError) {
-        // Se falhar, pode ser porque a role owner já foi criada pelo trigger
-        // Então vamos atualizar ao invés de inserir
-        const { error: updateRoleError } = await supabase
-          .from('user_roles')
-          .update({ role: data.role, organization_id: organizationId })
-          .eq('user_id', authData.user.id);
-
-        if (updateRoleError) throw updateRoleError;
-      }
+      if (roleError) throw roleError;
 
       toast({
         title: 'Usuário criado',
