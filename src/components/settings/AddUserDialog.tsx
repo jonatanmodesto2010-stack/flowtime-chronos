@@ -58,7 +58,7 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
 
     setIsLoading(true);
     try {
-      // Criar usuário
+      // Criar usuário com confirmação de email desabilitada
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -66,13 +66,36 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
           data: {
             full_name: data.fullName,
           },
+          emailRedirectTo: undefined,
         },
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error('Falha ao criar usuário');
 
-      // Adicionar role à organização
+      // Aguardar triggers serem executados (profile criado)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Verificar se o profile foi criado
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, organization_id')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error('Profile não foi criado automaticamente');
+      }
+
+      // Atualizar organization_id do profile para a organização do admin
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ organization_id: organizationId })
+        .eq('id', authData.user.id);
+
+      if (updateError) throw updateError;
+
+      // Adicionar role escolhida à organização
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
