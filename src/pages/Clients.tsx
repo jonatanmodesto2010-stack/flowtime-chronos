@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Edit2, Calendar, List } from 'lucide-react';
+import { Plus, Trash2, Edit2, Calendar, List, Search } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientTimeline } from '@/components/ClientTimeline';
@@ -10,6 +10,7 @@ import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { clientInfoSchema } from '@/lib/validations';
+import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import type { User } from '@supabase/supabase-js';
 
@@ -33,6 +34,7 @@ const Clients = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [managingClientName, setManagingClientName] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     client_name: '',
     start_date: new Date().toISOString().split('T')[0],
@@ -301,7 +303,7 @@ const Clients = () => {
             animate={{ opacity: 1, y: 0 }} 
             className="max-w-6xl mx-auto"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 gap-4">
               <div>
                 <h2 className="text-3xl font-bold text-foreground mb-2">
                   Gerenciar Clientes
@@ -311,15 +313,28 @@ const Clients = () => {
                 </p>
               </div>
               
-              <motion.button
-                onClick={() => handleOpenModal()}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg"
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Plus size={20} />
-                Novo Cliente
-              </motion.button>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Buscar cliente..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring w-64"
+                  />
+                </div>
+                
+                <motion.button
+                  onClick={() => handleOpenModal()}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg whitespace-nowrap"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Plus size={20} />
+                  Novo Cliente
+                </motion.button>
+              </div>
             </div>
 
             {clients.length === 0 ? (
@@ -344,7 +359,11 @@ const Clients = () => {
               </motion.div>
             ) : (
               <div className="grid gap-4">
-                {clients.map((client, index) => (
+                {clients
+                  .filter((client) =>
+                    client.client_name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((client, index) => (
                   <motion.div
                     key={client.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -354,9 +373,14 @@ const Clients = () => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-foreground mb-3">
-                          {client.client_name}
-                        </h3>
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-xl font-bold text-foreground">
+                            {client.client_name}
+                          </h3>
+                          <Badge className="bg-red-500 text-white hover:bg-red-600">
+                            COBRANÇA
+                          </Badge>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
                             <p className="text-sm text-muted-foreground mb-1">Data de Início</p>

@@ -17,7 +17,7 @@ import {
 
 const iconOptions = [
   { value: '💬', label: '💬 Mensagem' },
-  { value: '📅', label: '📅 Calendário' },
+  { value: '📅', label: '📅 Agendamento' },
   { value: '📄', label: '📄 Boleto' },
   { value: '📞', label: '📞 Ligação' },
   { value: '✅', label: '✅ Pago' },
