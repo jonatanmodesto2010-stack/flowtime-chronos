@@ -479,15 +479,6 @@ const Calendar = () => {
                   Hoje
                 </Button>
                 <Button
-                  variant={viewMode === 'month' ? 'default' : 'outline'}
-                  onClick={() => setViewMode('month')}
-                  size="lg"
-                  className="min-w-[120px] gap-2"
-                >
-                  <Grid3x3 size={18} />
-                  Mês
-                </Button>
-                <Button
                   variant={viewMode === 'week' ? 'default' : 'outline'}
                   onClick={() => setViewMode('week')}
                   size="lg"
@@ -495,6 +486,15 @@ const Calendar = () => {
                 >
                   <CalendarDays size={18} />
                   Semana
+                </Button>
+                <Button
+                  variant={viewMode === 'month' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('month')}
+                  size="lg"
+                  className="min-w-[120px] gap-2"
+                >
+                  <Grid3x3 size={18} />
+                  Mês
                 </Button>
               </div>
 
