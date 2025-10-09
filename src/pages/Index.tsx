@@ -190,7 +190,7 @@ const Index = () => {
           user_id: user.id,
           organization_id: organizationId,
           client_id: null,
-          client_name: 'NOVO CLIENTE',
+          client_name: '',
           start_date: today,
           boleto_value: 0,
           due_date: today,
