@@ -40,48 +40,19 @@ export const UserManagement = () => {
 
     try {
       const { data, error } = await supabase
-        .from('user_roles')
-        .select(`
-          id,
-          role,
-          user_id,
-          profiles (
-            full_name
-          )
-        `)
-        .eq('organization_id', organizationId);
+        .rpc('get_organization_users', { _org_id: organizationId });
 
       if (error) throw error;
 
-      const usersWithEmails: UserWithRole[] = await Promise.all(
-        (data || []).map(async (userRole: any) => {
-          // Buscar email do usuário atual se for ele mesmo
-          const { data: { user: currentUser } } = await supabase.auth.getUser();
-          let email = '';
-          
-          if (currentUser?.id === userRole.user_id) {
-            email = currentUser.email || '';
-          } else {
-            // Para outros usuários, mostrar email parcialmente oculto ou ID
-            email = `user-${userRole.user_id.slice(0, 8)}`;
-          }
+      const usersWithRoles: UserWithRole[] = (data || []).map((user: any) => ({
+        id: user.user_id,
+        email: user.email || '',
+        full_name: user.full_name || 'Usuário',
+        role: user.role,
+        user_role_id: user.user_role_id,
+      }));
 
-          // profiles pode retornar null ou um objeto
-          const profile = Array.isArray(userRole.profiles) 
-            ? userRole.profiles[0] 
-            : userRole.profiles;
-
-          return {
-            id: userRole.user_id,
-            email,
-            full_name: profile?.full_name || 'Usuário',
-            role: userRole.role,
-            user_role_id: userRole.id,
-          };
-        })
-      );
-
-      setUsers(usersWithEmails);
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({

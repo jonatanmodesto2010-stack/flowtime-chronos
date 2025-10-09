@@ -271,6 +271,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_organization_users: {
+        Args: { _org_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          phone: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          user_role_id: string
+        }[]
+      }
       get_user_organization: {
         Args: { _user_id: string }
         Returns: string
