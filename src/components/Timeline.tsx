@@ -65,6 +65,11 @@ export const Timeline = ({
     dueDate: new Date().toISOString().split('T')[0]
   };
 
+  // Verifica se há algum evento com status 'no_response' (ícone 🚫)
+  const hasNoResponseEvent = lines.some(line => 
+    line.events?.some(event => event.status === 'no_response')
+  );
+
   const handleAddEvent = (lineId: string) => {
     const line = lines.find(l => l.id === lineId);
     if (!line) return;
@@ -219,7 +224,9 @@ export const Timeline = ({
         <div className="flex items-center gap-2">
           <motion.button
             onClick={() => setShowClientModal(true)}
-            className="px-4 py-2 text-foreground font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2"
+            className={`px-4 py-2 font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2 ${
+              hasNoResponseEvent ? 'text-red-600 dark:text-red-400' : 'text-foreground'
+            }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
