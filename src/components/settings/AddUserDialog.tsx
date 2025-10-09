@@ -91,13 +91,16 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
         .select('id')
         .eq('id', (await supabase.auth.getUser()).data.user?.id || '');
 
-      // Criar usuário com confirmação de email desabilitada
+      // Criar usuário com metadados indicando que foi criado por admin
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             full_name: data.fullName,
+            created_by_admin: true,
+            organization_id: organizationId,
+            role: data.role,
           },
           emailRedirectTo: undefined,
         },
@@ -118,17 +121,8 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
         throw new Error('Este email já está cadastrado. Use outro email.');
       }
 
-      // Aguardar profile ser criado pelos triggers com retry logic
+      // Aguardar profile e role serem criados pelo trigger
       await waitForProfile(authData.user.id);
-
-      // Usar a função do banco para adicionar o usuário à organização
-      const { error: roleError } = await supabase.rpc('add_user_to_organization', {
-        _user_id: authData.user.id,
-        _organization_id: organizationId,
-        _role: data.role,
-      });
-
-      if (roleError) throw roleError;
 
       toast({
         title: 'Usuário criado',
