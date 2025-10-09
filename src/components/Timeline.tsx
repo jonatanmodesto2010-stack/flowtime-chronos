@@ -60,9 +60,9 @@ export const Timeline = ({
   
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
-    name: 'Cliente',
+    name: '',
     startDate: new Date().toISOString().split('T')[0],
-    boletoValue: '0.00',
+    boletoValue: '',
     dueDate: new Date().toISOString().split('T')[0]
   };
 

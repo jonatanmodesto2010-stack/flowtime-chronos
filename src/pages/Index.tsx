@@ -155,7 +155,7 @@ const Index = () => {
                 clientId: ct.client_id || undefined,
                 name: ct.client_name,
                 startDate: ct.start_date,
-                boletoValue: ct.boleto_value?.toString() || '0.00',
+                boletoValue: ct.boleto_value ? ct.boleto_value.toString() : '',
                 dueDate: ct.due_date || ct.start_date,
               },
               lines: linesWithEvents,
@@ -399,7 +399,7 @@ const Index = () => {
           client_id: info.clientId || null,
           client_name: info.name,
           start_date: info.startDate,
-          boleto_value: parseFloat(info.boletoValue),
+          boleto_value: info.boletoValue === '' ? 0 : parseFloat(info.boletoValue),
           due_date: info.dueDate,
         })
         .eq('id', timelineId);
