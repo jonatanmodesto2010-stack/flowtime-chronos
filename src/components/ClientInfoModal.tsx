@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
 import { clientInfoSchema } from '@/lib/validations';
 import { z } from 'zod';
 
@@ -55,7 +54,6 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      onClick={onCancel}
     >
       <motion.div
         className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-md p-6 relative"
@@ -65,13 +63,6 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
         transition={{ type: "spring", duration: 0.4 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onCancel}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Fechar modal"
-        >
-          <X size={20} />
-        </button>
 
         <h2 className="text-2xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
           Informações do Cliente
@@ -166,19 +157,11 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
         <div className="flex gap-3 mt-6">
           <motion.button
             onClick={handleSave}
-            className="flex-1 px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg shadow-lg transition-all"
+            className="w-full px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-lg shadow-lg transition-all"
             whileHover={{ scale: 1.03, y: -1 }}
             whileTap={{ scale: 0.97 }}
           >
             Salvar
-          </motion.button>
-          <motion.button
-            onClick={onCancel}
-            className="px-6 py-3 bg-secondary text-secondary-foreground font-semibold rounded-lg transition-all"
-            whileHover={{ scale: 1.03, y: -1 }}
-            whileTap={{ scale: 0.97 }}
-          >
-            Cancelar
           </motion.button>
         </div>
       </motion.div>

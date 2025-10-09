@@ -152,6 +152,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
                   mode="single"
                   selected={selectedDate}
                   onSelect={handleDateSelect}
+                  locale={ptBR}
                   initialFocus
                   className="pointer-events-auto"
                 />
