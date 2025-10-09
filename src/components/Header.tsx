@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { OrganizationSelector } from './OrganizationSelector';
 
 interface HeaderProps {
   theme: string;
@@ -61,6 +62,8 @@ export const Header = ({ theme, onToggleTheme, onToggleSidebar }: HeaderProps) =
       </div>
 
       <div className="flex items-center gap-3">
+        <OrganizationSelector />
+        
         <motion.button
           onClick={onToggleTheme}
           className="p-2 bg-primary text-primary-foreground rounded-lg transition-colors"

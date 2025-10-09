@@ -57,3 +57,11 @@ export const eventSchema = z.object({
   position: z.enum(['top', 'bottom']),
   status: z.enum(['created', 'resolved', 'no_response']),
 });
+
+export const organizationSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { message: 'Nome da organização é obrigatório' })
+    .max(100, { message: 'Nome muito longo (máximo 100 caracteres)' }),
+});
