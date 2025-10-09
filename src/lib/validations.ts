@@ -65,3 +65,34 @@ export const organizationSchema = z.object({
     .min(1, { message: 'Nome da organização é obrigatório' })
     .max(100, { message: 'Nome muito longo (máximo 100 caracteres)' }),
 });
+
+export const profileSchema = z.object({
+  full_name: z
+    .string()
+    .trim()
+    .min(1, { message: 'Nome completo é obrigatório' })
+    .max(100, { message: 'Nome muito longo' }),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[\d\s\+\-\(\)]+$/, { message: 'Formato de telefone inválido' })
+    .max(20, { message: 'Telefone muito longo' })
+    .optional()
+    .or(z.literal('')),
+});
+
+export const passwordChangeSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(6, { message: 'Senha deve ter no mínimo 6 caracteres' }),
+  newPassword: z
+    .string()
+    .min(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
+    .max(100, { message: 'Senha muito longa' }),
+  confirmPassword: z
+    .string()
+    .min(6, { message: 'Senha deve ter no mínimo 6 caracteres' }),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword'],
+});

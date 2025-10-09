@@ -98,6 +98,7 @@ export type Database = {
           full_name: string | null
           id: string
           organization_id: string | null
+          phone: string | null
           updated_at: string | null
         }
         Insert: {
@@ -105,6 +106,7 @@ export type Database = {
           full_name?: string | null
           id: string
           organization_id?: string | null
+          phone?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -112,6 +114,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           organization_id?: string | null
+          phone?: string | null
           updated_at?: string | null
         }
         Relationships: [
