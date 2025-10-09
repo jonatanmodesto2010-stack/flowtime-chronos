@@ -29,9 +29,31 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [dueDateOpen, setDueDateOpen] = useState(false);
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>(undefined);
+  const [selectedDueDate, setSelectedDueDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     setFormData(clientInfo);
+    
+    // Parse startDate string (ISO format YYYY-MM-DD) → Date object
+    if (clientInfo.startDate && clientInfo.startDate.trim() !== '') {
+      const date = new Date(clientInfo.startDate);
+      if (!isNaN(date.getTime())) {
+        setSelectedStartDate(date);
+      }
+    } else {
+      setSelectedStartDate(undefined);
+    }
+    
+    // Parse dueDate string (ISO format YYYY-MM-DD) → Date object
+    if (clientInfo.dueDate && clientInfo.dueDate.trim() !== '') {
+      const date = new Date(clientInfo.dueDate);
+      if (!isNaN(date.getTime())) {
+        setSelectedDueDate(date);
+      }
+    } else {
+      setSelectedDueDate(undefined);
+    }
     
     // Proteção contra atualização de página com dados não salvos
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -74,6 +96,26 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
 
   const handleChange = (field: keyof ClientInfo, value: string) => {
     setFormData({ ...formData, [field]: value });
+  };
+
+  const handleStartDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Date → ISO string (YYYY-MM-DD) para backend
+      const isoDate = date.toISOString().split('T')[0];
+      setSelectedStartDate(date);
+      handleChange('startDate', isoDate);
+      setStartDateOpen(false);
+    }
+  };
+
+  const handleDueDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Date → ISO string (YYYY-MM-DD) para backend
+      const isoDate = date.toISOString().split('T')[0];
+      setSelectedDueDate(date);
+      handleChange('dueDate', isoDate);
+      setDueDateOpen(false);
+    }
   };
 
   return (
@@ -126,26 +168,22 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal px-4 py-2 h-auto",
-                    !formData.startDate && "text-muted-foreground",
+                    !selectedStartDate && "text-muted-foreground",
                     errors.startDate && "border-destructive"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.startDate 
-                    ? format(new Date(formData.startDate), "dd/MM/yyyy", { locale: ptBR })
+                  {selectedStartDate 
+                    ? format(selectedStartDate, "dd/MM/yyyy", { locale: ptBR })
                     : "Selecione a data"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={formData.startDate ? new Date(formData.startDate) : undefined}
-                  onSelect={(date) => {
-                    if (date) {
-                      handleChange('startDate', date.toISOString().split('T')[0]);
-                      setStartDateOpen(false);
-                    }
-                  }}
+                  selected={selectedStartDate}
+                  onSelect={handleStartDateSelect}
+                  locale={ptBR}
                   initialFocus
                   className="pointer-events-auto"
                 />
@@ -185,26 +223,22 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal px-4 py-2 h-auto",
-                    !formData.dueDate && "text-muted-foreground",
+                    !selectedDueDate && "text-muted-foreground",
                     errors.dueDate && "border-destructive"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.dueDate 
-                    ? format(new Date(formData.dueDate), "dd/MM/yyyy", { locale: ptBR })
+                  {selectedDueDate 
+                    ? format(selectedDueDate, "dd/MM/yyyy", { locale: ptBR })
                     : "Selecione a data"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={formData.dueDate ? new Date(formData.dueDate) : undefined}
-                  onSelect={(date) => {
-                    if (date) {
-                      handleChange('dueDate', date.toISOString().split('T')[0]);
-                      setDueDateOpen(false);
-                    }
-                  }}
+                  selected={selectedDueDate}
+                  onSelect={handleDueDateSelect}
+                  locale={ptBR}
                   initialFocus
                   className="pointer-events-auto"
                 />
