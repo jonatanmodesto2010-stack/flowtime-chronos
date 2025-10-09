@@ -83,7 +83,7 @@ const Calendar = () => {
         
         const { data: lines, error: linesError } = await supabaseClient
           .from('timeline_lines')
-          .select('id')
+          .select('id, timeline_id')
           .in('timeline_id', timelineIds);
 
         if (linesError) throw linesError;
@@ -101,9 +101,7 @@ const Calendar = () => {
           // Map events with client names
           const eventsWithClients = (eventsData || []).map(event => {
             const line = lines.find(l => l.id === event.line_id);
-            const timeline = timelines.find(t => 
-              lines.some(l => l.id === event.line_id)
-            );
+            const timeline = timelines.find(t => t.id === line?.timeline_id);
             
             return {
               id: event.id,
