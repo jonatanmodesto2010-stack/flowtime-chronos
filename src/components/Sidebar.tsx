@@ -21,7 +21,10 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const handleNavigation = (path: string) => {
     if (path !== '#') {
       navigate(path);
-      onClose();
+      // Só fecha no mobile
+      if (window.innerWidth < 1024) {
+        onClose();
+      }
     }
   };
 
