@@ -45,7 +45,7 @@ export const UserManagement = () => {
           id,
           role,
           user_id,
-          profiles!inner(
+          profiles (
             full_name
           )
         `)
