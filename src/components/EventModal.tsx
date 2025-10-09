@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AgreementIcon } from '@/components/icons/AgreementIcon';
 
 const iconOptions = [
   { value: '💬', label: '💬 Mensagem' },
@@ -21,7 +22,7 @@ const iconOptions = [
   { value: '📄', label: '📄 Boleto' },
   { value: '📞', label: '📞 Ligação' },
   { value: '✅', label: '✅ Pago' },
-  { value: '🤝', label: '🤝 Acordo' },
+  { value: 'agreement', label: 'Acordo', icon: AgreementIcon },
 ];
 
 interface Event {
@@ -119,12 +120,35 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
             <label className="text-xs font-semibold text-muted-foreground mb-2 block">Ícone</label>
             <Select value={formData.icon} onValueChange={(value) => setFormData({ ...formData, icon: value })}>
               <SelectTrigger className="w-full bg-background">
-                <SelectValue />
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const selected = iconOptions.find(opt => opt.value === formData.icon);
+                    if (selected?.icon) {
+                      const IconComponent = selected.icon;
+                      return (
+                        <>
+                          <IconComponent className="h-4 w-4" size={16} />
+                          <span>{selected.label}</span>
+                        </>
+                      );
+                    }
+                    return <span>{selected?.label || formData.icon || 'Selecione um ícone'}</span>;
+                  })()}
+                </div>
               </SelectTrigger>
               <SelectContent>
                 {iconOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                    <div className="flex items-center gap-2">
+                      {opt.icon ? (
+                        <>
+                          <opt.icon className="h-4 w-4" size={16} />
+                          <span>{opt.label}</span>
+                        </>
+                      ) : (
+                        <span>{opt.label}</span>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

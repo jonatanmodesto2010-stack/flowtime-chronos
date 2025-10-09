@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Trash2, Pencil } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
+import { AgreementIcon } from './icons/AgreementIcon';
 
 interface Event {
   id: string;
@@ -55,6 +56,14 @@ export const Timeline = ({
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
+  
+  // Helper function to render the appropriate icon
+  const renderEventIcon = (iconValue: string) => {
+    if (iconValue === 'agreement') {
+      return <AgreementIcon className="text-current" size={40} />;
+    }
+    return <span className="text-4xl leading-none">{iconValue}</span>;
+  };
   
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
@@ -361,14 +370,14 @@ export const Timeline = ({
                           <div className="text-xs font-semibold text-foreground mb-2 whitespace-nowrap">
                             {event.date}
                           </div>
-                          <div className="text-4xl leading-none">
-                            {event.icon}
+                          <div className="leading-none flex items-center justify-center">
+                            {renderEventIcon(event.icon)}
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="text-4xl mb-2 leading-none">
-                            {event.icon}
+                          <div className="mb-2 leading-none flex items-center justify-center">
+                            {renderEventIcon(event.icon)}
                           </div>
                           <div className="text-xs font-semibold text-foreground whitespace-nowrap">
                             {event.date}
