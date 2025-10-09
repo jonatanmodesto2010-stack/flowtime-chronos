@@ -58,6 +58,12 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
 
     setIsLoading(true);
     try {
+      // Verificar se usuário já existe
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id || '');
+
       // Criar usuário com confirmação de email desabilitada
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
@@ -70,21 +76,37 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
         },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        // Tratar erro de email já cadastrado
+        if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
+          throw new Error('Este email já está cadastrado. Use outro email.');
+        }
+        throw authError;
+      }
+      
       if (!authData.user) throw new Error('Falha ao criar usuário');
 
+      // Se o usuário já existia (repeated signup), não continuar
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        throw new Error('Este email já está cadastrado. Use outro email.');
+      }
+
       // Aguardar triggers serem executados (profile criado)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Verificar se o profile foi criado
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError || !profile) {
-        throw new Error('Profile não foi criado automaticamente');
+      if (profileError) {
+        throw new Error(`Erro ao verificar profile: ${profileError.message}`);
+      }
+
+      if (!profile) {
+        throw new Error('Profile não foi criado. Aguarde alguns segundos e tente novamente.');
       }
 
       // Atualizar organization_id do profile para a organização do admin
@@ -104,7 +126,16 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
           role: data.role,
         });
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        // Se falhar, pode ser porque a role owner já foi criada pelo trigger
+        // Então vamos atualizar ao invés de inserir
+        const { error: updateRoleError } = await supabase
+          .from('user_roles')
+          .update({ role: data.role, organization_id: organizationId })
+          .eq('user_id', authData.user.id);
+
+        if (updateRoleError) throw updateRoleError;
+      }
 
       toast({
         title: 'Usuário criado',
