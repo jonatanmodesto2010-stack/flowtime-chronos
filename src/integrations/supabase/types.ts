@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_versions: {
+        Row: {
+          build_time: string
+          build_version: string
+          created_at: string | null
+          deployed_at: string | null
+          id: string
+          is_active: boolean | null
+          version: string
+        }
+        Insert: {
+          build_time: string
+          build_version: string
+          created_at?: string | null
+          deployed_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          version: string
+        }
+        Update: {
+          build_time?: string
+          build_version?: string
+          created_at?: string | null
+          deployed_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          version?: string
+        }
+        Relationships: []
+      }
       client_timelines: {
         Row: {
           boleto_value: number | null

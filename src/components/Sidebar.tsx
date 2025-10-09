@@ -1,7 +1,7 @@
 import { Home, Calendar, Users, Settings, Filter, X, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { APP_NAME, getFullVersion } from '@/config/version';
+import { APP_NAME, getFullVersion, getBuildVersion } from '@/config/version';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -127,6 +127,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <div className="text-xs text-muted-foreground">
             <p className="font-semibold mb-1">{APP_NAME}</p>
             <p>{getFullVersion()}</p>
+            <p className="text-[10px] opacity-70 mt-1">Build: {getBuildVersion()}</p>
           </div>
         </motion.div>
       </motion.aside>
