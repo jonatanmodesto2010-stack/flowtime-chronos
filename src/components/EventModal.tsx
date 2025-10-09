@@ -108,7 +108,6 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
       animate="visible"
       exit="hidden"
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onCancel}
     >
       <motion.div
         variants={modalVariants}
@@ -177,6 +176,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
               className="w-full p-3 bg-background rounded-md border border-border h-20 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Descreva o evento..."
+              autoFocus={event.isNew}
             />
           </div>
           <div className="flex gap-2 mt-2">
