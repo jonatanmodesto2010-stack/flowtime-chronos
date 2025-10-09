@@ -4,6 +4,7 @@ import { Plus, Trash2, X } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface Event {
   id: string;
@@ -311,10 +312,15 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
       >
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Timeline - {clientName}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                {clientName}
+              </h2>
+              <Badge className="bg-red-500 text-white hover:bg-red-600">
+                COBRANÇA
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
               Gerencie as linhas e eventos deste cliente
             </p>
           </div>
