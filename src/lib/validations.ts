@@ -96,3 +96,12 @@ export const passwordChangeSchema = z.object({
   message: 'As senhas não coincidem',
   path: ['confirmPassword'],
 });
+
+export const editUserSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(1, { message: 'Nome é obrigatório' })
+    .max(100, { message: 'Nome muito longo' }),
+  role: z.enum(['admin', 'member', 'viewer']),
+});

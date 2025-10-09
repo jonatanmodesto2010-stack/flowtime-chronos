@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AddUserDialog } from './AddUserDialog';
+import { EditUserDialog } from './EditUserDialog';
 import { useUserRole } from '@/hooks/useUserRole';
 import {
   AlertDialog,
@@ -31,6 +32,8 @@ export const UserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<UserWithRole | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
   const { toast } = useToast();
   const { organizationId, isOwner } = useUserRole();
@@ -148,14 +151,27 @@ export const UserManagement = () => {
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
                     <TableCell className="text-right">
                       {user.role !== 'owner' && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setUserToDelete(user)}
-                          disabled={!isOwner && user.role === 'admin'}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setUserToEdit(user);
+                              setIsEditDialogOpen(true);
+                            }}
+                            disabled={!isOwner && user.role === 'admin'}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setUserToDelete(user)}
+                            disabled={!isOwner && user.role === 'admin'}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -172,6 +188,18 @@ export const UserManagement = () => {
         onSuccess={loadUsers}
         organizationId={organizationId}
       />
+
+      {userToEdit && (
+        <EditUserDialog
+          isOpen={isEditDialogOpen}
+          onClose={() => {
+            setIsEditDialogOpen(false);
+            setUserToEdit(null);
+          }}
+          onSuccess={loadUsers}
+          user={userToEdit}
+        />
+      )}
 
       <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
         <AlertDialogContent>
