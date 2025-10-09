@@ -14,8 +14,7 @@ import { Loader2 } from 'lucide-react';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -190,12 +189,10 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
       <Header 
-        theme={theme} 
-        onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      <div className="flex">
+      <div className="flex w-full">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
         <main className="flex-1 p-8 pt-24">

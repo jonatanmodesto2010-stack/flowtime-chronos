@@ -44,7 +44,6 @@ interface TimelineData {
 }
 
 const Index = () => {
-  const [theme, setTheme] = useState('light');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [user, setUser] = useState<User | null>(null);
@@ -74,11 +73,6 @@ const Index = () => {
     );
   };
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-  }, [theme]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -182,9 +176,6 @@ const Index = () => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
 
   const handleAddTimeline = async () => {
     if (!user) return;
@@ -461,8 +452,6 @@ const Index = () => {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
         <Header 
-          theme={theme} 
-          onToggleTheme={toggleTheme}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
         
@@ -492,8 +481,6 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
       <Header 
-        theme={theme} 
-        onToggleTheme={toggleTheme}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
       

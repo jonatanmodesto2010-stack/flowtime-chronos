@@ -24,7 +24,6 @@ interface Client {
 }
 
 const Clients = () => {
-  const [theme, setTheme] = useState('light');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [user, setUser] = useState<User | null>(null);
@@ -45,11 +44,6 @@ const Clients = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-  }, [theme]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -101,9 +95,6 @@ const Clients = () => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
 
   const handleOpenModal = (client?: Client) => {
     if (client) {
@@ -263,8 +254,6 @@ const Clients = () => {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
         <Header 
-          theme={theme} 
-          onToggleTheme={toggleTheme}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
         
@@ -289,8 +278,6 @@ const Clients = () => {
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
       <Header 
-        theme={theme} 
-        onToggleTheme={toggleTheme}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
       

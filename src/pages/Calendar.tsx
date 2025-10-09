@@ -29,7 +29,6 @@ interface Event {
 }
 
 const Calendar = () => {
-  const [theme, setTheme] = useState('light');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,11 +43,6 @@ const Calendar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-  }, [theme]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -227,9 +221,6 @@ const Calendar = () => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -360,8 +351,6 @@ const Calendar = () => {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
         <Header 
-          theme={theme} 
-          onToggleTheme={toggleTheme}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
         
@@ -382,8 +371,6 @@ const Calendar = () => {
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
       <Header 
-        theme={theme} 
-        onToggleTheme={toggleTheme}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
       

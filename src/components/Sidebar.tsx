@@ -46,9 +46,13 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       {/* Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ x: isOpen ? 0 : -280 }}
+        animate={{ 
+          x: typeof window !== 'undefined' && window.innerWidth >= 1024 
+            ? 0 
+            : isOpen ? 0 : -280 
+        }}
         transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-        className="fixed lg:sticky top-0 left-0 h-screen w-[280px] bg-card border-r border-border z-50 lg:z-30 flex flex-col lg:translate-x-0"
+        className="fixed lg:sticky top-0 left-0 h-screen w-[280px] bg-card border-r border-border z-50 lg:z-30 flex flex-col"
       >
         {/* Close button - Mobile only */}
         <div className="lg:hidden flex justify-end p-4">

@@ -4,15 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { OrganizationSelector } from './OrganizationSelector';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface HeaderProps {
-  theme: string;
-  onToggleTheme: () => void;
   onToggleSidebar?: () => void;
 }
 
-export const Header = ({ theme, onToggleTheme, onToggleSidebar }: HeaderProps) => {
+export const Header = ({ onToggleSidebar }: HeaderProps) => {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -65,7 +65,7 @@ export const Header = ({ theme, onToggleTheme, onToggleSidebar }: HeaderProps) =
         <OrganizationSelector />
         
         <motion.button
-          onClick={onToggleTheme}
+          onClick={toggleTheme}
           className="p-2 bg-primary text-primary-foreground rounded-lg transition-colors"
           whileHover={{ scale: 1.1, rotate: 180 }}
           whileTap={{ scale: 0.9 }}
