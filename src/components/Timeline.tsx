@@ -5,6 +5,7 @@ import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { TagSelector } from './TagSelector';
 
 interface Event {
   id: string;
@@ -32,6 +33,7 @@ interface TimelineLine {
 
 interface TimelineData {
   id: string;
+  organization_id?: string;
   clientInfo: ClientInfo;
   lines: TimelineLine[];
 }
@@ -68,31 +70,31 @@ export const Timeline = ({
     dueDate: new Date().toISOString().split('T')[0]
   };
 
+  const loadTimelineTags = async () => {
+    if (!timeline.id) return;
+    
+    const { data, error } = await supabase
+      .from('client_timeline_tags')
+      .select(`
+        tag_id,
+        tags:tag_id (
+          id,
+          name,
+          color
+        )
+      `)
+      .eq('timeline_id', timeline.id);
+    
+    if (!error && data) {
+      const tags = data
+        .map(item => (item as any).tags)
+        .filter(Boolean);
+      setTimelineTags(tags);
+    }
+  };
+
   // Carregar tags do timeline
   useEffect(() => {
-    const loadTimelineTags = async () => {
-      if (!timeline.id) return;
-      
-      const { data, error } = await supabase
-        .from('client_timeline_tags')
-        .select(`
-          tag_id,
-          tags:tag_id (
-            id,
-            name,
-            color
-          )
-        `)
-        .eq('timeline_id', timeline.id);
-      
-      if (!error && data) {
-        const tags = data
-          .map(item => (item as any).tags)
-          .filter(Boolean);
-        setTimelineTags(tags);
-      }
-    };
-    
     loadTimelineTags();
   }, [timeline.id]);
 
@@ -266,16 +268,25 @@ export const Timeline = ({
             {clientInfo.clientId ? `${clientInfo.clientId} - ${clientInfo.name}` : clientInfo.name}
           </motion.button>
           
-          {/* Tags dinâmicas */}
-          {timelineTags.map(tag => (
-            <Badge 
-              key={tag.id}
-              style={{ backgroundColor: tag.color }}
-              className="text-white hover:opacity-80 px-3 py-1"
-            >
-              {tag.name}
-            </Badge>
-          ))}
+            {/* Tag Selector com Dropdown ou Tags read-only */}
+            {!readOnly ? (
+              <TagSelector
+                timelineId={timeline.id}
+                organizationId={timeline.organization_id || ''}
+                selectedTags={timelineTags}
+                onTagsChange={loadTimelineTags}
+              />
+            ) : (
+              timelineTags.map(tag => (
+                <Badge 
+                  key={tag.id}
+                  style={{ backgroundColor: tag.color }}
+                  className="text-white px-3 py-1"
+                >
+                  {tag.name}
+                </Badge>
+              ))
+            )}
           
           {!readOnly && addNewLine && (
             <>

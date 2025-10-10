@@ -21,6 +21,7 @@ export const TagsManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [tagName, setTagName] = useState('');
   const [tagColor, setTagColor] = useState('#ef4444');
   const { organizationId } = useUserRole();
   const { toast } = useToast();
@@ -53,31 +54,52 @@ export const TagsManagement = () => {
     }
   };
 
-  const validateTag = (name: string): boolean => {
-    if (name.toUpperCase() !== 'COBRANÇA') {
-      toast({
-        title: 'Erro',
-        description: 'Apenas a tag "COBRANÇA" pode ser criada neste sistema.',
-        variant: 'destructive',
-      });
-      return false;
-    }
-    return true;
-  };
-
   const handleSaveTag = async () => {
     if (!organizationId) return;
 
-    const tagName = 'COBRANÇA';
+    const trimmedName = tagName.trim();
 
-    if (!validateTag(tagName)) return;
+    if (!trimmedName) {
+      toast({
+        title: 'Erro',
+        description: 'O nome da tag não pode estar vazio.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (trimmedName.length > 50) {
+      toast({
+        title: 'Erro',
+        description: 'O nome da tag deve ter no máximo 50 caracteres.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       if (editingTag) {
-        // Atualizar cor da tag existente
+        // Verificar se já existe outra tag com o mesmo nome
+        const { data: existingTag } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('name', trimmedName)
+          .eq('organization_id', organizationId)
+          .neq('id', editingTag.id)
+          .maybeSingle();
+
+        if (existingTag) {
+          toast({
+            title: 'Erro',
+            description: 'Já existe uma tag com este nome.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
         const { error } = await supabase
           .from('tags')
-          .update({ color: tagColor })
+          .update({ name: trimmedName, color: tagColor })
           .eq('id', editingTag.id);
 
         if (error) throw error;
@@ -87,26 +109,32 @@ export const TagsManagement = () => {
           description: 'Tag atualizada com sucesso.',
         });
       } else {
-        // Criar nova tag
+        // Verificar se já existe uma tag com o mesmo nome
+        const { data: existingTag } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('name', trimmedName)
+          .eq('organization_id', organizationId)
+          .maybeSingle();
+
+        if (existingTag) {
+          toast({
+            title: 'Erro',
+            description: 'Já existe uma tag com este nome.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
         const { error } = await supabase
           .from('tags')
           .insert({
             organization_id: organizationId,
-            name: tagName,
+            name: trimmedName,
             color: tagColor,
           });
 
-        if (error) {
-          if (error.code === '23505') {
-            toast({
-              title: 'Aviso',
-              description: 'A tag COBRANÇA já existe na sua organização.',
-              variant: 'destructive',
-            });
-            return;
-          }
-          throw error;
-        }
+        if (error) throw error;
 
         toast({
           title: 'Sucesso',
@@ -117,6 +145,7 @@ export const TagsManagement = () => {
       await loadTags();
       setIsDialogOpen(false);
       setEditingTag(null);
+      setTagName('');
       setTagColor('#ef4444');
     } catch (error) {
       console.error('Erro ao salvar tag:', error);
@@ -155,12 +184,14 @@ export const TagsManagement = () => {
 
   const openEditDialog = (tag: Tag) => {
     setEditingTag(tag);
+    setTagName(tag.name);
     setTagColor(tag.color);
     setIsDialogOpen(true);
   };
 
   const openCreateDialog = () => {
     setEditingTag(null);
+    setTagName('');
     setTagColor('#ef4444');
     setIsDialogOpen(true);
   };
@@ -171,82 +202,130 @@ export const TagsManagement = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Gerenciamento de Tags</CardTitle>
-        <CardDescription>
-          Gerencie as tags de cobrança da organização. Apenas a tag "COBRANÇA" pode ser criada.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">Tags Cadastradas</h3>
-          {tags.length === 0 && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Tag
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingTag ? 'Editar Tag' : 'Adicionar Tag'}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Nome da Tag</Label>
-                    <Input value="COBRANÇA" disabled className="bg-muted" />
-                    <p className="text-xs text-muted-foreground">
-                      Apenas a tag "COBRANÇA" pode ser criada neste sistema.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="color">Cor da Tag</Label>
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        id="color"
-                        type="color"
-                        value={tagColor}
-                        onChange={(e) => setTagColor(e.target.value)}
-                        className="w-20 h-10 cursor-pointer"
-                      />
-                      <Input
-                        type="text"
-                        value={tagColor}
-                        onChange={(e) => setTagColor(e.target.value)}
-                        placeholder="#ef4444"
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 p-3 border rounded-md">
-                    <span className="text-sm text-muted-foreground">Prévia:</span>
-                    <span
-                      style={{ backgroundColor: tagColor }}
-                      className="px-3 py-1 rounded-md text-white text-sm font-medium"
-                    >
-                      COBRANÇA
-                    </span>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div>
+          <CardTitle>Gerenciamento de Tags</CardTitle>
+          <CardDescription>
+            Crie e gerencie as tags da organização.
+          </CardDescription>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={openCreateDialog} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Tag
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingTag ? 'Editar Tag' : 'Adicionar Tag'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nome da Tag</Label>
+                <Input 
+                  value={tagName}
+                  onChange={(e) => setTagName(e.target.value)}
+                  placeholder="Digite o nome da tag"
+                  maxLength={50}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Máximo 50 caracteres
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="color">Cor da Tag</Label>
+                <div className="flex gap-2 items-center mb-2">
+                  <Input
+                    id="color"
+                    type="color"
+                    value={tagColor}
+                    onChange={(e) => setTagColor(e.target.value)}
+                    className="w-20 h-10 cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={tagColor}
+                    onChange={(e) => setTagColor(e.target.value)}
+                    placeholder="#ef4444"
+                    className="flex-1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Cores sugeridas:</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                      style={{ backgroundColor: '#ef4444' }}
+                      onClick={() => setTagColor('#ef4444')}
+                      title="Vermelho"
+                    />
+                    <button
+                      type="button"
+                      className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                      style={{ backgroundColor: '#f59e0b' }}
+                      onClick={() => setTagColor('#f59e0b')}
+                      title="Laranja"
+                    />
+                    <button
+                      type="button"
+                      className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                      style={{ backgroundColor: '#10b981' }}
+                      onClick={() => setTagColor('#10b981')}
+                      title="Verde"
+                    />
+                    <button
+                      type="button"
+                      className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                      style={{ backgroundColor: '#3b82f6' }}
+                      onClick={() => setTagColor('#3b82f6')}
+                      title="Azul"
+                    />
+                    <button
+                      type="button"
+                      className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                      style={{ backgroundColor: '#8b5cf6' }}
+                      onClick={() => setTagColor('#8b5cf6')}
+                      title="Roxo"
+                    />
+                    <button
+                      type="button"
+                      className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                      style={{ backgroundColor: '#ec4899' }}
+                      onClick={() => setTagColor('#ec4899')}
+                      title="Rosa"
+                    />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleSaveTag}>
-                    {editingTag ? 'Salvar' : 'Criar'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-
+              </div>
+              <div className="flex items-center gap-2 p-3 border rounded-md">
+                <span className="text-sm text-muted-foreground">Prévia:</span>
+                <span
+                  style={{ backgroundColor: tagColor }}
+                  className="px-3 py-1 rounded-md text-white text-sm font-medium"
+                >
+                  {tagName || 'Nome da tag'}
+                </span>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveTag}>
+                {editingTag ? 'Salvar' : 'Criar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
         {tags.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            Nenhuma tag cadastrada. Clique em "Adicionar Tag" para criar a tag COBRANÇA.
+            Nenhuma tag cadastrada. Clique em "Adicionar Tag" para criar sua primeira tag.
           </div>
         ) : (
           <div className="space-y-2">
@@ -284,14 +363,16 @@ export const TagsManagement = () => {
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
                           <Label>Nome da Tag</Label>
-                          <Input value="COBRANÇA" disabled className="bg-muted" />
-                          <p className="text-xs text-muted-foreground">
-                            O nome da tag não pode ser alterado.
-                          </p>
+                          <Input 
+                            value={tagName}
+                            onChange={(e) => setTagName(e.target.value)}
+                            placeholder="Digite o nome da tag"
+                            maxLength={50}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="edit-color">Cor da Tag</Label>
-                          <div className="flex gap-2 items-center">
+                          <div className="flex gap-2 items-center mb-2">
                             <Input
                               id="edit-color"
                               type="color"
@@ -307,6 +388,47 @@ export const TagsManagement = () => {
                               className="flex-1"
                             />
                           </div>
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">Cores sugeridas:</p>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                                style={{ backgroundColor: '#ef4444' }}
+                                onClick={() => setTagColor('#ef4444')}
+                              />
+                              <button
+                                type="button"
+                                className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                                style={{ backgroundColor: '#f59e0b' }}
+                                onClick={() => setTagColor('#f59e0b')}
+                              />
+                              <button
+                                type="button"
+                                className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                                style={{ backgroundColor: '#10b981' }}
+                                onClick={() => setTagColor('#10b981')}
+                              />
+                              <button
+                                type="button"
+                                className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                                style={{ backgroundColor: '#3b82f6' }}
+                                onClick={() => setTagColor('#3b82f6')}
+                              />
+                              <button
+                                type="button"
+                                className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                                style={{ backgroundColor: '#8b5cf6' }}
+                                onClick={() => setTagColor('#8b5cf6')}
+                              />
+                              <button
+                                type="button"
+                                className="w-8 h-8 rounded-md border-2 border-border hover:scale-110 transition-transform"
+                                style={{ backgroundColor: '#ec4899' }}
+                                onClick={() => setTagColor('#ec4899')}
+                              />
+                            </div>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 p-3 border rounded-md">
                           <span className="text-sm text-muted-foreground">Prévia:</span>
@@ -314,7 +436,7 @@ export const TagsManagement = () => {
                             style={{ backgroundColor: tagColor }}
                             className="px-3 py-1 rounded-md text-white text-sm font-medium"
                           >
-                            COBRANÇA
+                            {tagName || 'Nome da tag'}
                           </span>
                         </div>
                       </div>
