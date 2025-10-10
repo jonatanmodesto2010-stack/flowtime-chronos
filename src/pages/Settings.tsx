@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserManagement } from '@/components/settings/UserManagement';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { UserProfile } from '@/components/settings/UserProfile';
+import { TagsManagement } from '@/components/settings/TagsManagement';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -62,7 +63,10 @@ const Settings = () => {
               <TabsTrigger value="users">Usuários</TabsTrigger>
             )}
             {canManageSettings && (
-              <TabsTrigger value="general">Geral</TabsTrigger>
+              <>
+                <TabsTrigger value="general">Geral</TabsTrigger>
+                <TabsTrigger value="tags">Tags</TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -77,9 +81,14 @@ const Settings = () => {
           )}
 
           {canManageSettings && (
-            <TabsContent value="general">
-              <GeneralSettings />
-            </TabsContent>
+            <>
+              <TabsContent value="general">
+                <GeneralSettings />
+              </TabsContent>
+              <TabsContent value="tags">
+                <TagsManagement />
+              </TabsContent>
+            </>
           )}
         </Tabs>
         </main>

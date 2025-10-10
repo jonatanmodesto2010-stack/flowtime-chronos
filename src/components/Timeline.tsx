@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Trash2 } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Event {
   id: string;
@@ -57,6 +58,7 @@ export const Timeline = ({
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
   
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
@@ -65,6 +67,34 @@ export const Timeline = ({
     boletoValue: '',
     dueDate: new Date().toISOString().split('T')[0]
   };
+
+  // Carregar tags do timeline
+  useEffect(() => {
+    const loadTimelineTags = async () => {
+      if (!timeline.id) return;
+      
+      const { data, error } = await supabase
+        .from('client_timeline_tags')
+        .select(`
+          tag_id,
+          tags:tag_id (
+            id,
+            name,
+            color
+          )
+        `)
+        .eq('timeline_id', timeline.id);
+      
+      if (!error && data) {
+        const tags = data
+          .map(item => (item as any).tags)
+          .filter(Boolean);
+        setTimelineTags(tags);
+      }
+    };
+    
+    loadTimelineTags();
+  }, [timeline.id]);
 
   // Verifica se há algum evento com status 'no_response' (ícone 🚫)
   const hasNoResponseEvent = lines.some(line => 
@@ -236,10 +266,16 @@ export const Timeline = ({
             {clientInfo.clientId ? `${clientInfo.clientId} - ${clientInfo.name}` : clientInfo.name}
           </motion.button>
           
-          {/* Tag COBRANÇA */}
-          <Badge className="bg-red-500 text-white hover:bg-red-600 px-3 py-1">
-            COBRANÇA
-          </Badge>
+          {/* Tags dinâmicas */}
+          {timelineTags.map(tag => (
+            <Badge 
+              key={tag.id}
+              style={{ backgroundColor: tag.color }}
+              className="text-white hover:opacity-80 px-3 py-1"
+            >
+              {tag.name}
+            </Badge>
+          ))}
           
           {!readOnly && addNewLine && (
             <>
@@ -253,19 +289,6 @@ export const Timeline = ({
               >
                 ✏️ Linha
               </motion.button>
-              
-              {/* Botão + Evento */}
-              {lines.length > 0 && (
-                <motion.button
-                  onClick={() => handleAddEvent(lines[0].id)}
-                  className="px-3 py-1.5 text-xs font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-all flex items-center gap-1"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Adicionar evento na primeira linha"
-                >
-                  ➕ Evento
-                </motion.button>
-              )}
               
               {/* Badge Valor */}
               <Badge 
