@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Trash2 } from 'lucide-react';
+import { User, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +61,7 @@ export const Timeline = ({
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
+  const [timelineHeight, setTimelineHeight] = useState(200);
   
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
@@ -347,11 +348,41 @@ export const Timeline = ({
               )}
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
-                <div className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 min-h-[200px] px-4">
+                <div 
+                  className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 px-4 transition-all duration-300"
+                  style={{ minHeight: `${timelineHeight}px` }}
+                >
                   {/* Contador de eventos - Verde */}
                   <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
                     {(line.events || []).length} / 28
                   </div>
+                  
+                  {/* Controle de altura - canto inferior esquerdo */}
+                  {!readOnly && (
+                    <div className="absolute bottom-4 left-4 z-40 flex flex-col gap-1">
+                      <button
+                        onClick={() => setTimelineHeight(prev => Math.min(prev + 50, 600))}
+                        disabled={timelineHeight >= 600}
+                        className="w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg transition-all"
+                        title="Aumentar altura"
+                      >
+                        <ChevronDown size={20} />
+                      </button>
+                      
+                      <button
+                        onClick={() => setTimelineHeight(prev => Math.max(prev - 50, 200))}
+                        disabled={timelineHeight <= 200}
+                        className="w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg transition-all"
+                        title="Diminuir altura"
+                      >
+                        <ChevronUp size={20} />
+                      </button>
+                      
+                      <div className="text-xs text-center text-muted-foreground mt-1">
+                        {timelineHeight}px
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Linha central de ponta a ponta */}
             <button
