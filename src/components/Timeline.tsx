@@ -357,11 +357,11 @@ export const Timeline = ({
                     {(line.events || []).length} / 28
                   </div>
                   
-                  {/* Botão toggle único - canto inferior esquerdo */}
+                  {/* Botão toggle único - centralizado no canto inferior */}
                   {!readOnly && (
                     <button
                       onClick={() => setIsExpanded(!isExpanded)}
-                      className="absolute bottom-4 left-4 z-40 w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent flex items-center justify-center shadow-lg transition-all"
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent flex items-center justify-center shadow-lg transition-all"
                       title={isExpanded ? "Diminuir altura" : "Aumentar altura"}
                     >
                       {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
