@@ -42,7 +42,6 @@ interface TimelineData {
   organization_id?: string;
   clientInfo: ClientInfo;
   lines: TimelineLine[];
-  tags?: Array<{ id: string; name: string; color: string }>;
 }
 
 const Index = () => {
@@ -54,8 +53,6 @@ const Index = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [availableTags, setAvailableTags] = useState<Array<{ id: string; name: string; color: string }>>([]);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { organizationId } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -101,28 +98,8 @@ const Index = () => {
   useEffect(() => {
     if (organizationId) {
       loadTimelines();
-      loadTags();
     }
   }, [organizationId]);
-
-  const loadTags = async () => {
-    if (!organizationId) return;
-    
-    try {
-      const { data, error } = await supabaseClient
-        .from('tags')
-        .select('id, name, color')
-        .eq('organization_id', organizationId)
-        .order('name');
-      
-      if (error) throw error;
-      if (data) {
-        setAvailableTags(data);
-      }
-    } catch (error: any) {
-      console.error('Erro ao carregar tags:', error);
-    }
-  };
 
   const loadTimelines = async () => {
     if (!organizationId) return;
@@ -131,17 +108,7 @@ const Index = () => {
       setLoading(true);
       const { data: clientTimelines, error } = await supabaseClient
         .from('client_timelines')
-        .select(`
-          *,
-          client_timeline_tags (
-            tag_id,
-            tags (
-              id,
-              name,
-              color
-            )
-          )
-        `)
+        .select('*')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
@@ -183,10 +150,6 @@ const Index = () => {
               })
             );
 
-            const tags = (ct.client_timeline_tags || [])
-              .map((ctt: any) => ctt.tags)
-              .filter((tag: any) => tag !== null);
-
             return {
               id: ct.id,
               organization_id: ct.organization_id,
@@ -198,7 +161,6 @@ const Index = () => {
                 dueDate: ct.due_date || ct.start_date,
               },
               lines: linesWithEvents,
-              tags,
             };
           })
         );
@@ -534,7 +496,7 @@ const Index = () => {
             transition={{ duration: 0.5 }}
           >
             <Tabs defaultValue="geral" className="w-full">
-              <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-sm border-b border-border py-4 -mx-6 px-6 mb-6 flex items-center justify-between">
+              <div className="flex items-center justify-between mb-6">
                 <TabsList>
                   <TabsTrigger value="geral">Geral</TabsTrigger>
                   <TabsTrigger value="filtros">Filtros</TabsTrigger>
@@ -568,12 +530,9 @@ const Index = () => {
 
               <TabsContent value="geral" className="space-y-6">
                 {timelines
-                  .filter((timeline) => {
-                    const matchesSearch = timeline.clientInfo.name.toLowerCase().includes(searchQuery.toLowerCase());
-                    const matchesTags = selectedTagIds.length === 0 || 
-                      timeline.tags?.some(tag => selectedTagIds.includes(tag.id));
-                    return matchesSearch && matchesTags;
-                  })
+                  .filter((timeline) =>
+                    timeline.clientInfo.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
                   .sort((a, b) => {
                     const aHasToday = hasEventsToday(a);
                     const bHasToday = hasEventsToday(b);
@@ -644,43 +603,9 @@ const Index = () => {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Tags</label>
-                      <div className="flex flex-wrap gap-2">
-                        {availableTags.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">Nenhuma tag disponível</p>
-                        ) : (
-                          availableTags.map(tag => (
-                            <button
-                              key={tag.id}
-                              onClick={() => {
-                                setSelectedTagIds(prev => 
-                                  prev.includes(tag.id) 
-                                    ? prev.filter(id => id !== tag.id)
-                                    : [...prev, tag.id]
-                                );
-                              }}
-                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                                selectedTagIds.includes(tag.id)
-                                  ? 'ring-2 ring-offset-2 ring-offset-background'
-                                  : 'opacity-60 hover:opacity-100'
-                              }`}
-                              style={{ 
-                                backgroundColor: tag.color,
-                                color: 'white',
-                                ...(selectedTagIds.includes(tag.id) && { ringColor: tag.color })
-                              }}
-                            >
-                              {tag.name}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
                     <div className="pt-4">
                       <p className="text-sm text-muted-foreground">
-                        Filtros ativos: <span className="font-medium">{statusFilter !== 'all' || dateFilter !== 'all' || selectedTagIds.length > 0 ? 'Sim' : 'Nenhum'}</span>
+                        Filtros ativos: <span className="font-medium">{statusFilter !== 'all' || dateFilter !== 'all' ? 'Sim' : 'Nenhum'}</span>
                       </p>
                     </div>
                   </div>
