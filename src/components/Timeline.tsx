@@ -320,9 +320,14 @@ export const Timeline = ({
                   </div>
                   
                   {/* Linha central de ponta a ponta */}
-                  <div 
-                    className="absolute top-1/2 h-0.5 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4"
-                  />
+            <button
+              onClick={() => handleAddEvent(line.id)}
+              disabled={readOnly}
+              className={`absolute top-1/2 h-0.5 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4 ${
+                !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1 transition-all' : 'cursor-default'
+              }`}
+              title={!readOnly ? "Clique para adicionar evento" : ""}
+            />
                   
                   {(line.events || []).map((event, index) => (
                     <motion.div
