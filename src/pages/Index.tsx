@@ -39,6 +39,7 @@ interface TimelineLine {
 
 interface TimelineData {
   id: string;
+  organization_id?: string;
   clientInfo: ClientInfo;
   lines: TimelineLine[];
 }
@@ -151,6 +152,7 @@ const Index = () => {
 
             return {
               id: ct.id,
+              organization_id: ct.organization_id,
               clientInfo: {
                 clientId: ct.client_id || undefined,
                 name: ct.client_name,
