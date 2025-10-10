@@ -22,6 +22,7 @@ const iconOptions = [
   { value: '📞', label: '📞 Ligação' },
   { value: '✅', label: '✅ Pago' },
   { value: '🤝', label: '🤝 Acordo' },
+  { value: '👨‍🔧', label: '👨‍🔧 Técnico' },
 ];
 
 interface Event {

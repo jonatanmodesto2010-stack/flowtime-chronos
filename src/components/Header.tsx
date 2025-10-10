@@ -1,10 +1,19 @@
-import { Sun, Moon, Menu, LogOut } from 'lucide-react';
+import { Sun, Moon, Menu, LogOut, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { OrganizationSelector } from './OrganizationSelector';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useState, useEffect } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -14,6 +23,26 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    loadUserName();
+  }, []);
+
+  const loadUserName = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile?.full_name) {
+        setUserName(profile.full_name);
+      }
+    }
+  };
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -75,16 +104,37 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
         </motion.button>
         
-        <motion.button
-          onClick={handleLogout}
-          className="p-2 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          aria-label="Logout"
-          title="Sair"
-        >
-          <LogOut size={20} />
-        </motion.button>
+        {/* Dropdown de Perfil */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <motion.button
+              className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Perfil"
+            >
+              <User size={20} />
+              {userName && <span className="text-sm font-medium hidden md:inline">{userName}</span>}
+            </motion.button>
+          </DropdownMenuTrigger>
+          
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+              <User className="mr-2 h-4 w-4" />
+              <span>Perfil</span>
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </motion.header>
   );

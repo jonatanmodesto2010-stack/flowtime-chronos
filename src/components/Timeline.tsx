@@ -61,7 +61,7 @@ export const Timeline = ({
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
-  const [timelineHeight, setTimelineHeight] = useState(200);
+  const [isExpanded, setIsExpanded] = useState(false);
   
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
@@ -350,38 +350,22 @@ export const Timeline = ({
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
                 <div 
                   className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 px-4 transition-all duration-300"
-                  style={{ minHeight: `${timelineHeight}px` }}
+                  style={{ minHeight: `${isExpanded ? 550 : 200}px` }}
                 >
                   {/* Contador de eventos - Verde */}
                   <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
                     {(line.events || []).length} / 28
                   </div>
                   
-                  {/* Controle de altura - canto inferior esquerdo */}
+                  {/* Botão toggle único - canto inferior esquerdo */}
                   {!readOnly && (
-                    <div className="absolute bottom-4 left-4 z-40 flex flex-col gap-1">
-                      <button
-                        onClick={() => setTimelineHeight(prev => Math.min(prev + 50, 600))}
-                        disabled={timelineHeight >= 600}
-                        className="w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg transition-all"
-                        title="Aumentar altura"
-                      >
-                        <ChevronDown size={20} />
-                      </button>
-                      
-                      <button
-                        onClick={() => setTimelineHeight(prev => Math.max(prev - 50, 200))}
-                        disabled={timelineHeight <= 200}
-                        className="w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg transition-all"
-                        title="Diminuir altura"
-                      >
-                        <ChevronUp size={20} />
-                      </button>
-                      
-                      <div className="text-xs text-center text-muted-foreground mt-1">
-                        {timelineHeight}px
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="absolute bottom-4 left-4 z-40 w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent flex items-center justify-center shadow-lg transition-all"
+                      title={isExpanded ? "Diminuir altura" : "Aumentar altura"}
+                    >
+                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </button>
                   )}
                   
                   {/* Linha central de ponta a ponta */}
