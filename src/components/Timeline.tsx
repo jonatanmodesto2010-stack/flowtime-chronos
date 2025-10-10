@@ -349,7 +349,9 @@ export const Timeline = ({
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
                 <div 
-                  className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 px-4 transition-all duration-300"
+                  className={`timeline-container relative flex items-center w-full mx-auto py-24 px-4 transition-all duration-300 ${
+                    (line.events || []).length === 1 ? 'justify-center' : 'justify-between'
+                  }`}
                   style={{ minHeight: `${isExpanded ? 550 : 200}px` }}
                 >
                   {/* Contador de eventos - Verde */}
@@ -381,7 +383,7 @@ export const Timeline = ({
                   {(line.events || []).map((event, index) => (
                     <motion.div
                       key={event.id}
-                      className="relative z-10 text-center flex-shrink-0 min-w-[80px] -ml-[39px] first:ml-0"
+                      className="relative z-10 text-center flex-shrink-0 min-w-[80px]"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
