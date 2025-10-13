@@ -529,8 +529,14 @@ export const Timeline = ({
                               marginLeft: '20px',
                             }}
                           >
-                            <p className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded">
-                              {event.description}
+                            <p 
+                              className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
+                              title={event.description}
+                            >
+                              {event.description.length > 30 
+                                ? `${event.description.substring(0, 30)}...` 
+                                : event.description
+                              }
                             </p>
                           </motion.div>
                         )}
