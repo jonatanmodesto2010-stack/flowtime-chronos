@@ -505,7 +505,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                                   animate={{ 
                                     opacity: 1, 
                                     scale: 1,
-                                    rotate: event.position === 'bottom' ? -25 : 25
+                                    rotate: event.position === 'bottom' ? 25 : -25
                                   }}
                                   exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
                                   transition={{ duration: 0.3 }}
