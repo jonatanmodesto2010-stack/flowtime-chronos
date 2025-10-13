@@ -387,48 +387,40 @@ export const Timeline = ({
                     </button>
                   )}
                   
-                  {/* Segmentos da linha coloridos dinamicamente */}
-                  {(line.events || []).length === 0 ? (
-                    // Linha vazia quando não há eventos
-                    <button
-                      onClick={() => handleAddEvent(line.id)}
-                      disabled={readOnly}
-                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4 ${
-                        !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5 transition-all' : 'cursor-default'
-                      }`}
-                      title={!readOnly ? "Clique para adicionar evento" : ""}
-                    />
-                  ) : (
-                    // Segmentos entre eventos
-                    (line.events || []).map((event, index) => {
-                      if (index === (line.events || []).length - 1) return null; // Não renderiza depois do último
-                      
-                      const nextEvent = (line.events || [])[index + 1];
-                      const segmentColor = getLineSegmentColor(event, nextEvent);
-                      const isSameDate = event.date === nextEvent?.date;
-                      
-                      // Cálculo preciso baseado no centro dos ícones
-                      const totalEvents = (line.events || []).length;
-                      const currentIconCenter = (index / (totalEvents - 1)) * 100;
-                      const nextIconCenter = ((index + 1) / (totalEvents - 1)) * 100;
-                      
-                      return (
-                        <button
-                          key={`segment-${event.id}-${nextEvent?.id}`}
-                          onClick={() => handleAddEvent(line.id)}
-                          disabled={readOnly}
-                          className={`absolute top-1/2 h-1 ${segmentColor} -translate-y-1/2 z-0 transition-all ${
-                            !readOnly ? 'cursor-pointer hover:h-1.5' : 'cursor-default'
-                          } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
-                          style={{
-                            left: `${currentIconCenter}%`,
-                            right: `${100 - nextIconCenter}%`
-                          }}
-                          title={!readOnly ? "Clique para adicionar evento" : ""}
-                        />
-                      );
-                    })
-                  )}
+                  {/* Linha base - sempre visível */}
+                  <div 
+                    className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4"
+                  />
+
+                  {/* Segmentos coloridos sobrepostos (apenas quando há 2+ eventos) */}
+                  {(line.events || []).length >= 2 && (line.events || []).map((event, index) => {
+                    if (index === (line.events || []).length - 1) return null;
+                    
+                    const nextEvent = (line.events || [])[index + 1];
+                    const segmentColor = getLineSegmentColor(event, nextEvent);
+                    const isSameDate = event.date === nextEvent?.date;
+                    
+                    // Cálculo preciso baseado no centro dos ícones
+                    const totalEvents = (line.events || []).length;
+                    const currentIconCenter = (index / (totalEvents - 1)) * 100;
+                    const nextIconCenter = ((index + 1) / (totalEvents - 1)) * 100;
+                    
+                    return (
+                      <button
+                        key={`segment-${event.id}-${nextEvent?.id}`}
+                        onClick={() => handleAddEvent(line.id)}
+                        disabled={readOnly}
+                        className={`absolute top-1/2 h-1 ${segmentColor} -translate-y-1/2 z-10 transition-all ${
+                          !readOnly ? 'cursor-pointer hover:h-1.5' : 'cursor-default'
+                        } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
+                        style={{
+                          left: `${currentIconCenter}%`,
+                          right: `${100 - nextIconCenter}%`
+                        }}
+                        title={!readOnly ? "Clique para adicionar evento" : ""}
+                      />
+                    );
+                  })}
                   
                   {(line.events || []).map((event, index) => (
                     <motion.div
