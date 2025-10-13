@@ -38,6 +38,11 @@ export const clientInfoSchema = z.object({
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Data inválida' }),
+  createInitialLine: z.boolean().optional(),
+  initialEventIcon: z.string().optional(),
+  initialEventDate: z.string().optional(),
+  initialEventDescription: z.string().max(150).optional(),
+  initialEventTime: z.string().optional(),
 });
 
 export const eventSchema = z.object({

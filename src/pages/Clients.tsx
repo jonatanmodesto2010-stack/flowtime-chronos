@@ -160,28 +160,34 @@ const Clients = () => {
     setErrors({});
   };
 
-  const handleSave = async () => {
+  const handleSave = async (clientData?: any) => {
     try {
       setErrors({});
-      clientInfoSchema.parse({
+      
+      const dataToValidate = clientData || {
         name: formData.client_name,
         startDate: formData.start_date,
         boletoValue: formData.boleto_value,
         dueDate: formData.due_date,
-      });
+      };
+      
+      clientInfoSchema.parse(dataToValidate);
 
       if (!user || !organizationId) return;
 
-      const boletoValue = formData.boleto_value === '' ? 0 : parseFloat(formData.boleto_value);
+      const boletoValue = (clientData?.boletoValue || formData.boleto_value) === '' ? 0 : parseFloat(clientData?.boletoValue || formData.boleto_value);
+      const clientName = clientData?.name || formData.client_name;
+      const startDate = clientData?.startDate || formData.start_date;
+      const dueDate = clientData?.dueDate || formData.due_date;
 
       if (editingClient) {
         const { error } = await supabaseClient
           .from('client_timelines')
           .update({
-            client_name: formData.client_name,
-            start_date: formData.start_date,
+            client_name: clientName,
+            start_date: startDate,
             boleto_value: boletoValue,
-            due_date: formData.due_date,
+            due_date: dueDate,
           })
           .eq('id', editingClient.id);
 
@@ -197,17 +203,17 @@ const Clients = () => {
           .insert({
             user_id: user.id,
             organization_id: organizationId,
-            client_name: formData.client_name,
-            start_date: formData.start_date,
+            client_name: clientName,
+            start_date: startDate,
             boleto_value: boletoValue,
-            due_date: formData.due_date,
+            due_date: dueDate,
           })
           .select()
           .single();
 
         if (timelineError) throw timelineError;
 
-        const { error: lineError } = await supabaseClient
+        const { data: newLine, error: lineError } = await supabaseClient
           .from('timeline_lines')
           .insert({
             timeline_id: timeline.id,
@@ -218,9 +224,30 @@ const Clients = () => {
 
         if (lineError) throw lineError;
 
+        // Se checkbox marcado, criar evento inicial
+        if (clientData?.createInitialLine) {
+          const { error: eventError } = await supabaseClient
+            .from('timeline_events')
+            .insert({
+              line_id: newLine.id,
+              icon: clientData.initialEventIcon || '💬',
+              event_date: clientData.initialEventDate || '--/--',
+              event_time: clientData.initialEventTime || null,
+              description: clientData.initialEventDescription || '',
+              position: 'top',
+              status: 'created',
+              icon_size: 'text-2xl',
+              event_order: 0,
+            });
+
+          if (eventError) throw eventError;
+        }
+
         toast({
           title: 'Cliente cadastrado',
-          description: 'Cliente criado com sucesso.',
+          description: clientData?.createInitialLine 
+            ? 'Cliente criado com linha e evento inicial!' 
+            : 'Cliente criado com sucesso.',
         });
       }
 
@@ -477,13 +504,7 @@ const Clients = () => {
             dueDate: formData.due_date,
           }}
           onSave={(info) => {
-            setFormData({
-              client_name: info.name,
-              start_date: info.startDate,
-              boleto_value: info.boletoValue,
-              due_date: info.dueDate,
-            });
-            handleSave();
+            handleSave(info);
           }}
           onCancel={handleCloseModal}
         />
