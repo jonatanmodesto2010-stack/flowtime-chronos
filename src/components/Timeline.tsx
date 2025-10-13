@@ -417,7 +417,7 @@ export const Timeline = ({
                           } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
                           style={{
                             left: `calc(${(index / ((line.events || []).length - 1)) * 100}% + 12px)`,
-                            right: `calc(${100 - ((index + 1) / ((line.events || []).length - 1)) * 100}% + 12px)`
+                            right: `calc(${100 - ((index + 1) / ((line.events || []).length - 1)) * 100}% - 12px)`
                           }}
                           title={!readOnly ? "Clique para adicionar evento" : ""}
                         />
