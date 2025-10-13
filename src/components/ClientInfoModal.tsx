@@ -24,10 +24,11 @@ interface ClientInfoModalProps {
   onSave: (info: ClientInfo) => void;
   onCancel: () => void;
   onOpenEventModal?: () => void;
+  onCreateLine?: () => void;
   pendingEventData?: any;
 }
 
-export const ClientInfoModal = ({ clientInfo, onSave, onCancel, onOpenEventModal, pendingEventData }: ClientInfoModalProps) => {
+export const ClientInfoModal = ({ clientInfo, onSave, onCancel, onOpenEventModal, onCreateLine, pendingEventData }: ClientInfoModalProps) => {
   const [formData, setFormData] = useState<ClientInfo>(clientInfo);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [startDateOpen, setStartDateOpen] = useState(false);
@@ -261,20 +262,15 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel, onOpenEventModal
             
             <div className="grid grid-cols-2 gap-3">
               {/* Botão: Criar Linha */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  toast({ 
-                    title: 'Linha criada', 
-                    description: 'Uma linha vazia será adicionada ao salvar.' 
-                  });
-                }}
-                className="flex items-center gap-2 h-12"
-              >
-                <span className="text-lg">➕</span>
-                <span className="text-sm">Criar Linha</span>
-              </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onCreateLine?.()}
+              className="flex items-center gap-2 h-12"
+            >
+              <span className="text-lg">➕</span>
+              <span className="text-sm">Criar Linha</span>
+            </Button>
               
               {/* Botão: Criar Evento */}
               <Button

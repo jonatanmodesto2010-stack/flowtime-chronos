@@ -6,6 +6,7 @@ import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientTimeline } from '@/components/ClientTimeline';
 import { ClientInfoModal } from '@/components/ClientInfoModal';
+import { EventModal } from '@/components/EventModal';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,7 @@ const Clients = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showEventModal, setShowEventModal] = useState(false);
   const [pendingEventData, setPendingEventData] = useState<any>(null);
+  const [createEmptyLine, setCreateEmptyLine] = useState(false);
   const [formData, setFormData] = useState({
     client_name: '',
     start_date: new Date().toISOString().split('T')[0],
@@ -161,6 +163,7 @@ const Clients = () => {
     setEditingClient(null);
     setErrors({});
     setPendingEventData(null);
+    setCreateEmptyLine(false);
   };
 
   const handleOpenEventModal = () => {
@@ -185,6 +188,14 @@ const Clients = () => {
     toast({
       title: 'Evento preparado',
       description: 'Evento será criado ao salvar o cliente.',
+    });
+  };
+
+  const handleCreateLine = () => {
+    setCreateEmptyLine(true);
+    toast({ 
+      title: 'Linha marcada', 
+      description: 'Uma linha vazia será criada ao salvar.' 
     });
   };
 
@@ -241,44 +252,38 @@ const Clients = () => {
 
         if (timelineError) throw timelineError;
 
-        const { data: newLine, error: lineError } = await supabaseClient
-          .from('timeline_lines')
-          .insert({
-            timeline_id: timeline.id,
-            position: 0,
-          })
-          .select()
-          .single();
-
-        if (lineError) throw lineError;
-
-        // Se houver evento pendente, criar o evento
-        if (pendingEventData) {
-          const { error: eventError } = await supabaseClient
-            .from('timeline_events')
+        if (createEmptyLine || pendingEventData) {
+          const { data: newLine, error: lineError } = await supabaseClient
+            .from('timeline_lines')
             .insert({
-              line_id: newLine.id,
-              icon: pendingEventData.icon,
-              event_date: pendingEventData.date,
-              event_time: pendingEventData.time || null,
-              description: pendingEventData.description,
-              position: pendingEventData.position,
-              status: 'created',
-              icon_size: 'text-2xl',
-              event_order: 0,
-            });
+              timeline_id: timeline.id,
+              position: 0,
+            })
+            .select()
+            .single();
 
-          if (eventError) throw eventError;
-          
-          toast({
-            title: 'Sucesso!',
-            description: 'Cliente criado com evento inicial!',
-          });
-        } else {
-          toast({
-            title: 'Sucesso!',
-            description: 'Cliente criado com sucesso!',
-          });
+          if (lineError) throw lineError;
+
+          if (pendingEventData) {
+            const { error: eventError } = await supabaseClient
+              .from('timeline_events')
+              .insert({
+                line_id: newLine.id,
+                icon: pendingEventData.icon,
+                event_date: pendingEventData.date,
+                event_time: pendingEventData.time || null,
+                description: pendingEventData.description,
+                position: pendingEventData.position,
+                status: 'created',
+                icon_size: 'text-2xl',
+                event_order: 0,
+              });
+
+            if (eventError) throw eventError;
+          }
+
+          setPendingEventData(null);
+          setCreateEmptyLine(false);
         }
 
         toast({
@@ -534,20 +539,21 @@ const Clients = () => {
 
       {/* Modal */}
       {showModal && (
-        <ClientInfoModal
-          clientInfo={{
-            name: formData.client_name,
-            startDate: formData.start_date,
-            boletoValue: formData.boleto_value,
-            dueDate: formData.due_date,
-          }}
-          onSave={(info) => {
-            handleSave(info);
-          }}
-          onCancel={handleCloseModal}
-          onOpenEventModal={handleOpenEventModal}
-          pendingEventData={pendingEventData}
-        />
+            <ClientInfoModal
+              clientInfo={{
+                name: formData.client_name,
+                startDate: formData.start_date,
+                boletoValue: formData.boleto_value,
+                dueDate: formData.due_date,
+              }}
+              onSave={(info) => {
+                handleSave(info);
+              }}
+              onCancel={handleCloseModal}
+              onOpenEventModal={handleOpenEventModal}
+              onCreateLine={handleCreateLine}
+              pendingEventData={pendingEventData}
+            />
       )}
 
       {/* EventModal */}
