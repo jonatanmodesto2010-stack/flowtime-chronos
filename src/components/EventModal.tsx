@@ -22,6 +22,7 @@ const iconOptions = [
   { value: '📞', label: '📞 Ligação' },
   { value: '✅', label: '✅ Pago' },
   { value: '🤝', label: '🤝 Acordo' },
+  { value: '⚠️', label: '⚠️ Importante' },
   { value: '👨‍🔧', label: '👨‍🔧 Técnico' },
 ];
 
@@ -171,10 +172,16 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Descrição</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block">
+              Descrição
+              <span className="float-right text-xs">
+                {formData.description.length}/150
+              </span>
+            </label>
             <textarea 
               value={formData.description} 
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
+              maxLength={150}
               className="w-full p-3 bg-background rounded-md border border-border h-20 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Descreva o evento..."
               autoFocus={event.isNew}

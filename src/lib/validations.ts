@@ -26,7 +26,7 @@ export const clientInfoSchema = z.object({
     .string()
     .trim()
     .min(1, { message: 'Nome do cliente é obrigatório' })
-    .max(200, { message: 'Nome muito longo' }),
+    .max(150, { message: 'Nome muito longo (máximo 150 caracteres)' }),
   startDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Data inválida' }),
@@ -58,7 +58,7 @@ export const eventSchema = z.object({
   description: z
     .string()
     .trim()
-    .max(1000, { message: 'Descrição muito longa' }),
+    .max(150, { message: 'Descrição muito longa (máximo 150 caracteres)' }),
   position: z.enum(['top', 'bottom']),
   status: z.enum(['created', 'resolved', 'no_response']),
 });
@@ -68,7 +68,7 @@ export const organizationSchema = z.object({
     .string()
     .trim()
     .min(1, { message: 'Nome da organização é obrigatório' })
-    .max(100, { message: 'Nome muito longo (máximo 100 caracteres)' }),
+    .max(150, { message: 'Nome muito longo (máximo 150 caracteres)' }),
 });
 
 export const profileSchema = z.object({
@@ -76,7 +76,7 @@ export const profileSchema = z.object({
     .string()
     .trim()
     .min(1, { message: 'Nome completo é obrigatório' })
-    .max(100, { message: 'Nome muito longo' }),
+    .max(150, { message: 'Nome muito longo (máximo 150 caracteres)' }),
   phone: z
     .string()
     .trim()

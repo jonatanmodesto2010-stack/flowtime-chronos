@@ -148,6 +148,7 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
+              maxLength={150}
               className={`w-full px-4 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.name ? 'border-destructive' : 'border-border'
               }`}

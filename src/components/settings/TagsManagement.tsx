@@ -68,10 +68,10 @@ export const TagsManagement = () => {
       return;
     }
 
-    if (trimmedName.length > 50) {
+    if (trimmedName.length > 150) {
       toast({
         title: 'Erro',
-        description: 'O nome da tag deve ter no máximo 50 caracteres.',
+        description: 'O nome da tag deve ter no máximo 150 caracteres.',
         variant: 'destructive',
       });
       return;
@@ -229,10 +229,10 @@ export const TagsManagement = () => {
                   value={tagName}
                   onChange={(e) => setTagName(e.target.value)}
                   placeholder="Digite o nome da tag"
-                  maxLength={50}
+                  maxLength={150}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Máximo 50 caracteres
+                  Máximo 150 caracteres
                 </p>
               </div>
               <div className="space-y-2">
@@ -367,7 +367,7 @@ export const TagsManagement = () => {
                             value={tagName}
                             onChange={(e) => setTagName(e.target.value)}
                             placeholder="Digite o nome da tag"
-                            maxLength={50}
+                            maxLength={150}
                           />
                         </div>
                         <div className="space-y-2">
