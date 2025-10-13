@@ -368,7 +368,7 @@ export const Timeline = ({
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
                 <div 
-                  className="timeline-container relative flex items-center w-full mx-auto py-24 px-4 transition-all duration-300"
+                  className="timeline-container relative flex items-center w-full mx-auto py-24 px-12 transition-all duration-300"
                   style={{ minHeight: `${isExpanded ? 550 : 200}px` }}
                 >
                   {/* Contador de eventos - Verde */}
@@ -392,14 +392,14 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4 transition-all ${
+                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-12 right-12 transition-all ${
                         !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5' : 'cursor-default'
                       }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
                     <div 
-                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4"
+                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-12 right-12"
                     />
                   )}
 
