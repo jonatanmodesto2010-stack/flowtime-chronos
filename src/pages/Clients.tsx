@@ -177,6 +177,9 @@ const Clients = () => {
       status: 'created' as const,
       isNew: true,
     };
+    
+    // Marcar que uma linha vazia será criada junto com o evento
+    setCreateEmptyLine(true);
     setPendingEventData(tempEvent);
     setShowEventModal(true);
   };
@@ -264,7 +267,7 @@ const Clients = () => {
 
           if (lineError) throw lineError;
 
-          if (pendingEventData) {
+          if (pendingEventData && pendingEventData.isNew) {
             const { error: eventError } = await supabaseClient
               .from('timeline_events')
               .insert({
@@ -280,18 +283,26 @@ const Clients = () => {
               });
 
             if (eventError) throw eventError;
+            
+            toast({
+              title: 'Cliente e evento criados',
+              description: 'Timeline criada com evento inicial.',
+            });
+          } else if (createEmptyLine) {
+            toast({
+              title: 'Cliente e linha criados',
+              description: 'Timeline criada com linha vazia.',
+            });
           }
 
           setPendingEventData(null);
           setCreateEmptyLine(false);
+        } else {
+          toast({
+            title: 'Cliente cadastrado',
+            description: 'Cliente criado com sucesso.',
+          });
         }
-
-        toast({
-          title: 'Cliente cadastrado',
-          description: pendingEventData 
-            ? 'Cliente criado com linha e evento inicial!' 
-            : 'Cliente criado com sucesso.',
-        });
       }
 
       loadClients();
