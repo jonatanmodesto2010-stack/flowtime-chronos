@@ -6,7 +6,6 @@ import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientTimeline } from '@/components/ClientTimeline';
 import { ClientInfoModal } from '@/components/ClientInfoModal';
-import { EventModal } from '@/components/EventModal';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -36,9 +35,6 @@ const Clients = () => {
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [managingClientName, setManagingClientName] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showEventModal, setShowEventModal] = useState(false);
-  const [pendingEventData, setPendingEventData] = useState<any>(null);
-  const [createEmptyLine, setCreateEmptyLine] = useState(false);
   const [formData, setFormData] = useState({
     client_name: '',
     start_date: new Date().toISOString().split('T')[0],
@@ -162,74 +158,30 @@ const Clients = () => {
     setShowModal(false);
     setEditingClient(null);
     setErrors({});
-    setPendingEventData(null);
-    setCreateEmptyLine(false);
   };
 
-  const handleOpenEventModal = () => {
-    const tempEvent = {
-      id: crypto.randomUUID(),
-      icon: '💬',
-      iconSize: 'text-2xl',
-      date: '--/--',
-      description: '',
-      position: 'top' as const,
-      status: 'created' as const,
-      isNew: true,
-    };
-    
-    // Marcar que uma linha vazia será criada junto com o evento
-    setCreateEmptyLine(true);
-    setPendingEventData(tempEvent);
-    setShowEventModal(true);
-  };
-
-  const handleSaveEventFromModal = (event: any) => {
-    setPendingEventData(event);
-    setShowEventModal(false);
-    
-    toast({
-      title: 'Evento preparado',
-      description: 'Evento será criado ao salvar o cliente.',
-    });
-  };
-
-  const handleCreateLine = () => {
-    setCreateEmptyLine(true);
-    toast({ 
-      title: 'Linha marcada', 
-      description: 'Uma linha vazia será criada ao salvar.' 
-    });
-  };
-
-  const handleSave = async (clientData?: any) => {
+  const handleSave = async () => {
     try {
       setErrors({});
-      
-      const dataToValidate = clientData || {
+      clientInfoSchema.parse({
         name: formData.client_name,
         startDate: formData.start_date,
         boletoValue: formData.boleto_value,
         dueDate: formData.due_date,
-      };
-      
-      clientInfoSchema.parse(dataToValidate);
+      });
 
       if (!user || !organizationId) return;
 
-      const boletoValue = (clientData?.boletoValue || formData.boleto_value) === '' ? 0 : parseFloat(clientData?.boletoValue || formData.boleto_value);
-      const clientName = clientData?.name || formData.client_name;
-      const startDate = clientData?.startDate || formData.start_date;
-      const dueDate = clientData?.dueDate || formData.due_date;
+      const boletoValue = formData.boleto_value === '' ? 0 : parseFloat(formData.boleto_value);
 
       if (editingClient) {
         const { error } = await supabaseClient
           .from('client_timelines')
           .update({
-            client_name: clientName,
-            start_date: startDate,
+            client_name: formData.client_name,
+            start_date: formData.start_date,
             boleto_value: boletoValue,
-            due_date: dueDate,
+            due_date: formData.due_date,
           })
           .eq('id', editingClient.id);
 
@@ -245,64 +197,31 @@ const Clients = () => {
           .insert({
             user_id: user.id,
             organization_id: organizationId,
-            client_name: clientName,
-            start_date: startDate,
+            client_name: formData.client_name,
+            start_date: formData.start_date,
             boleto_value: boletoValue,
-            due_date: dueDate,
+            due_date: formData.due_date,
           })
           .select()
           .single();
 
         if (timelineError) throw timelineError;
 
-        if (createEmptyLine || pendingEventData) {
-          const { data: newLine, error: lineError } = await supabaseClient
-            .from('timeline_lines')
-            .insert({
-              timeline_id: timeline.id,
-              position: 0,
-            })
-            .select()
-            .single();
+        const { error: lineError } = await supabaseClient
+          .from('timeline_lines')
+          .insert({
+            timeline_id: timeline.id,
+            position: 0,
+          })
+          .select()
+          .single();
 
-          if (lineError) throw lineError;
+        if (lineError) throw lineError;
 
-          if (pendingEventData && pendingEventData.isNew) {
-            const { error: eventError } = await supabaseClient
-              .from('timeline_events')
-              .insert({
-                line_id: newLine.id,
-                icon: pendingEventData.icon,
-                event_date: pendingEventData.date,
-                event_time: pendingEventData.time || null,
-                description: pendingEventData.description,
-                position: pendingEventData.position,
-                status: 'created',
-                icon_size: 'text-2xl',
-                event_order: 0,
-              });
-
-            if (eventError) throw eventError;
-            
-            toast({
-              title: 'Cliente e evento criados',
-              description: 'Timeline criada com evento inicial.',
-            });
-          } else if (createEmptyLine) {
-            toast({
-              title: 'Cliente e linha criados',
-              description: 'Timeline criada com linha vazia.',
-            });
-          }
-
-          setPendingEventData(null);
-          setCreateEmptyLine(false);
-        } else {
-          toast({
-            title: 'Cliente cadastrado',
-            description: 'Cliente criado com sucesso.',
-          });
-        }
+        toast({
+          title: 'Cliente cadastrado',
+          description: 'Cliente criado com sucesso.',
+        });
       }
 
       loadClients();
@@ -550,37 +469,25 @@ const Clients = () => {
 
       {/* Modal */}
       {showModal && (
-            <ClientInfoModal
-              clientInfo={{
-                name: formData.client_name,
-                startDate: formData.start_date,
-                boletoValue: formData.boleto_value,
-                dueDate: formData.due_date,
-              }}
-              onSave={(info) => {
-                handleSave(info);
-              }}
-              onCancel={handleCloseModal}
-              onOpenEventModal={handleOpenEventModal}
-              onCreateLine={handleCreateLine}
-              pendingEventData={pendingEventData}
-            />
+        <ClientInfoModal
+          clientInfo={{
+            name: formData.client_name,
+            startDate: formData.start_date,
+            boletoValue: formData.boleto_value,
+            dueDate: formData.due_date,
+          }}
+          onSave={(info) => {
+            setFormData({
+              client_name: info.name,
+              start_date: info.startDate,
+              boleto_value: info.boletoValue,
+              due_date: info.dueDate,
+            });
+            handleSave();
+          }}
+          onCancel={handleCloseModal}
+        />
       )}
-
-      {/* EventModal */}
-      <AnimatePresence>
-        {showEventModal && pendingEventData && (
-          <EventModal
-            event={pendingEventData}
-            onSave={handleSaveEventFromModal}
-            onDelete={() => {
-              setShowEventModal(false);
-              setPendingEventData(null);
-            }}
-            onCancel={() => setShowEventModal(false)}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Timeline Management Modal */}
       <AnimatePresence>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { clientInfoSchema } from '@/lib/validations';
 import { z } from 'zod';
 import { CalendarIcon } from 'lucide-react';
@@ -8,7 +8,6 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 interface ClientInfo {
@@ -23,12 +22,9 @@ interface ClientInfoModalProps {
   clientInfo: ClientInfo;
   onSave: (info: ClientInfo) => void;
   onCancel: () => void;
-  onOpenEventModal?: () => void;
-  onCreateLine?: () => void;
-  pendingEventData?: any;
 }
 
-export const ClientInfoModal = ({ clientInfo, onSave, onCancel, onOpenEventModal, onCreateLine, pendingEventData }: ClientInfoModalProps) => {
+export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModalProps) => {
   const [formData, setFormData] = useState<ClientInfo>(clientInfo);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [startDateOpen, setStartDateOpen] = useState(false);
@@ -251,61 +247,6 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel, onOpenEventModal
             </Popover>
             {errors.dueDate && (
               <p className="text-sm text-destructive mt-1">{errors.dueDate}</p>
-            )}
-          </div>
-
-          {/* Ações na Timeline */}
-          <div className="border-t border-border pt-4 mt-4">
-            <p className="text-sm font-semibold text-foreground mb-3">
-              Ações na Timeline
-            </p>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {/* Botão: Criar Linha */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onCreateLine?.()}
-              className="flex items-center gap-2 h-12"
-            >
-              <span className="text-lg">➕</span>
-              <span className="text-sm">Criar Linha</span>
-            </Button>
-              
-              {/* Botão: Criar Evento */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenEventModal?.()}
-                className="flex items-center gap-2 h-12 border-primary/50 hover:border-primary"
-              >
-                <span className="text-lg">📝</span>
-                <span className="text-sm">Criar Evento</span>
-              </Button>
-            </div>
-            
-            {/* Preview do evento pendente */}
-            {pendingEventData && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg"
-              >
-                <p className="text-xs font-semibold text-muted-foreground mb-1">
-                  Evento preparado:
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{pendingEventData.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {pendingEventData.description || 'Sem descrição'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {pendingEventData.date} {pendingEventData.time && `às ${pendingEventData.time}`}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
             )}
           </div>
         </div>
