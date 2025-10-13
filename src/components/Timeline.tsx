@@ -250,10 +250,20 @@ export const Timeline = ({
 
   // Função para determinar a cor dos segmentos da linha
   const getLineSegmentColor = (currentEvent: Event, nextEvent: Event) => {
+    // Verificação null-safe para os eventos e suas datas
+    if (!currentEvent?.date || !nextEvent?.date) {
+      return 'bg-foreground/30';
+    }
+    
+    // Normalizar as datas removendo espaços extras
+    const currentDate = currentEvent.date.trim();
+    const nextDate = nextEvent.date.trim();
+    
     // Se as datas são iguais, retorna amarelo
-    if (currentEvent.date === nextEvent.date) {
+    if (currentDate === nextDate) {
       return 'bg-yellow-500';
     }
+    
     return 'bg-foreground/30'; // cor padrão (cinza)
   };
 
