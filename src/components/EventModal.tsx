@@ -182,16 +182,16 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
           </div>
           <div className="flex gap-2 mt-2">
             <button 
-              onClick={handleSave} 
-              className="flex-1 py-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg transition-transform hover:scale-105"
-            >
-              Salvar
-            </button>
-            <button 
               onClick={handleCancel} 
               className="flex-1 py-2 text-sm font-semibold bg-muted text-muted-foreground rounded-lg transition-colors hover:bg-secondary"
             >
               Cancelar
+            </button>
+            <button 
+              onClick={handleSave} 
+              className="flex-1 py-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg transition-transform hover:scale-105"
+            >
+              Salvar
             </button>
           </div>
           <button 
