@@ -392,14 +392,14 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[78px] right-[78px] transition-all ${
+                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[82px] right-[82px] transition-all ${
                         !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5' : 'cursor-default'
                       }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
                     <div 
-                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[78px] right-[78px]"
+                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[82px] right-[82px]"
                     />
                   )}
 
@@ -413,8 +413,8 @@ export const Timeline = ({
                     
                     // Cálculo preciso baseado no centro dos ícones
                     const totalEvents = (line.events || []).length;
-                    const currentIconCenter = (index / (totalEvents - 1)) * 100;
-                    const nextIconCenter = ((index + 1) / (totalEvents - 1)) * 100;
+                    const currentIconCenter = totalEvents === 1 ? 50 : 6.83 + (index / (totalEvents - 1)) * 86.34;
+                    const nextIconCenter = totalEvents === 1 ? 50 : 6.83 + ((index + 1) / (totalEvents - 1)) * 86.34;
                     
                     return (
                       <button
@@ -435,7 +435,7 @@ export const Timeline = ({
                   
                   {(line.events || []).map((event, index) => {
                     const totalEvents = (line.events || []).length;
-                    const leftPosition = totalEvents === 1 ? 50 : 6.5 + (index / (totalEvents - 1)) * 87;
+                    const leftPosition = totalEvents === 1 ? 50 : 6.83 + (index / (totalEvents - 1)) * 86.34;
                     
                     return (
                       <motion.div
