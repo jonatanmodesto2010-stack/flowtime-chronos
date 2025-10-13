@@ -435,7 +435,7 @@ export const Timeline = ({
                   
                   {(line.events || []).map((event, index) => {
                     const totalEvents = (line.events || []).length;
-                    const leftPosition = totalEvents === 1 ? 50 : (index / (totalEvents - 1)) * 100;
+                    const leftPosition = totalEvents === 1 ? 50 : 6.5 + (index / (totalEvents - 1)) * 87;
                     
                     return (
                       <motion.div
