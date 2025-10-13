@@ -407,6 +407,11 @@ export const Timeline = ({
                       const segmentColor = getLineSegmentColor(event, nextEvent);
                       const isSameDate = event.date === nextEvent?.date;
                       
+                      // Cálculo preciso baseado no centro dos ícones
+                      const totalEvents = (line.events || []).length;
+                      const currentIconCenter = (index / (totalEvents - 1)) * 100;
+                      const nextIconCenter = ((index + 1) / (totalEvents - 1)) * 100;
+                      
                       return (
                         <button
                           key={`segment-${event.id}-${nextEvent?.id}`}
@@ -416,8 +421,8 @@ export const Timeline = ({
                             !readOnly ? 'cursor-pointer hover:h-1.5' : 'cursor-default'
                           } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
                           style={{
-                            left: `calc(${(index / ((line.events || []).length - 1)) * 100}% + 12px)`,
-                            right: `calc(${100 - ((index + 1) / ((line.events || []).length - 1)) * 100}% - 12px)`
+                            left: `${currentIconCenter}%`,
+                            right: `${100 - nextIconCenter}%`
                           }}
                           title={!readOnly ? "Clique para adicionar evento" : ""}
                         />
