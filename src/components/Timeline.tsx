@@ -392,14 +392,14 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-20 right-20 transition-all ${
+                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[78px] right-[78px] transition-all ${
                         !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5' : 'cursor-default'
                       }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
                     <div 
-                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-20 right-20"
+                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[78px] right-[78px]"
                     />
                   )}
 
