@@ -62,18 +62,10 @@ export const Timeline = ({
   const [showClientModal, setShowClientModal] = useState(false);
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [showAllDescriptions, setShowAllDescriptions] = useState(false);
   
-  const toggleDescription = (eventId: string) => {
-    setExpandedDescriptions(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(eventId)) {
-        newSet.delete(eventId);
-      } else {
-        newSet.add(eventId);
-      }
-      return newSet;
-    });
+  const toggleAllDescriptions = () => {
+    setShowAllDescriptions(prev => !prev);
   };
   
   const lines = timeline.lines || [];
@@ -289,17 +281,31 @@ export const Timeline = ({
       >
         <div className="flex items-center gap-2 flex-wrap">
           {/* Nome clicável com ID do cliente */}
-          <motion.button
-            onClick={() => setShowClientModal(true)}
-            className={`px-3 py-2 font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2 ${
-              hasNoResponseEvent ? 'text-red-600 dark:text-red-400' : 'text-foreground'
-            }`}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <User size={16} />
-            {clientInfo.clientId ? `${clientInfo.clientId} - ${clientInfo.name}` : clientInfo.name}
-          </motion.button>
+            <motion.button
+              onClick={() => setShowClientModal(true)}
+              className={`px-3 py-2 font-semibold rounded-lg hover:bg-accent transition-all text-sm flex items-center gap-2 ${
+                hasNoResponseEvent ? 'text-red-600 dark:text-red-400' : 'text-foreground'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <User size={16} />
+              {clientInfo.clientId ? `${clientInfo.clientId} - ${clientInfo.name}` : clientInfo.name}
+            </motion.button>
+
+            <motion.button
+              onClick={toggleAllDescriptions}
+              className={`px-3 py-2 font-semibold rounded-lg transition-all text-xs flex items-center gap-2 ${
+                showAllDescriptions 
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={showAllDescriptions ? "Ocultar todas descrições" : "Mostrar todas descrições"}
+            >
+              {showAllDescriptions ? '👁️ Ocultar' : '📝 Ver Descrições'}
+            </motion.button>
           
             {/* Tag Selector com Dropdown ou Tags read-only */}
             {!readOnly ? (
@@ -499,33 +505,29 @@ export const Timeline = ({
                         )}
                       </div>
                       
-                      {/* Botão para mostrar/ocultar descrição */}
-                      {event.description && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleDescription(event.id);
-                          }}
-                          className="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-full transition-colors z-30"
-                          title={expandedDescriptions.has(event.id) ? "Ocultar descrição" : "Ver descrição"}
-                        >
-                          {expandedDescriptions.has(event.id) ? '👁️' : '📝'}
-                        </button>
-                      )}
-                      
-                      {/* Área de descrição expansível */}
+
+                      {/* Área de descrição expansível com rotação */}
                       <AnimatePresence>
-                        {expandedDescriptions.has(event.id) && event.description && (
+                        {showAllDescriptions && event.description && (
                           <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="absolute mt-2 bg-card border border-border rounded-lg p-2 shadow-lg z-40 max-w-[200px] text-xs"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.3 }}
+                            className={`absolute whitespace-nowrap z-50 pointer-events-none ${
+                              event.position === 'bottom' 
+                                ? 'top-10 origin-bottom-left' 
+                                : 'bottom-10 origin-top-left'
+                            }`}
                             style={{
-                              [event.position === 'bottom' ? 'top' : 'bottom']: '100%',
+                              transform: event.position === 'bottom' 
+                                ? 'rotate(-15deg)' 
+                                : 'rotate(15deg)',
+                              left: '50%',
+                              marginLeft: '10px',
                             }}
                           >
-                            <p className="text-foreground break-words whitespace-normal">
+                            <p className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded">
                               {event.description}
                             </p>
                           </motion.div>
