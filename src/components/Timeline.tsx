@@ -353,18 +353,6 @@ export const Timeline = ({
             key={line.id} 
             className="relative"
           >
-              {!readOnly && lines.length > 1 && (
-                <div className="flex justify-center mb-10">
-                  <motion.button 
-                    onClick={() => handleAddEvent(line.id)} 
-                    className="px-6 py-3 font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-lg transition-transform hover:scale-105 hover:shadow-xl"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    + Adicionar Evento
-                  </motion.button>
-                </div>
-              )}
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
                 <div 
