@@ -516,15 +516,16 @@ export const Timeline = ({
                             transition={{ duration: 0.3 }}
                             className={`absolute whitespace-nowrap z-50 pointer-events-none ${
                               event.position === 'bottom' 
-                                ? 'top-10 origin-bottom-left' 
-                                : 'bottom-10 origin-top-left'
+                                ? 'top-12' 
+                                : 'bottom-12'
                             }`}
                             style={{
+                              transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
                               transform: event.position === 'bottom' 
-                                ? 'rotate(-15deg)' 
-                                : 'rotate(15deg)',
-                              left: '50%',
-                              marginLeft: '10px',
+                                ? 'rotate(-25deg)' 
+                                : 'rotate(25deg)',
+                              left: '0',
+                              marginLeft: '20px',
                             }}
                           >
                             <p className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded">
