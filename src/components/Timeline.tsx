@@ -435,18 +435,13 @@ export const Timeline = ({
                   
                   {(line.events || []).map((event, index) => {
                     const totalEvents = (line.events || []).length;
-                    const positionRatio = totalEvents === 1 ? 0.5 : index / (totalEvents - 1);
+                    const leftPosition = totalEvents === 1 ? 50 : (index / (totalEvents - 1)) * 100;
                     
                     return (
                       <motion.div
                         key={event.id}
                         className="absolute z-10 text-center flex-shrink-0"
-                        style={{ 
-                          left: totalEvents === 1 
-                            ? '50%' 
-                            : `calc(48px + (100% - 96px) * ${positionRatio})`,
-                          transform: 'translateX(-50%)' 
-                        }}
+                        style={{ left: `${leftPosition}%`, transform: 'translateX(-50%)' }}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: index * 0.1 }}
