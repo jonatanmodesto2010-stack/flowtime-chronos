@@ -510,9 +510,13 @@ export const Timeline = ({
                       <AnimatePresence>
                         {showAllDescriptions && event.description && (
                           <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
+                            initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
+                            animate={{ 
+                              opacity: 1, 
+                              scale: 1,
+                              rotate: event.position === 'bottom' ? -25 : 25
+                            }}
+                            exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
                             transition={{ duration: 0.3 }}
                             className={`absolute whitespace-nowrap z-50 pointer-events-none ${
                               event.position === 'bottom' 
@@ -521,9 +525,6 @@ export const Timeline = ({
                             }`}
                             style={{
                               transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
-                              transform: event.position === 'bottom' 
-                                ? 'rotate(-25deg)' 
-                                : 'rotate(25deg)',
                               left: '0',
                               marginLeft: '20px',
                             }}
