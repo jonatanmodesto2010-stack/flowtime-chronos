@@ -34,7 +34,20 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
   const [loading, setLoading] = useState(true);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  
+  const toggleDescription = (eventId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     loadTimeline();
@@ -448,31 +461,68 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                           </button>
                           
                           <div
-                            className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
+                            className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center gap-1 ${
                               event.position === 'bottom' ? 'top-5' : 'bottom-5'
                             }`}
-                            onClick={() => handleEventClick(event, line.id)}
-                            title={event.description}
                           >
-                            {event.position === 'bottom' ? (
-                              <>
-                                <div className="text-sm font-semibold text-foreground mb-2">
-                                  {event.date}
-                                </div>
-                                <div className={`${event.iconSize || 'text-2xl'}`}>
-                                  {event.icon}
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
-                                  {event.icon}
-                                </div>
-                                <div className="text-sm font-semibold text-foreground">
-                                  {event.date}
-                                </div>
-                              </>
+                            <div
+                              className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                              onClick={() => handleEventClick(event, line.id)}
+                              title={event.description}
+                            >
+                              {event.position === 'bottom' ? (
+                                <>
+                                  <div className="text-sm font-semibold text-foreground mb-2">
+                                    {event.date}
+                                  </div>
+                                  <div className={`${event.iconSize || 'text-2xl'}`}>
+                                    {event.icon}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
+                                    {event.icon}
+                                  </div>
+                                  <div className="text-sm font-semibold text-foreground">
+                                    {event.date}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            
+                            {/* Botão para mostrar/ocultar descrição */}
+                            {event.description && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleDescription(event.id);
+                                }}
+                                className="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-full transition-colors z-30"
+                                title={expandedDescriptions.has(event.id) ? "Ocultar descrição" : "Ver descrição"}
+                              >
+                                {expandedDescriptions.has(event.id) ? '👁️' : '📝'}
+                              </button>
                             )}
+                            
+                            {/* Área de descrição expansível */}
+                            <AnimatePresence>
+                              {expandedDescriptions.has(event.id) && event.description && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="absolute mt-2 bg-card border border-border rounded-lg p-2 shadow-lg z-40 max-w-[200px] text-xs"
+                                  style={{
+                                    [event.position === 'bottom' ? 'top' : 'bottom']: '100%',
+                                  }}
+                                >
+                                  <p className="text-foreground break-words whitespace-normal">
+                                    {event.description}
+                                  </p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         </div>
                       ))}

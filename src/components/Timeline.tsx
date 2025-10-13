@@ -62,6 +62,19 @@ export const Timeline = ({
   const [showClientModal, setShowClientModal] = useState(false);
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  
+  const toggleDescription = (eventId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
   
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
@@ -453,34 +466,71 @@ export const Timeline = ({
                       </AnimatePresence>
                     </button>
                     <div
-                      className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform ${
+                      className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 ${
                         event.position === 'bottom' ? 'top-5' : 'bottom-5'
                       }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
                     >
-                      {event.position === 'bottom' ? (
-                        <>
-                          <div className="text-xs font-semibold text-foreground mb-2 whitespace-nowrap">
-                            {event.date}
-                          </div>
-                          <div className="leading-none flex items-center justify-center">
+                      <div
+                        className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEventClick(event, line.id);
+                        }}
+                        title={event.description}
+                      >
+                        {event.position === 'bottom' ? (
+                          <>
+                            <div className="text-xs font-semibold text-foreground mb-2 whitespace-nowrap">
+                              {event.date}
+                            </div>
+                            <div className="leading-none flex items-center justify-center">
+                                <span className="text-2xl">{event.icon}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="mb-2 leading-none flex items-center justify-center">
                               <span className="text-2xl">{event.icon}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="mb-2 leading-none flex items-center justify-center">
-                            <span className="text-2xl">{event.icon}</span>
-                          </div>
-                          <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                            {event.date}
-                          </div>
-                        </>
+                            </div>
+                            <div className="text-xs font-semibold text-foreground whitespace-nowrap">
+                              {event.date}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Botão para mostrar/ocultar descrição */}
+                      {event.description && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDescription(event.id);
+                          }}
+                          className="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-full transition-colors z-30"
+                          title={expandedDescriptions.has(event.id) ? "Ocultar descrição" : "Ver descrição"}
+                        >
+                          {expandedDescriptions.has(event.id) ? '👁️' : '📝'}
+                        </button>
                       )}
+                      
+                      {/* Área de descrição expansível */}
+                      <AnimatePresence>
+                        {expandedDescriptions.has(event.id) && event.description && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="absolute mt-2 bg-card border border-border rounded-lg p-2 shadow-lg z-40 max-w-[200px] text-xs"
+                            style={{
+                              [event.position === 'bottom' ? 'top' : 'bottom']: '100%',
+                            }}
+                          >
+                            <p className="text-foreground break-words whitespace-normal">
+                              {event.description}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                     </motion.div>
                     );
