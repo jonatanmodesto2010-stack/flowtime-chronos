@@ -248,6 +248,15 @@ export const Timeline = ({
     }
   };
 
+  // Função para determinar a cor dos segmentos da linha
+  const getLineSegmentColor = (currentEvent: Event, nextEvent: Event) => {
+    // Se as datas são iguais, retorna amarelo
+    if (currentEvent.date === nextEvent.date) {
+      return 'bg-yellow-500';
+    }
+    return 'bg-foreground/30'; // cor padrão (cinza)
+  };
+
   return (
     <div className="w-full">
       <motion.div 
@@ -368,15 +377,43 @@ export const Timeline = ({
                     </button>
                   )}
                   
-                  {/* Linha central de ponta a ponta */}
-            <button
-              onClick={() => handleAddEvent(line.id)}
-              disabled={readOnly}
-              className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4 ${
-                !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5 transition-all' : 'cursor-default'
-              }`}
-              title={!readOnly ? "Clique para adicionar evento" : ""}
-            />
+                  {/* Segmentos da linha coloridos dinamicamente */}
+                  {(line.events || []).length === 0 ? (
+                    // Linha vazia quando não há eventos
+                    <button
+                      onClick={() => handleAddEvent(line.id)}
+                      disabled={readOnly}
+                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4 ${
+                        !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5 transition-all' : 'cursor-default'
+                      }`}
+                      title={!readOnly ? "Clique para adicionar evento" : ""}
+                    />
+                  ) : (
+                    // Segmentos entre eventos
+                    (line.events || []).map((event, index) => {
+                      if (index === (line.events || []).length - 1) return null; // Não renderiza depois do último
+                      
+                      const nextEvent = (line.events || [])[index + 1];
+                      const segmentColor = getLineSegmentColor(event, nextEvent);
+                      const isSameDate = event.date === nextEvent?.date;
+                      
+                      return (
+                        <button
+                          key={`segment-${event.id}-${nextEvent?.id}`}
+                          onClick={() => handleAddEvent(line.id)}
+                          disabled={readOnly}
+                          className={`absolute top-1/2 h-1 ${segmentColor} -translate-y-1/2 z-0 transition-all ${
+                            !readOnly ? 'cursor-pointer hover:h-1.5' : 'cursor-default'
+                          } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
+                          style={{
+                            left: `calc(${(index / ((line.events || []).length - 1)) * 100}% + 1rem)`,
+                            right: `calc(${100 - ((index + 1) / ((line.events || []).length - 1)) * 100}% + 1rem)`
+                          }}
+                          title={!readOnly ? "Clique para adicionar evento" : ""}
+                        />
+                      );
+                    })
+                  )}
                   
                   {(line.events || []).map((event, index) => (
                     <motion.div
