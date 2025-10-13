@@ -368,7 +368,7 @@ export const Timeline = ({
               
               <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
                 <div 
-                  className="timeline-container relative flex items-center justify-between w-full mx-auto py-24 px-4 transition-all duration-300"
+                  className="timeline-container relative flex items-center w-full mx-auto py-24 px-4 transition-all duration-300"
                   style={{ minHeight: `${isExpanded ? 550 : 200}px` }}
                 >
                   {/* Contador de eventos - Verde */}
@@ -387,10 +387,21 @@ export const Timeline = ({
                     </button>
                   )}
                   
-                  {/* Linha base - sempre visível */}
-                  <div 
-                    className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4"
-                  />
+                  {/* Linha base - sempre visível e clicável quando há 0 ou 1 evento */}
+                  {(line.events || []).length < 2 ? (
+                    <button
+                      onClick={() => handleAddEvent(line.id)}
+                      disabled={readOnly}
+                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4 transition-all ${
+                        !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5' : 'cursor-default'
+                      }`}
+                      title={!readOnly ? "Clique para adicionar evento" : ""}
+                    />
+                  ) : (
+                    <div 
+                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-4 right-4"
+                    />
+                  )}
 
                   {/* Segmentos coloridos sobrepostos (apenas quando há 2+ eventos) */}
                   {(line.events || []).length >= 2 && (line.events || []).map((event, index) => {
@@ -422,15 +433,20 @@ export const Timeline = ({
                     );
                   })}
                   
-                  {(line.events || []).map((event, index) => (
-                    <motion.div
-                      key={event.id}
-                      className="relative z-10 text-center flex-shrink-0 min-w-[80px] -ml-[39px] first:ml-0"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      layout
-                    >
+                  {(line.events || []).map((event, index) => {
+                    const totalEvents = (line.events || []).length;
+                    const leftPosition = totalEvents === 1 ? 50 : (index / (totalEvents - 1)) * 100;
+                    
+                    return (
+                      <motion.div
+                        key={event.id}
+                        className="absolute z-10 text-center flex-shrink-0"
+                        style={{ left: `${leftPosition}%`, transform: 'translateX(-50%)' }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                        layout
+                      >
                     <button
                       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
                       onClick={(e) => handleStatusToggle(e, line.id, event.id)}
@@ -478,8 +494,9 @@ export const Timeline = ({
                         </>
                       )}
                     </div>
-                  </motion.div>
-                  ))}
+                    </motion.div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
