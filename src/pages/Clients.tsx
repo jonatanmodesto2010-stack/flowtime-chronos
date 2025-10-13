@@ -35,6 +35,8 @@ const Clients = () => {
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [managingClientName, setManagingClientName] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [pendingEventData, setPendingEventData] = useState<any>(null);
   const [formData, setFormData] = useState({
     client_name: '',
     start_date: new Date().toISOString().split('T')[0],
@@ -158,6 +160,32 @@ const Clients = () => {
     setShowModal(false);
     setEditingClient(null);
     setErrors({});
+    setPendingEventData(null);
+  };
+
+  const handleOpenEventModal = () => {
+    const tempEvent = {
+      id: crypto.randomUUID(),
+      icon: '💬',
+      iconSize: 'text-2xl',
+      date: '--/--',
+      description: '',
+      position: 'top' as const,
+      status: 'created' as const,
+      isNew: true,
+    };
+    setPendingEventData(tempEvent);
+    setShowEventModal(true);
+  };
+
+  const handleSaveEventFromModal = (event: any) => {
+    setPendingEventData(event);
+    setShowEventModal(false);
+    
+    toast({
+      title: 'Evento preparado',
+      description: 'Evento será criado ao salvar o cliente.',
+    });
   };
 
   const handleSave = async (clientData?: any) => {
@@ -224,28 +252,38 @@ const Clients = () => {
 
         if (lineError) throw lineError;
 
-        // Se checkbox marcado, criar evento inicial
-        if (clientData?.createInitialLine) {
+        // Se houver evento pendente, criar o evento
+        if (pendingEventData) {
           const { error: eventError } = await supabaseClient
             .from('timeline_events')
             .insert({
               line_id: newLine.id,
-              icon: clientData.initialEventIcon || '💬',
-              event_date: clientData.initialEventDate || '--/--',
-              event_time: clientData.initialEventTime || null,
-              description: clientData.initialEventDescription || '',
-              position: 'top',
+              icon: pendingEventData.icon,
+              event_date: pendingEventData.date,
+              event_time: pendingEventData.time || null,
+              description: pendingEventData.description,
+              position: pendingEventData.position,
               status: 'created',
               icon_size: 'text-2xl',
               event_order: 0,
             });
 
           if (eventError) throw eventError;
+          
+          toast({
+            title: 'Sucesso!',
+            description: 'Cliente criado com evento inicial!',
+          });
+        } else {
+          toast({
+            title: 'Sucesso!',
+            description: 'Cliente criado com sucesso!',
+          });
         }
 
         toast({
           title: 'Cliente cadastrado',
-          description: clientData?.createInitialLine 
+          description: pendingEventData 
             ? 'Cliente criado com linha e evento inicial!' 
             : 'Cliente criado com sucesso.',
         });
@@ -507,8 +545,25 @@ const Clients = () => {
             handleSave(info);
           }}
           onCancel={handleCloseModal}
+          onOpenEventModal={handleOpenEventModal}
+          pendingEventData={pendingEventData}
         />
       )}
+
+      {/* EventModal */}
+      <AnimatePresence>
+        {showEventModal && pendingEventData && (
+          <EventModal
+            event={pendingEventData}
+            onSave={handleSaveEventFromModal}
+            onDelete={() => {
+              setShowEventModal(false);
+              setPendingEventData(null);
+            }}
+            onCancel={() => setShowEventModal(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Timeline Management Modal */}
       <AnimatePresence>
