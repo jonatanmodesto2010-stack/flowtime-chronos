@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { User, Trash2, ChevronUp, ChevronDown, Minus } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +63,7 @@ export const Timeline = ({
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAllDescriptions, setShowAllDescriptions] = useState(false);
+  const [isVertical, setIsVertical] = useState(false);
   
   const toggleAllDescriptions = () => {
     setShowAllDescriptions(prev => !prev);
@@ -294,6 +295,16 @@ export const Timeline = ({
             </motion.button>
 
             <motion.button
+              onClick={() => setIsVertical(!isVertical)}
+              className="px-2 py-2 rounded-lg hover:bg-accent transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={isVertical ? "Alternar para horizontal" : "Alternar para vertical"}
+            >
+              <Minus size={20} className={isVertical ? "rotate-90" : ""} />
+            </motion.button>
+
+            <motion.button
               onClick={toggleAllDescriptions}
               className={`px-3 py-2 font-semibold rounded-lg transition-all text-xs flex items-center gap-2 ${
                 showAllDescriptions 
@@ -373,10 +384,17 @@ export const Timeline = ({
             className="relative"
           >
               
-              <div className="overflow-x-auto overflow-y-visible scrollbar-hide">
+              <div className={isVertical ? "overflow-y-auto overflow-x-visible scrollbar-hide" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
                 <div 
-                  className="timeline-container relative flex items-center w-full mx-auto py-24 px-12 transition-all duration-300"
-                  style={{ minHeight: `${isExpanded ? 550 : 200}px` }}
+                  className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
+                    isVertical 
+                      ? 'flex flex-col items-center py-12 px-24' 
+                      : 'flex items-center py-24 px-12'
+                  }`}
+                  style={{ 
+                    minHeight: isVertical ? '600px' : `${isExpanded ? 550 : 200}px`,
+                    minWidth: isVertical ? 'auto' : '100%'
+                  }}
                 >
                   {/* Contador de eventos - Verde */}
                   <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
@@ -399,14 +417,22 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-                      className={`absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[1.5%] right-[1.5%] transition-all ${
-                        !readOnly ? 'cursor-pointer hover:bg-foreground/50 hover:h-1.5' : 'cursor-default'
+                      className={`absolute bg-foreground/30 z-0 transition-all ${
+                        isVertical
+                          ? 'left-1/2 w-1 h-[calc(100%-48px)] top-6 -translate-x-1/2'
+                          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+                      } ${
+                        !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
                       }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
                     <div 
-                      className="absolute top-1/2 h-1 bg-foreground/30 -translate-y-1/2 z-0 left-[1.5%] right-[1.5%]"
+                      className={`absolute bg-foreground/30 z-0 ${
+                        isVertical
+                          ? 'left-1/2 w-1 h-[calc(100%-48px)] top-6 -translate-x-1/2'
+                          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+                      }`}
                     />
                   )}
 
@@ -428,10 +454,17 @@ export const Timeline = ({
                         key={`segment-${event.id}-${nextEvent?.id}`}
                         onClick={() => handleAddEvent(line.id)}
                         disabled={readOnly}
-                        className={`absolute top-1/2 h-1 ${segmentColor} -translate-y-1/2 z-10 transition-all ${
-                          !readOnly ? 'cursor-pointer hover:h-1.5' : 'cursor-default'
+                        className={`absolute ${segmentColor} z-10 transition-all ${
+                          isVertical
+                            ? 'left-1/2 w-1 -translate-x-1/2'
+                            : 'top-1/2 h-1 -translate-y-1/2'
+                        } ${
+                          !readOnly ? 'cursor-pointer' : 'cursor-default'
                         } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
-                        style={{
+                        style={isVertical ? {
+                          top: `${currentIconCenter}%`,
+                          bottom: `${100 - nextIconCenter}%`
+                        } : {
                           left: `${currentIconCenter}%`,
                           right: `${100 - nextIconCenter}%`
                         }}
@@ -442,13 +475,18 @@ export const Timeline = ({
                   
                   {(line.events || []).map((event, index) => {
                     const totalEvents = (line.events || []).length;
-                    const leftPosition = totalEvents === 1 ? 50 : 1.5 + (index / (totalEvents - 1)) * 97;
+                    const position = totalEvents === 1 ? 50 : 1.5 + (index / (totalEvents - 1)) * 97;
                     
                     return (
                       <motion.div
                         key={event.id}
-                        className="absolute z-10 text-center flex-shrink-0"
-                        style={{ left: `${leftPosition}%`, transform: 'translateX(-50%)' }}
+                        className={`absolute z-10 text-center flex-shrink-0 ${
+                          isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'
+                        }`}
+                        style={isVertical 
+                          ? { top: `${position}%` }
+                          : { left: `${position}%`, transform: 'translateX(-50%)' }
+                        }
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -472,8 +510,10 @@ export const Timeline = ({
                       </AnimatePresence>
                     </button>
                     <div
-                      className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 ${
-                        event.position === 'bottom' ? 'top-5' : 'bottom-5'
+                      className={`absolute w-full flex flex-col items-center gap-1 ${
+                        isVertical
+                          ? event.position === 'bottom' ? 'left-8' : 'right-8'
+                          : event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
                       }`}
                     >
                       <div
@@ -514,7 +554,7 @@ export const Timeline = ({
                             animate={{ 
                               opacity: 1, 
                               scale: 1,
-                              rotate: event.position === 'bottom' ? 45 : -45
+                              rotate: isVertical ? 0 : (event.position === 'bottom' ? 45 : -45)
                             }}
                             exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
                             transition={{ duration: 0.3 }}
@@ -526,7 +566,7 @@ export const Timeline = ({
                             style={{
                               transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
                               left: '0',
-                              marginLeft: '20px',
+                              marginLeft: isVertical ? '0' : '20px',
                             }}
                           >
                             <p 

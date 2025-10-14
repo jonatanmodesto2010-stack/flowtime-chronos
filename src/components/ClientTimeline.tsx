@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, Minus } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
@@ -35,6 +35,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showAllDescriptions, setShowAllDescriptions] = useState(false);
+  const [isVertical, setIsVertical] = useState(false);
   const { toast } = useToast();
   
   const toggleAllDescriptions = () => {
@@ -360,6 +361,15 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                 COBRANÇA
               </Badge>
               <motion.button
+                onClick={() => setIsVertical(!isVertical)}
+                className="px-2 py-2 rounded-lg hover:bg-accent transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title={isVertical ? "Alternar para horizontal" : "Alternar para vertical"}
+              >
+                <Minus size={20} className={isVertical ? "rotate-90" : ""} />
+              </motion.button>
+              <motion.button
                 onClick={toggleAllDescriptions}
                 className={`px-3 py-1.5 font-semibold rounded-lg transition-all text-xs flex items-center gap-2 ${
                   showAllDescriptions 
@@ -449,13 +459,30 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                       Nenhum evento nesta linha
                     </div>
                   ) : (
-                    <div className="timeline-container relative flex justify-around items-start w-full py-12 overflow-x-auto">
-                      <div className="absolute top-1/2 left-0 w-full h-0.5 bg-foreground/30 -translate-y-1/2 z-0" />
-                      {line.events.map((event, index) => (
-                        <div
-                          key={event.id}
-                          className="relative z-10 w-32 text-center"
-                        >
+                    <div className={`timeline-container relative w-full py-12 transition-all duration-300 ${
+                      isVertical 
+                        ? 'flex flex-col items-center min-h-[600px] px-24' 
+                        : 'flex justify-around items-start overflow-x-auto'
+                    }`}>
+                      <div className={`absolute bg-foreground/30 z-0 ${
+                        isVertical
+                          ? 'left-1/2 w-1 h-[calc(100%-48px)] top-6 -translate-x-1/2'
+                          : 'top-1/2 left-0 w-full h-0.5 -translate-y-1/2'
+                      }`} />
+                      {line.events.map((event, index) => {
+                        const totalEvents = line.events.length;
+                        const position = totalEvents === 1 ? 50 : 6 + (index / (totalEvents - 1)) * 88;
+                        
+                        return (
+                          <div
+                            key={event.id}
+                            className={`relative z-10 text-center ${
+                              isVertical 
+                                ? 'my-4 absolute left-1/2 -translate-x-1/2' 
+                                : 'w-32'
+                            }`}
+                            style={isVertical ? { top: `${position}%` } : {}}
+                          >
                           <button
                             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
                             onClick={() => handleStatusToggle(line.id, event.id)}
@@ -466,8 +493,10 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                           </button>
                           
                           <div
-                            className={`absolute left-1/2 -translate-x-1/2 w-full flex flex-col items-center gap-1 ${
-                              event.position === 'bottom' ? 'top-5' : 'bottom-5'
+                            className={`absolute w-full flex flex-col items-center gap-1 ${
+                              isVertical
+                                ? event.position === 'bottom' ? 'left-8' : 'right-8'
+                                : event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
                             }`}
                           >
                             <div
@@ -505,7 +534,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                                   animate={{ 
                                     opacity: 1, 
                                     scale: 1,
-                                    rotate: event.position === 'bottom' ? 45 : -45
+                                    rotate: isVertical ? 0 : (event.position === 'bottom' ? 45 : -45)
                                   }}
                                   exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
                                   transition={{ duration: 0.3 }}
@@ -517,7 +546,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                                   style={{
                                     transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
                                     left: '0',
-                                    marginLeft: '20px',
+                                    marginLeft: isVertical ? '0' : '20px',
                                   }}
                                 >
                                   <p 
@@ -534,7 +563,8 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                             </AnimatePresence>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
