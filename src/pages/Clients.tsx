@@ -224,8 +224,7 @@ const Clients = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    style={{ backgroundColor: '#121e1b' }}
-                    className="rounded-lg p-4 flex items-center gap-4"
+                    className="rounded-lg p-4 flex items-center gap-4 bg-card"
                   >
                     <Popover 
                       open={editingClientId === client.id}
@@ -236,17 +235,16 @@ const Clients = () => {
                       <PopoverTrigger asChild>
                         <motion.button
                           onClick={() => handleEditClient(client)}
-                          className="flex items-center justify-center w-10 h-10 rounded-full"
-                          style={{ backgroundColor: '#22c55e' }}
+                          className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-secondary/90"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                         >
-                          <Pencil className="w-5 h-5 text-white" />
+                          <Pencil className="w-5 h-5 text-secondary-foreground" />
                         </motion.button>
                       </PopoverTrigger>
                       
                       <PopoverContent 
-                        className="w-96 p-0 bg-[#1a1a1a] border-border"
+                        className="w-96 p-0 bg-popover border-border"
                         align="start"
                         sideOffset={8}
                       >
@@ -330,7 +328,7 @@ const Clients = () => {
                               Cancelar
                             </Button>
                             <Button
-                              className="flex-1 bg-[#22c55e] hover:bg-[#16a34a] text-white"
+                              className="flex-1 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                               onClick={() => handleSaveEdit(client.id)}
                             >
                               <Check className="w-4 h-4 mr-2" />
@@ -341,7 +339,7 @@ const Clients = () => {
                       </PopoverContent>
                     </Popover>
 
-                    <h3 className="text-white font-bold text-lg uppercase tracking-wide">
+                    <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
                       {client.client_name}
                     </h3>
                   </motion.div>
