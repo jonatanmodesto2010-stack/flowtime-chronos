@@ -388,8 +388,8 @@ export const Timeline = ({
                 <div 
                   className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
                     isVertical 
-                      ? 'flex flex-col items-center py-12 px-24' 
-                      : 'flex items-center py-24 px-12'
+                      ? 'flex flex-col items-center py-8 px-12' 
+                      : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
                     minHeight: isVertical ? '600px' : `${isExpanded ? 550 : 200}px`,

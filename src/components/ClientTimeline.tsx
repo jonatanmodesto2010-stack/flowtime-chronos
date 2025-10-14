@@ -461,7 +461,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                   ) : (
                     <div className={`timeline-container relative w-full py-12 transition-all duration-300 ${
                       isVertical 
-                        ? 'flex flex-col items-center min-h-[600px] px-24' 
+                        ? 'flex flex-col items-center min-h-[600px] px-12' 
                         : 'flex justify-around items-start overflow-x-auto'
                     }`}>
                       <div className={`absolute bg-foreground/30 z-0 ${
