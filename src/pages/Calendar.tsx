@@ -136,30 +136,31 @@ const Calendar = () => {
     try {
       setLoading(true);
       
-      // Retry logic com timeout para dar tempo do cache atualizar
-      let timelines = null;
-      let timelinesError = null;
+      console.log('🔄 Carregando eventos para userId:', userId);
       
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const result = await supabaseClient
-          .from('client_timelines')
-          .select('id, client_name')
-          .eq('user_id', userId);
-        
-        if (!result.error) {
-          timelines = result.data;
-          break;
-        }
-        
-        timelinesError = result.error;
-        
-        // Aguarda 1 segundo antes de tentar novamente
-        if (attempt < 2) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+      // Buscar timelines pela organização ao invés de user_id
+      const { data: userRoles } = await supabaseClient
+        .from('user_roles')
+        .select('organization_id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (!userRoles?.organization_id) {
+        console.error('❌ Usuário sem organização');
+        setLoading(false);
+        return;
       }
+      
+      console.log('🏢 Organization ID:', userRoles.organization_id);
+      
+      const { data: timelines, error: timelinesError } = await supabaseClient
+        .from('client_timelines')
+        .select('id, client_name')
+        .eq('organization_id', userRoles.organization_id);
 
       if (timelinesError) throw timelinesError;
+      
+      console.log('📋 Timelines encontradas:', timelines?.length || 0);
 
       if (timelines && timelines.length > 0) {
         const timelineIds = timelines.map(t => t.id);
@@ -170,6 +171,8 @@ const Calendar = () => {
           .in('timeline_id', timelineIds);
 
         if (linesError) throw linesError;
+        
+        console.log('📊 Lines encontradas:', lines?.length || 0);
 
         if (lines && lines.length > 0) {
           const lineIds = lines.map(l => l.id);
