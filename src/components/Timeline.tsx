@@ -392,7 +392,7 @@ export const Timeline = ({
                       : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
-                    minHeight: isVertical ? '600px' : `${isExpanded ? 550 : 250}px`,
+                    minHeight: isVertical ? '700px' : `${isExpanded ? 550 : 250}px`,
                     minWidth: isVertical ? 'auto' : '100%'
                   }}
                 >
@@ -402,7 +402,7 @@ export const Timeline = ({
                   </div>
                   
                   {/* Botão toggle único - centralizado no canto inferior */}
-                  {!readOnly && (
+                  {!readOnly && !isVertical && (
                     <button
                       onClick={() => setIsExpanded(!isExpanded)}
                       className="absolute bottom-[8px] left-1/2 -translate-x-1/2 z-40 w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent flex items-center justify-center shadow-lg transition-all"
@@ -419,7 +419,7 @@ export const Timeline = ({
                       disabled={readOnly}
                       className={`absolute bg-foreground/30 z-0 transition-all ${
                         isVertical
-                          ? 'left-1/2 w-1 h-[calc(100%-48px)] top-6 -translate-x-1/2'
+                          ? 'left-1/2 w-1 h-[calc(100%-56px)] top-7 -translate-x-1/2'
                           : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
                       } ${
                         !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
