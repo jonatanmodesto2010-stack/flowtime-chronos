@@ -420,7 +420,7 @@ const Calendar = () => {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    ✅ Resolvidos
+                    ✅ Respondeu
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -431,7 +431,7 @@ const Calendar = () => {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    🚫 Sem Resposta
+                    🚫 Não Respondeu
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -463,8 +463,8 @@ const Calendar = () => {
                     <SelectContent className="bg-background z-50">
                       <SelectItem value="all">Todos os Status</SelectItem>
                       <SelectItem value="created">📝 Criados</SelectItem>
-                      <SelectItem value="resolved">✅ Resolvidos</SelectItem>
-                      <SelectItem value="no_response">🚫 Sem Resposta</SelectItem>
+                      <SelectItem value="resolved">✅ Respondeu</SelectItem>
+                      <SelectItem value="no_response">🚫 Não Respondeu</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -611,8 +611,8 @@ const Calendar = () => {
                                 'secondary'
                               }>
                                 {event.status === 'created' && '📝 Criado'}
-                                {event.status === 'resolved' && '✅ Resolvido'}
-                                {event.status === 'no_response' && '🚫 Sem Resposta'}
+                                {event.status === 'resolved' && '✅ Respondeu'}
+                                {event.status === 'no_response' && '🚫 Não Respondeu'}
                               </Badge>
                             </div>
                           </motion.div>
@@ -809,11 +809,11 @@ const Calendar = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xl">✅</span>
-                  <span className="text-sm text-muted-foreground">Resolvidos</span>
+                  <span className="text-sm text-muted-foreground">Respondeu</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🚫</span>
-                  <span className="text-sm text-muted-foreground">Sem Resposta</span>
+                  <span className="text-sm text-muted-foreground">Não Respondeu</span>
                 </div>
               </div>
             </div>
@@ -863,8 +863,8 @@ const Calendar = () => {
                                   : 'secondary'
                               }>
                                 {event.status === 'created' && '📝 Criado'}
-                                {event.status === 'resolved' && '✅ Resolvido'}
-                                {event.status === 'no_response' && '🚫 Sem Resposta'}
+                                {event.status === 'resolved' && '✅ Respondeu'}
+                                {event.status === 'no_response' && '🚫 Não Respondeu'}
                               </Badge>
                             </div>
                             {event.description && (
