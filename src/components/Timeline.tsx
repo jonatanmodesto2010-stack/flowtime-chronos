@@ -509,13 +509,13 @@ export const Timeline = ({
                         </motion.div>
                       </AnimatePresence>
                     </button>
-                    <div
-                      className={`absolute w-full flex flex-col items-center gap-1 ${
-                        isVertical
-                          ? event.position === 'bottom' ? 'left-8' : 'right-8'
-                          : event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
-                      }`}
-                    >
+              <div
+                className={`absolute w-full flex flex-col items-center gap-1 ${
+                  isVertical
+                    ? event.status === 'no_response' ? 'left-8' : 'right-8'
+                    : event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
+                }`}
+              >
                       <div
                         className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
                         onClick={(e) => {
