@@ -508,8 +508,8 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
 
                 {/* Elementos ao redor do status */}
                 {event.status === 'no_response' ? (
-                  // Elementos à DIREITA do status
-                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+20px)]">
+                  // Elementos à ESQUERDA do status
+                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+20px)]">
                     <div
                       className="text-2xl cursor-pointer hover:scale-105 transition-transform"
                       onClick={(e) => {
@@ -537,8 +537,21 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                     )}
                   </div>
                 ) : (
-                  // Elementos à ESQUERDA do status
-                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+20px)]">
+                  // Elementos à DIREITA do status
+                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+20px)]">
+                    <div
+                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event, line.id);
+                      }}
+                      title={event.description}
+                    >
+                      {event.icon}
+                    </div>
+                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
+                      {event.date}
+                    </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -551,19 +564,6 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                         </p>
                       </motion.div>
                     )}
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
-                    </div>
-                    <div
-                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
-                    >
-                      {event.icon}
-                    </div>
                   </div>
                 )}
               </>
