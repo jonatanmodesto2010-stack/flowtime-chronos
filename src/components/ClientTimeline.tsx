@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, X, Minus } from 'lucide-react';
 import { EventModal } from './EventModal';
@@ -16,6 +16,8 @@ interface Event {
   position: 'top' | 'bottom';
   status: 'created' | 'resolved' | 'no_response';
   isNew?: boolean;
+  time?: string;
+  created_at?: string;
 }
 
 interface TimelineLine {
@@ -36,6 +38,8 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showAllDescriptions, setShowAllDescriptions] = useState(false);
   const [isVertical, setIsVertical] = useState(false);
+  const [isLocalUpdate, setIsLocalUpdate] = useState(false);
+  const reloadTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
   
   const toggleAllDescriptions = () => {
@@ -56,8 +60,15 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
           table: 'timeline_events'
         },
         (payload) => {
+          if (isLocalUpdate) return;
+          
           console.log('Evento alterado:', payload);
-          loadTimeline();
+          if (reloadTimeoutRef.current) {
+            clearTimeout(reloadTimeoutRef.current);
+          }
+          reloadTimeoutRef.current = setTimeout(() => {
+            loadTimeline();
+          }, 500);
         }
       )
       .on(
@@ -69,13 +80,23 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
           filter: `timeline_id=eq.${clientId}`
         },
         (payload) => {
+          if (isLocalUpdate) return;
+          
           console.log('Linha alterada:', payload);
-          loadTimeline();
+          if (reloadTimeoutRef.current) {
+            clearTimeout(reloadTimeoutRef.current);
+          }
+          reloadTimeoutRef.current = setTimeout(() => {
+            loadTimeline();
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+      }
       supabase.removeChannel(channel);
     };
   }, [clientId]);
@@ -110,9 +131,11 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                 icon: e.icon,
                 iconSize: e.icon_size,
                 date: e.event_date,
+                time: e.event_time || undefined,
                 description: e.description || '',
                 position: e.position as 'top' | 'bottom',
                 status: e.status as 'created' | 'resolved' | 'no_response',
+                created_at: e.created_at
               })),
             };
           })
@@ -268,6 +291,8 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
 
   const saveLineToDatabase = async (lineId: string, events: Event[]) => {
     try {
+      setIsLocalUpdate(true);
+      
       await supabaseClient
         .from('timeline_events')
         .delete()
@@ -276,6 +301,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
       const eventsToInsert = events.map((e, index) => ({
         line_id: lineId,
         event_date: e.date,
+        event_time: e.time,
         description: e.description,
         position: e.position,
         status: e.status,
@@ -289,9 +315,17 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
           .from('timeline_events')
           .insert(eventsToInsert);
 
-        if (error) throw error;
+        if (error) {
+          setIsLocalUpdate(false);
+          throw error;
+        }
       }
+      
+      setTimeout(() => {
+        setIsLocalUpdate(false);
+      }, 300);
     } catch (error: any) {
+      setIsLocalUpdate(false);
       toast({
         title: 'Erro ao salvar',
         description: error.message,

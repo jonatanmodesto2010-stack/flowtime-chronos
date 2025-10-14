@@ -36,6 +36,7 @@ interface Event {
   status: 'created' | 'resolved' | 'no_response';
   isNew?: boolean;
   time?: string;
+  created_at?: string;
 }
 
 interface EventModalProps {
@@ -187,6 +188,15 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
               autoFocus={event.isNew}
             />
           </div>
+
+          {/* Log de criação */}
+          {!event.isNew && event.created_at && (
+            <div className="text-xs text-muted-foreground border-t pt-3 mt-2">
+              <span className="font-semibold">Criado em:</span>{' '}
+              {format(new Date(event.created_at), "dd/MM/yyyy 'às' HH:mm")}
+            </div>
+          )}
+
           <div className="flex gap-2 mt-2">
             <button 
               onClick={handleCancel} 

@@ -16,6 +16,8 @@ interface Event {
   position: 'top' | 'bottom';
   status: 'created' | 'resolved' | 'no_response';
   isNew?: boolean;
+  time?: string;
+  created_at?: string;
 }
 
 interface ClientInfo {
