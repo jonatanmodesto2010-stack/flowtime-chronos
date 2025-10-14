@@ -516,8 +516,8 @@ export const Timeline = ({
 
                 {/* Elementos ao redor do status */}
                 {event.status === 'no_response' ? (
-                  // Elementos à ESQUERDA do status
-                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+20px)]">
+                  // Elementos à ESQUERDA do status: Descrição → Data → Ícone
+                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+20px)]">
                     <div
                       className="text-2xl cursor-pointer hover:scale-105 transition-transform"
                       onClick={(e) => {
@@ -545,7 +545,7 @@ export const Timeline = ({
                     )}
                   </div>
                 ) : (
-                  // Elementos à DIREITA do status
+                  // Elementos à DIREITA do status: Ícone → Data → Descrição
                   <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+20px)]">
                     <div
                       className="text-2xl cursor-pointer hover:scale-105 transition-transform"
