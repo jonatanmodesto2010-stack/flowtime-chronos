@@ -492,99 +492,90 @@ export const Timeline = ({
                         transition={{ duration: 0.5, delay: index * 0.1 }}
                         layout
                       >
-                    {isVertical ? (
-                      <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                        {event.status === 'no_response' ? (
-                          <>
-                            {showAllDescriptions && event.description && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                transition={{ duration: 0.3 }}
-                              >
-                                <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                                  {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
-                                </p>
-                              </motion.div>
-                            )}
-                            <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                              {event.date}
-                            </div>
-                            <div
-                              className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEventClick(event, line.id);
-                              }}
-                              title={event.description}
-                            >
-                              {event.icon}
-                            </div>
-                            <button
-                              className="w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
-                              onClick={(e) => handleStatusToggle(e, line.id, event.id)}
-                            >
-                              <AnimatePresence mode="popLayout">
-                                <motion.div
-                                  key={event.status}
-                                  initial={{ scale: 0, opacity: 0 }}
-                                  animate={{ scale: 1, opacity: 1 }}
-                                  exit={{ scale: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                >
-                                  {renderStatusIcon(event.status)}
-                                </motion.div>
-                              </AnimatePresence>
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              className="w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
-                              onClick={(e) => handleStatusToggle(e, line.id, event.id)}
-                            >
-                              <AnimatePresence mode="popLayout">
-                                <motion.div
-                                  key={event.status}
-                                  initial={{ scale: 0, opacity: 0 }}
-                                  animate={{ scale: 1, opacity: 1 }}
-                                  exit={{ scale: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                >
-                                  {renderStatusIcon(event.status)}
-                                </motion.div>
-                              </AnimatePresence>
-                            </button>
-                            <div
-                              className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEventClick(event, line.id);
-                              }}
-                              title={event.description}
-                            >
-                              {event.icon}
-                            </div>
-                            <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                              {event.date}
-                            </div>
-                            {showAllDescriptions && event.description && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                transition={{ duration: 0.3 }}
-                              >
-                                <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                                  {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
-                                </p>
-                              </motion.div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    ) : (
+            {isVertical ? (
+              <>
+                {/* Status SEMPRE fixo na linha */}
+                <button
+                  onClick={(e) => {
+                    handleStatusToggle(e, line.id, event.id);
+                  }}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform cursor-pointer"
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={event.status}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {renderStatusIcon(event.status)}
+                    </motion.div>
+                  </AnimatePresence>
+                </button>
+
+                {/* Elementos ao redor do status */}
+                {event.status === 'no_response' ? (
+                  // Elementos à DIREITA do status
+                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+20px)]">
+                    <div
+                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event, line.id);
+                      }}
+                      title={event.description}
+                    >
+                      {event.icon}
+                    </div>
+                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
+                      {event.date}
+                    </div>
+                    {showAllDescriptions && event.description && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                          {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
+                        </p>
+                      </motion.div>
+                    )}
+                  </div>
+                ) : (
+                  // Elementos à ESQUERDA do status
+                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+20px)]">
+                    {showAllDescriptions && event.description && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                          {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
+                        </p>
+                      </motion.div>
+                    )}
+                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
+                      {event.date}
+                    </div>
+                    <div
+                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event, line.id);
+                      }}
+                      title={event.description}
+                    >
+                      {event.icon}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
                       <>
                         <button
                           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
