@@ -88,6 +88,7 @@ export type Database = {
           created_at: string | null
           due_date: string | null
           id: string
+          is_active: boolean
           organization_id: string | null
           start_date: string
           updated_at: string | null
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           id?: string
+          is_active?: boolean
           organization_id?: string | null
           start_date: string
           updated_at?: string | null
@@ -112,6 +114,7 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           id?: string
+          is_active?: boolean
           organization_id?: string | null
           start_date?: string
           updated_at?: string | null
