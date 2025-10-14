@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Edit2, Calendar, List, Search } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Pencil, X, Check } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
-import { ClientTimeline } from '@/components/ClientTimeline';
-import { ClientInfoModal } from '@/components/ClientInfoModal';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { clientInfoSchema } from '@/lib/validations';
-import { Badge } from '@/components/ui/badge';
-import { z } from 'zod';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import type { User } from '@supabase/supabase-js';
 
 interface Client {
@@ -24,27 +23,29 @@ interface Client {
   created_at: string;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 const Clients = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { organizationId } = useUserRole();
-  const [showModal, setShowModal] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [managingClientId, setManagingClientId] = useState<string | null>(null);
-  const [managingClientName, setManagingClientName] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [formData, setFormData] = useState({
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [editingClientId, setEditingClientId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
     client_name: '',
-    start_date: new Date().toISOString().split('T')[0],
+    start_date: '',
     boleto_value: '',
-    due_date: new Date().toISOString().split('T')[0],
+    due_date: '',
+    tag: '',
   });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
-
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -69,28 +70,7 @@ const Clients = () => {
   useEffect(() => {
     if (organizationId) {
       loadClients();
-      
-      // Realtime subscription para sincronizar mudanças entre usuários
-      const channel = supabase
-        .channel('client_timelines_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'client_timelines',
-            filter: `organization_id=eq.${organizationId}`
-          },
-          (payload) => {
-            console.log('Mudança detectada:', payload);
-            loadClients();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      loadTags();
     }
   }, [organizationId]);
 
@@ -103,7 +83,7 @@ const Clients = () => {
         .from('client_timelines')
         .select('*')
         .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false });
+        .order('client_name', { ascending: true });
 
       if (error) throw error;
       setClients(data || []);
@@ -118,174 +98,74 @@ const Clients = () => {
     }
   };
 
-
-  const handleOpenModal = (client?: Client) => {
-    if (client) {
-      setEditingClient(client);
-      setFormData({
-        client_name: client.client_name,
-        start_date: client.start_date,
-        boleto_value: client.boleto_value?.toString() || '',
-        due_date: client.due_date || client.start_date,
-      });
-    } else {
-      setEditingClient(null);
-      setFormData({
-        client_name: '',
-        start_date: new Date().toISOString().split('T')[0],
-        boleto_value: '',
-        due_date: new Date().toISOString().split('T')[0],
-      });
-    }
-    setErrors({});
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    // Verificar se há mudanças não salvas
-    const hasChanges = 
-      formData.client_name !== '' ||
-      formData.boleto_value !== '0.00' ||
-      formData.start_date !== new Date().toISOString().split('T')[0] ||
-      formData.due_date !== new Date().toISOString().split('T')[0];
+  const loadTags = async () => {
+    if (!organizationId) return;
     
-    if (hasChanges && !editingClient) {
-      if (!window.confirm('Você tem dados não salvos. Deseja realmente sair sem salvar?')) {
-        return;
-      }
-    }
-    
-    setShowModal(false);
-    setEditingClient(null);
-    setErrors({});
-  };
-
-  const handleSave = async () => {
     try {
-      setErrors({});
-      clientInfoSchema.parse({
-        name: formData.client_name,
-        startDate: formData.start_date,
-        boletoValue: formData.boleto_value,
-        dueDate: formData.due_date,
-      });
+      const { data, error } = await supabaseClient
+        .from('tags')
+        .select('*')
+        .eq('organization_id', organizationId);
 
-      if (!user || !organizationId) return;
-
-      const boletoValue = formData.boleto_value === '' ? 0 : parseFloat(formData.boleto_value);
-
-      if (editingClient) {
-        const { error } = await supabaseClient
-          .from('client_timelines')
-          .update({
-            client_name: formData.client_name,
-            start_date: formData.start_date,
-            boleto_value: boletoValue,
-            due_date: formData.due_date,
-          })
-          .eq('id', editingClient.id);
-
-        if (error) throw error;
-
-        toast({
-          title: 'Cliente atualizado',
-          description: 'As informações foram atualizadas com sucesso.',
-        });
-      } else {
-        const { data: timeline, error: timelineError } = await supabaseClient
-          .from('client_timelines')
-          .insert({
-            user_id: user.id,
-            organization_id: organizationId,
-            client_name: formData.client_name,
-            start_date: formData.start_date,
-            boleto_value: boletoValue,
-            due_date: formData.due_date,
-          })
-          .select()
-          .single();
-
-        if (timelineError) throw timelineError;
-
-        const { error: lineError } = await supabaseClient
-          .from('timeline_lines')
-          .insert({
-            timeline_id: timeline.id,
-            position: 0,
-          })
-          .select()
-          .single();
-
-        if (lineError) throw lineError;
-
-        toast({
-          title: 'Cliente cadastrado',
-          description: 'Cliente criado com sucesso.',
-        });
-      }
-
-      loadClients();
-      handleCloseModal();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldErrors: { [key: string]: string } = {};
-        error.issues.forEach((err) => {
-          if (err.path[0]) {
-            const field = err.path[0] as string;
-            const mappedField = field === 'name' ? 'client_name' : 
-                              field === 'startDate' ? 'start_date' :
-                              field === 'boletoValue' ? 'boleto_value' :
-                              field === 'dueDate' ? 'due_date' : field;
-            fieldErrors[mappedField] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-      } else {
-        toast({
-          title: 'Erro ao salvar',
-          description: 'Não foi possível salvar o cliente.',
-          variant: 'destructive',
-        });
-      }
+      if (error) throw error;
+      setTags(data || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar tags:', error);
     }
   };
 
-  const handleDelete = async (clientId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este cliente?')) return;
+  const handleEditClient = (client: Client) => {
+    setEditingClientId(client.id);
+    setEditForm({
+      client_name: client.client_name,
+      start_date: client.start_date,
+      boleto_value: client.boleto_value?.toString() || '',
+      due_date: client.due_date || '',
+      tag: '',
+    });
+  };
 
+  const handleSaveEdit = async (clientId: string) => {
     try {
+      const boletoValue = editForm.boleto_value === '' ? 0 : parseFloat(editForm.boleto_value);
+
       const { error } = await supabaseClient
         .from('client_timelines')
-        .delete()
+        .update({
+          client_name: editForm.client_name,
+          start_date: editForm.start_date,
+          boleto_value: boletoValue,
+          due_date: editForm.due_date,
+        })
         .eq('id', clientId);
 
       if (error) throw error;
 
       toast({
-        title: 'Cliente excluído',
-        description: 'Cliente removido com sucesso.',
+        title: 'Cliente atualizado',
+        description: 'As informações foram atualizadas com sucesso.',
       });
 
+      setEditingClientId(null);
       loadClients();
     } catch (error: any) {
       toast({
-        title: 'Erro ao excluir',
+        title: 'Erro ao salvar',
         description: error.message,
         variant: 'destructive',
       });
     }
   };
 
-  const formatCurrency = (value: number | null) => {
-    if (!value) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+  const handleCancelEdit = () => {
+    setEditingClientId(null);
+    setEditForm({
+      client_name: '',
+      start_date: '',
+      boleto_value: '',
+      due_date: '',
+      tag: '',
+    });
   };
 
   if (loading) {
@@ -299,11 +179,11 @@ const Clients = () => {
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           
           <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-6xl mx-auto">
-              <div className="h-9 w-64 bg-muted animate-pulse rounded mb-6" />
-              <div className="grid gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-32 bg-muted animate-pulse rounded-xl" />
+            <div className="max-w-4xl mx-auto">
+              <div className="h-9 w-48 bg-muted animate-pulse rounded mb-6" />
+              <div className="flex flex-col gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
                 ))}
               </div>
             </div>
@@ -326,139 +206,144 @@ const Clients = () => {
           <motion.div 
             initial={{ opacity: 0, y: -20 }} 
             animate={{ opacity: 1, y: 0 }} 
-            className="max-w-6xl mx-auto"
+            className="max-w-4xl mx-auto"
           >
-            <div className="flex items-center justify-between mb-6 gap-4">
-              <div>
-                <h2 className="text-3xl font-bold text-foreground mb-2">
-                  Gerenciar Clientes
-                </h2>
-                <p className="text-muted-foreground">
-                  Cadastre e gerencie os clientes das suas timelines
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Buscar cliente..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring w-64"
-                  />
-                </div>
-                
-                <motion.button
-                  onClick={() => handleOpenModal()}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-xl shadow-lg whitespace-nowrap"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Plus size={20} />
-                  Novo Cliente
-                </motion.button>
-              </div>
-            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-6">
+              Clientes
+            </h2>
 
             {clients.length === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-20"
-              >
-                <Calendar size={64} className="mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Nenhum cliente cadastrado
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Comece adicionando seu primeiro cliente
-                </p>
-                <button
-                  onClick={() => handleOpenModal()}
-                  className="px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-xl"
-                >
-                  Cadastrar Cliente
-                </button>
-              </motion.div>
+              <div className="text-center py-20 text-muted-foreground">
+                <p>Nenhum cliente encontrado</p>
+              </div>
             ) : (
-              <div className="grid gap-4">
-                {clients
-                  .filter((client) =>
-                    client.client_name.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map((client, index) => (
+              <div className="flex flex-col gap-3">
+                {clients.map((client, index) => (
                   <motion.div
                     key={client.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+                    style={{ backgroundColor: '#121e1b' }}
+                    className="rounded-lg p-4 flex items-center gap-4"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-xl font-bold text-foreground">
-                            {client.client_name}
-                          </h3>
-                          <Badge className="bg-red-500 text-white hover:bg-red-600">
-                            COBRANÇA
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-1">Data de Início</p>
-                            <p className="font-semibold">{formatDate(client.start_date)}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-1">Valor do Boleto</p>
-                            <p className="font-semibold text-green-600">
-                              {formatCurrency(client.boleto_value)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-1">Vencimento</p>
-                            <p className="font-semibold">
-                              {client.due_date ? formatDate(client.due_date) : '-'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                    <Popover 
+                      open={editingClientId === client.id}
+                      onOpenChange={(open) => {
+                        if (!open) handleCancelEdit();
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <motion.button
+                          onClick={() => handleEditClient(client)}
+                          className="flex items-center justify-center w-10 h-10 rounded-full"
+                          style={{ backgroundColor: '#22c55e' }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Pencil className="w-5 h-5 text-white" />
+                        </motion.button>
+                      </PopoverTrigger>
                       
-                      <div className="flex gap-2 ml-4">
-                        <motion.button
-                          onClick={() => {
-                            setManagingClientId(client.id);
-                            setManagingClientName(client.client_name);
-                          }}
-                          className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="Gerenciar Timeline"
+                      <PopoverContent 
+                        className="w-96 p-0 bg-[#1a1a1a] border-border"
+                        align="start"
+                        sideOffset={8}
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-6 space-y-4"
                         >
-                          <List size={18} />
-                        </motion.button>
-                        <motion.button
-                          onClick={() => handleOpenModal(client)}
-                          className="p-2 bg-primary text-primary-foreground rounded-lg"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="Editar"
-                        >
-                          <Edit2 size={18} />
-                        </motion.button>
-                        <motion.button
-                          onClick={() => handleDelete(client.id)}
-                          className="p-2 bg-destructive text-destructive-foreground rounded-lg"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
-                        </motion.button>
-                      </div>
-                    </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="client_name" className="text-sm text-foreground">
+                              Nome do Cliente
+                            </Label>
+                            <Input
+                              id="client_name"
+                              value={editForm.client_name}
+                              onChange={(e) => setEditForm({ ...editForm, client_name: e.target.value })}
+                              className="bg-background border-border text-foreground"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="start_date" className="text-sm text-foreground">
+                              Data de Início
+                            </Label>
+                            <Input
+                              id="start_date"
+                              type="date"
+                              value={editForm.start_date}
+                              onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
+                              className="bg-background border-border text-foreground"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="boleto_value" className="text-sm text-foreground">
+                              Valor do Boleto
+                            </Label>
+                            <Input
+                              id="boleto_value"
+                              type="number"
+                              step="0.01"
+                              value={editForm.boleto_value}
+                              onChange={(e) => setEditForm({ ...editForm, boleto_value: e.target.value })}
+                              className="bg-background border-border text-foreground"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="due_date" className="text-sm text-foreground">
+                              Data de Vencimento
+                            </Label>
+                            <Input
+                              id="due_date"
+                              type="date"
+                              value={editForm.due_date}
+                              onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
+                              className="bg-background border-border text-foreground"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="tag" className="text-sm text-foreground">
+                              Tag
+                            </Label>
+                            <Input
+                              id="tag"
+                              value={editForm.tag}
+                              onChange={(e) => setEditForm({ ...editForm, tag: e.target.value })}
+                              placeholder="Digite uma tag..."
+                              className="bg-background border-border text-foreground"
+                            />
+                          </div>
+
+                          <div className="flex gap-2 pt-4">
+                            <Button
+                              variant="outline"
+                              className="flex-1"
+                              onClick={handleCancelEdit}
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Cancelar
+                            </Button>
+                            <Button
+                              className="flex-1 bg-[#22c55e] hover:bg-[#16a34a] text-white"
+                              onClick={() => handleSaveEdit(client.id)}
+                            >
+                              <Check className="w-4 h-4 mr-2" />
+                              Salvar
+                            </Button>
+                          </div>
+                        </motion.div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <h3 className="text-white font-bold text-lg uppercase tracking-wide">
+                      {client.client_name}
+                    </h3>
                   </motion.div>
                 ))}
               </div>
@@ -466,42 +351,6 @@ const Clients = () => {
           </motion.div>
         </main>
       </div>
-
-      {/* Modal */}
-      {showModal && (
-        <ClientInfoModal
-          clientInfo={{
-            name: formData.client_name,
-            startDate: formData.start_date,
-            boletoValue: formData.boleto_value,
-            dueDate: formData.due_date,
-          }}
-          onSave={(info) => {
-            setFormData({
-              client_name: info.name,
-              start_date: info.startDate,
-              boleto_value: info.boletoValue,
-              due_date: info.dueDate,
-            });
-            handleSave();
-          }}
-          onCancel={handleCloseModal}
-        />
-      )}
-
-      {/* Timeline Management Modal */}
-      <AnimatePresence>
-        {managingClientId && (
-          <ClientTimeline
-            clientId={managingClientId}
-            clientName={managingClientName}
-            onClose={() => {
-              setManagingClientId(null);
-              setManagingClientName('');
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
