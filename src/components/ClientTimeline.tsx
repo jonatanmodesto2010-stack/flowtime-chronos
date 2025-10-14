@@ -187,7 +187,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
     const currentLine = updatedLines[lineIndex];
 
     if (event.isNew) {
-      currentLine.events.push({ ...event, isNew: false });
+      currentLine.events.unshift({ ...event, isNew: false });
     } else {
       const eventIndex = currentLine.events.findIndex(e => e.id === event.id);
       if (eventIndex !== -1) {

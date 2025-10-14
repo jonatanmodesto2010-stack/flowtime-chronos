@@ -141,7 +141,7 @@ export const Timeline = ({
       isNew: true,
     };
     
-    updateLine(lineId, [...lineEvents, newEvent]);
+    updateLine(lineId, [newEvent, ...lineEvents]);
     setEditingEvent(newEvent);
     setEditingLineId(lineId);
   };
