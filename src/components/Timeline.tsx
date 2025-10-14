@@ -392,7 +392,7 @@ export const Timeline = ({
                       : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
-                    minHeight: isVertical ? '600px' : `${isExpanded ? 550 : 235}px`,
+                    minHeight: isVertical ? '600px' : `${isExpanded ? 550 : 250}px`,
                     minWidth: isVertical ? 'auto' : '100%'
                   }}
                 >
