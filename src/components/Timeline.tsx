@@ -492,96 +492,188 @@ export const Timeline = ({
                         transition={{ duration: 0.5, delay: index * 0.1 }}
                         layout
                       >
-                    <button
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
-                      onClick={(e) => handleStatusToggle(e, line.id, event.id)}
-                    >
-                      <AnimatePresence mode="popLayout">
-                        <motion.div
-                          key={event.status}
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex items-center justify-center"
-                        >
-                          {renderStatusIcon(event.status)}
-                        </motion.div>
-                      </AnimatePresence>
-                    </button>
-              <div
-                className={`absolute w-full flex flex-col items-center gap-1 ${
-                  isVertical
-                    ? event.status === 'no_response' ? 'left-8' : 'right-8'
-                    : event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
-                }`}
-              >
-                      <div
-                        className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEventClick(event, line.id);
-                        }}
-                        title={event.description}
-                      >
-                        {event.position === 'bottom' ? (
+                    {isVertical ? (
+                      <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                        {event.status === 'no_response' ? (
                           <>
-                            <div className="text-xs font-semibold text-foreground mb-2 whitespace-nowrap">
+                            {showAllDescriptions && event.description && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                                  {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
+                                </p>
+                              </motion.div>
+                            )}
+                            <div className="text-xs font-semibold text-foreground whitespace-nowrap">
                               {event.date}
                             </div>
-                            <div className="leading-none flex items-center justify-center">
-                                <span className="text-2xl">{event.icon}</span>
+                            <div
+                              className="text-2xl cursor-pointer hover:scale-105 transition-transform"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEventClick(event, line.id);
+                              }}
+                              title={event.description}
+                            >
+                              {event.icon}
                             </div>
+                            <button
+                              className="w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
+                              onClick={(e) => handleStatusToggle(e, line.id, event.id)}
+                            >
+                              <AnimatePresence mode="popLayout">
+                                <motion.div
+                                  key={event.status}
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  {renderStatusIcon(event.status)}
+                                </motion.div>
+                              </AnimatePresence>
+                            </button>
                           </>
                         ) : (
                           <>
-                            <div className="mb-2 leading-none flex items-center justify-center">
-                              <span className="text-2xl">{event.icon}</span>
+                            <button
+                              className="w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
+                              onClick={(e) => handleStatusToggle(e, line.id, event.id)}
+                            >
+                              <AnimatePresence mode="popLayout">
+                                <motion.div
+                                  key={event.status}
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  {renderStatusIcon(event.status)}
+                                </motion.div>
+                              </AnimatePresence>
+                            </button>
+                            <div
+                              className="text-2xl cursor-pointer hover:scale-105 transition-transform"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEventClick(event, line.id);
+                              }}
+                              title={event.description}
+                            >
+                              {event.icon}
                             </div>
                             <div className="text-xs font-semibold text-foreground whitespace-nowrap">
                               {event.date}
                             </div>
+                            {showAllDescriptions && event.description && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                                  {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
+                                </p>
+                              </motion.div>
+                            )}
                           </>
                         )}
                       </div>
-                      
-
-                      {/* Área de descrição expansível com rotação */}
-                      <AnimatePresence>
-                        {showAllDescriptions && event.description && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
-                            animate={{ 
-                              opacity: 1, 
-                              scale: 1,
-                              rotate: isVertical ? 0 : (event.position === 'bottom' ? 45 : -45)
-                            }}
-                            exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className={`absolute whitespace-nowrap z-50 pointer-events-none ${
-                              event.position === 'bottom' 
-                                ? 'top-12' 
-                                : 'bottom-12'
-                            }`}
-                            style={{
-                              transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
-                              left: '0',
-                              marginLeft: isVertical ? '0' : '20px',
-                            }}
-                          >
-                            <p 
-                              className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
-                              title={event.description}
+                    ) : (
+                      <>
+                        <button
+                          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform"
+                          onClick={(e) => handleStatusToggle(e, line.id, event.id)}
+                        >
+                          <AnimatePresence mode="popLayout">
+                            <motion.div
+                              key={event.status}
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex items-center justify-center"
                             >
-                              {event.description.length > 30 
-                                ? `${event.description.substring(0, 30)}...` 
-                                : event.description
-                              }
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                              {renderStatusIcon(event.status)}
+                            </motion.div>
+                          </AnimatePresence>
+                        </button>
+                        <div
+                          className={`absolute w-full flex flex-col items-center gap-1 ${
+                            event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
+                          }`}
+                        >
+                          <div
+                            className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEventClick(event, line.id);
+                            }}
+                            title={event.description}
+                          >
+                            {event.position === 'bottom' ? (
+                              <>
+                                <div className="text-xs font-semibold text-foreground mb-2 whitespace-nowrap">
+                                  {event.date}
+                                </div>
+                                <div className="leading-none flex items-center justify-center">
+                                  <span className="text-2xl">{event.icon}</span>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="mb-2 leading-none flex items-center justify-center">
+                                  <span className="text-2xl">{event.icon}</span>
+                                </div>
+                                <div className="text-xs font-semibold text-foreground whitespace-nowrap">
+                                  {event.date}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          
+                          <AnimatePresence>
+                            {showAllDescriptions && event.description && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
+                                animate={{ 
+                                  opacity: 1, 
+                                  scale: 1,
+                                  rotate: event.position === 'bottom' ? 45 : -45
+                                }}
+                                exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className={`absolute whitespace-nowrap z-50 pointer-events-none ${
+                                  event.position === 'bottom' 
+                                    ? 'top-12' 
+                                    : 'bottom-12'
+                                }`}
+                                style={{
+                                  transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
+                                  left: '0',
+                                  marginLeft: '20px',
+                                }}
+                              >
+                                <p 
+                                  className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
+                                  title={event.description}
+                                >
+                                  {event.description.length > 30 
+                                    ? `${event.description.substring(0, 30)}...` 
+                                    : event.description
+                                  }
+                                </p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </>
+                    )}
                     </motion.div>
                     );
                   })}

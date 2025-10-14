@@ -483,85 +483,151 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                             }`}
                             style={isVertical ? { top: `${position}%` } : {}}
                           >
-                          <button
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
-                            onClick={() => handleStatusToggle(line.id, event.id)}
-                          >
-                            <div className="flex items-center justify-center">
-                              {renderStatusIcon(event.status)}
-                            </div>
-                          </button>
-                          
-              <div
-                className={`absolute w-full flex flex-col items-center gap-1 ${
-                  isVertical
-                    ? event.status === 'no_response' ? 'left-8' : 'right-8'
-                    : event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
-                }`}
-              >
-                            <div
-                              className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
-                              onClick={() => handleEventClick(event, line.id)}
-                              title={event.description}
-                            >
-                              {event.position === 'bottom' ? (
+                          {isVertical ? (
+                            <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                              {event.status === 'no_response' ? (
                                 <>
-                                  <div className="text-sm font-semibold text-foreground mb-2">
+                                  {showAllDescriptions && event.description && (
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0.8 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      exit={{ opacity: 0, scale: 0.8 }}
+                                      transition={{ duration: 0.3 }}
+                                    >
+                                      <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                                        {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
+                                      </p>
+                                    </motion.div>
+                                  )}
+                                  <div className="text-sm font-semibold text-foreground whitespace-nowrap">
                                     {event.date}
                                   </div>
-                                  <div className={`${event.iconSize || 'text-2xl'}`}>
+                                  <div
+                                    className={`${event.iconSize || 'text-2xl'} cursor-pointer hover:scale-105 transition-transform`}
+                                    onClick={() => handleEventClick(event, line.id)}
+                                    title={event.description}
+                                  >
                                     {event.icon}
                                   </div>
+                                  <button
+                                    className="w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                                    onClick={() => handleStatusToggle(line.id, event.id)}
+                                  >
+                                    {renderStatusIcon(event.status)}
+                                  </button>
                                 </>
                               ) : (
                                 <>
-                                  <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
+                                  <button
+                                    className="w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                                    onClick={() => handleStatusToggle(line.id, event.id)}
+                                  >
+                                    {renderStatusIcon(event.status)}
+                                  </button>
+                                  <div
+                                    className={`${event.iconSize || 'text-2xl'} cursor-pointer hover:scale-105 transition-transform`}
+                                    onClick={() => handleEventClick(event, line.id)}
+                                    title={event.description}
+                                  >
                                     {event.icon}
                                   </div>
-                                  <div className="text-sm font-semibold text-foreground">
+                                  <div className="text-sm font-semibold text-foreground whitespace-nowrap">
                                     {event.date}
                                   </div>
+                                  {showAllDescriptions && event.description && (
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0.8 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      exit={{ opacity: 0, scale: 0.8 }}
+                                      transition={{ duration: 0.3 }}
+                                    >
+                                      <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                                        {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
+                                      </p>
+                                    </motion.div>
+                                  )}
                                 </>
                               )}
                             </div>
-                            
-
-                            {/* Área de descrição expansível com rotação */}
-                            <AnimatePresence>
-                              {showAllDescriptions && event.description && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
-                                  animate={{ 
-                                    opacity: 1, 
-                                    scale: 1,
-                                    rotate: isVertical ? 0 : (event.position === 'bottom' ? 45 : -45)
-                                  }}
-                                  exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
-                                  transition={{ duration: 0.3 }}
-                                  className={`absolute whitespace-nowrap z-50 pointer-events-none ${
-                                    event.position === 'bottom' 
-                                      ? 'top-12' 
-                                      : 'bottom-12'
-                                  }`}
-                                  style={{
-                                    transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
-                                    left: '0',
-                                    marginLeft: isVertical ? '0' : '20px',
-                                  }}
+                          ) : (
+                            <>
+                              <button
+                                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                                onClick={() => handleStatusToggle(line.id, event.id)}
+                              >
+                                <div className="flex items-center justify-center">
+                                  {renderStatusIcon(event.status)}
+                                </div>
+                              </button>
+                              
+                              <div
+                                className={`absolute w-full flex flex-col items-center gap-1 ${
+                                  event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
+                                }`}
+                              >
+                                <div
+                                  className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                                  onClick={() => handleEventClick(event, line.id)}
+                                  title={event.description}
                                 >
-                                  <p 
-                                    className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
-                                    title={event.description}
-                                  >
-                                    {event.description.length > 30 
-                                      ? `${event.description.substring(0, 30)}...` 
-                                      : event.description
-                                    }
-                                  </p>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
+                                  {event.position === 'bottom' ? (
+                                    <>
+                                      <div className="text-sm font-semibold text-foreground mb-2">
+                                        {event.date}
+                                      </div>
+                                      <div className={`${event.iconSize || 'text-2xl'}`}>
+                                        {event.icon}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
+                                        {event.icon}
+                                      </div>
+                                      <div className="text-sm font-semibold text-foreground">
+                                        {event.date}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                                
+                                <AnimatePresence>
+                                  {showAllDescriptions && event.description && (
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
+                                      animate={{ 
+                                        opacity: 1, 
+                                        scale: 1,
+                                        rotate: event.position === 'bottom' ? 45 : -45
+                                      }}
+                                      exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className={`absolute whitespace-nowrap z-50 pointer-events-none ${
+                                        event.position === 'bottom' 
+                                          ? 'top-12' 
+                                          : 'bottom-12'
+                                      }`}
+                                      style={{
+                                        transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
+                                        left: '0',
+                                        marginLeft: '20px',
+                                      }}
+                                    >
+                                      <p 
+                                        className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
+                                        title={event.description}
+                                      >
+                                        {event.description.length > 30 
+                                          ? `${event.description.substring(0, 30)}...` 
+                                          : event.description
+                                        }
+                                      </p>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            </>
+                          )}
                         </div>
                         );
                       })}
