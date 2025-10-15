@@ -7,6 +7,7 @@ import { UserManagement } from '@/components/settings/UserManagement';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { UserProfile } from '@/components/settings/UserProfile';
 import { TagsManagement } from '@/components/settings/TagsManagement';
+import { HistorySettings } from '@/components/settings/HistorySettings';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -68,6 +69,7 @@ const Settings = () => {
                 <TabsTrigger value="tags">Tags</TabsTrigger>
               </>
             )}
+            <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -90,6 +92,10 @@ const Settings = () => {
               </TabsContent>
             </>
           )}
+
+          <TabsContent value="history">
+            <HistorySettings />
+          </TabsContent>
         </Tabs>
         </main>
       </div>

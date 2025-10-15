@@ -179,12 +179,76 @@ export const ClientTimelineDialog = ({
             </div>
           ) : timelineData ? (
             <div className="max-w-full">
-              <Timeline
-                timeline={timelineData}
-                updateLine={() => {}}
-                updateClientInfo={() => {}}
-                readOnly={true}
-              />
+      <Timeline
+        timeline={timelineData}
+        updateLine={async (lineId, events) => {
+          try {
+            // Deletar eventos antigos da linha
+            await supabase
+              .from('timeline_events')
+              .delete()
+              .eq('line_id', lineId);
+
+            // Inserir novos eventos
+            if (events.length > 0) {
+              const eventsToInsert = events.map((event, index) => ({
+                line_id: lineId,
+                event_date: event.date,
+                event_time: event.time || null,
+                description: event.description,
+                position: event.position,
+                status: event.status,
+                icon: event.icon,
+                icon_size: event.iconSize,
+                event_order: index,
+              }));
+
+              await supabase
+                .from('timeline_events')
+                .insert(eventsToInsert);
+            }
+
+            // Recarregar dados
+            loadTimelineData();
+            
+            toast({
+              title: 'Timeline atualizada',
+              description: 'Os eventos foram salvos com sucesso.',
+            });
+          } catch (error: any) {
+            toast({
+              title: 'Erro ao salvar',
+              description: error.message,
+              variant: 'destructive',
+            });
+          }
+        }}
+        updateClientInfo={async (updatedInfo) => {
+          try {
+            await supabase
+              .from('client_timelines')
+              .update({
+                client_name: updatedInfo.name,
+                start_date: updatedInfo.startDate,
+                boleto_value: updatedInfo.boletoValue ? parseFloat(updatedInfo.boletoValue) : null,
+                due_date: updatedInfo.dueDate || null,
+              })
+              .eq('id', client.id);
+
+            toast({
+              title: 'Cliente atualizado',
+              description: 'As informações foram atualizadas com sucesso.',
+            });
+          } catch (error: any) {
+            toast({
+              title: 'Erro ao atualizar',
+              description: error.message,
+              variant: 'destructive',
+            });
+          }
+        }}
+        readOnly={false}
+      />
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">

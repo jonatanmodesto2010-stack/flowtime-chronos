@@ -5,6 +5,7 @@ import { Pencil } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientDashboardModal } from '@/components/ClientDashboardModal';
+import { ClientSearchFilters } from '@/components/ClientSearchFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +28,7 @@ interface Client {
 const Clients = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { organizationId } = useUserRole();
@@ -74,6 +76,7 @@ const Clients = () => {
 
       if (error) throw error;
       setClients(data || []);
+      setFilteredClients(data || []);
     } catch (error: any) {
       toast({
         title: 'Erro ao carregar clientes',
@@ -82,6 +85,125 @@ const Clients = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFilterChange = async (filters: any) => {
+    if (!organizationId) return;
+
+    let query = supabaseClient
+      .from('client_timelines')
+      .select('*')
+      .eq('organization_id', organizationId);
+
+    // Search term (nome ou ID)
+    if (filters.searchTerm) {
+      query = query.or(`client_name.ilike.%${filters.searchTerm}%,client_id.ilike.%${filters.searchTerm}%`);
+    }
+
+    // Status filter
+    if (filters.statusFilter === 'active') {
+      query = query.eq('is_active', true);
+    } else if (filters.statusFilter === 'inactive') {
+      query = query.eq('is_active', false);
+    }
+
+    // Date range filter
+    if (filters.dateFrom) {
+      query = query.gte('start_date', filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      query = query.lte('start_date', filters.dateTo);
+    }
+
+    query = query.order('client_name', { ascending: true });
+
+    try {
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let results = data || [];
+
+      // Tags filter (client-side porque precisa de join complexo)
+      if (filters.tagsFilter && filters.tagsFilter.length > 0) {
+        const clientIds = results.map(c => c.id);
+        
+        const { data: clientTags } = await supabaseClient
+          .from('client_timeline_tags')
+          .select('timeline_id')
+          .in('timeline_id', clientIds)
+          .in('tag_id', filters.tagsFilter);
+
+        const filteredIds = clientTags?.map(ct => ct.timeline_id) || [];
+        results = results.filter(c => filteredIds.includes(c.id));
+      }
+
+      // Boleto filter
+      if (filters.boletoFilter !== 'all') {
+        const clientIds = results.map(c => c.id);
+        
+        const { data: boletos } = await supabaseClient
+          .from('client_boletos')
+          .select('timeline_id, status')
+          .in('timeline_id', clientIds);
+
+        if (filters.boletoFilter === 'pending') {
+          const idsWithPending = boletos?.filter(b => b.status === 'pendente' || b.status === 'atrasado')
+            .map(b => b.timeline_id) || [];
+          results = results.filter(c => idsWithPending.includes(c.id));
+        } else if (filters.boletoFilter === 'paid') {
+          const idsWithPaid = boletos?.filter(b => b.status === 'pago').map(b => b.timeline_id) || [];
+          results = results.filter(c => idsWithPaid.includes(c.id));
+        } else if (filters.boletoFilter === 'none') {
+          const idsWithBoletos = boletos?.map(b => b.timeline_id) || [];
+          results = results.filter(c => !idsWithBoletos.includes(c.id));
+        }
+      }
+
+      // Timeline filter
+      if (filters.timelineFilter !== 'all') {
+        const clientIds = results.map(c => c.id);
+        
+        const { data: lines } = await supabaseClient
+          .from('timeline_lines')
+          .select('id, timeline_id')
+          .in('timeline_id', clientIds);
+
+        if (filters.timelineFilter === 'with_events' || filters.timelineFilter === 'no_events') {
+          const lineIds = lines?.map(l => l.id) || [];
+          
+          const { data: events } = await supabaseClient
+            .from('timeline_events')
+            .select('line_id')
+            .in('line_id', lineIds);
+
+          const linesWithEvents = events?.map(e => e.line_id) || [];
+          const timelinesWithEvents = lines?.filter(l => linesWithEvents.includes(l.id))
+            .map(l => l.timeline_id) || [];
+
+          if (filters.timelineFilter === 'with_events') {
+            results = results.filter(c => timelinesWithEvents.includes(c.id));
+          } else {
+            results = results.filter(c => !timelinesWithEvents.includes(c.id));
+          }
+        } else if (filters.timelineFilter === 'with_analysis') {
+          const { data: analysis } = await supabaseClient
+            .from('client_analysis_history')
+            .select('timeline_id')
+            .in('timeline_id', clientIds);
+
+          const idsWithAnalysis = analysis?.map(a => a.timeline_id) || [];
+          results = results.filter(c => idsWithAnalysis.includes(c.id));
+        }
+      }
+
+      setFilteredClients(results);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao filtrar clientes',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -166,13 +288,22 @@ const Clients = () => {
               Clientes
             </h2>
 
-            {clients.length === 0 ? (
+            <ClientSearchFilters
+              onFilterChange={handleFilterChange}
+              organizationId={organizationId}
+            />
+
+            <div className="mb-4 text-sm text-muted-foreground">
+              Mostrando {filteredClients.length} de {clients.length} clientes
+            </div>
+
+            {filteredClients.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground">
                 <p>Nenhum cliente encontrado</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {clients.map((client, index) => (
+                {filteredClients.map((client, index) => (
                   <motion.div
                     key={client.id}
                     initial={{ opacity: 0, x: -20 }}

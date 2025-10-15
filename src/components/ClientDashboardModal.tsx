@@ -68,14 +68,12 @@ export const ClientDashboardModal = ({
   }>>([]);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
   const { toast } = useToast();
 
   const handleOpenCalendar = () => {
-    toast({
-      title: 'Calendário',
-      description: 'Funcionalidade de calendário em desenvolvimento.',
-    });
-    setShowCalendar(false);
+    // Navegar para calendário com filtro de cliente
+    window.location.href = `/calendar?client=${client.id}`;
   };
 
   useEffect(() => {
@@ -84,6 +82,7 @@ export const ClientDashboardModal = ({
       loadClientTags();
       loadAnalysisHistory();
       loadBoletos();
+      loadTimelineEvents();
     }
   }, [isOpen, client.id, client.organization_id]);
 
@@ -146,6 +145,36 @@ export const ClientDashboardModal = ({
         status: b.status,
         description: b.description || undefined
       })));
+    }
+  };
+
+  const loadTimelineEvents = async () => {
+    try {
+      const { data: lines, error: linesError } = await supabase
+        .from('timeline_lines')
+        .select('id')
+        .eq('timeline_id', client.id);
+
+      if (linesError) throw linesError;
+
+      if (lines && lines.length > 0) {
+        const lineIds = lines.map(l => l.id);
+
+        const { data: events, error: eventsError } = await supabase
+          .from('timeline_events')
+          .select('*')
+          .in('line_id', lineIds)
+          .order('event_date', { ascending: false });
+
+        if (eventsError) throw eventsError;
+
+        setTimelineEvents(events || []);
+      } else {
+        setTimelineEvents([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar eventos da timeline:', error);
+      setTimelineEvents([]);
     }
   };
 
@@ -294,6 +323,21 @@ export const ClientDashboardModal = ({
               </h3>
               
               <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="start_date">Data de Cadastro</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    disabled
+                    readOnly
+                    className="mt-1 bg-muted cursor-not-allowed opacity-70"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📅 Data em que o cliente foi cadastrado no sistema
+                  </p>
+                </div>
+
                 <div className="col-span-2">
                   <Label htmlFor="client_name">Nome do Cliente *</Label>
                   <Input
