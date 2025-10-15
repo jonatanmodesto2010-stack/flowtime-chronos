@@ -9,6 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AIAnalysisSection } from './AIAnalysisSection';
 import { ClientTimelineDialog } from './ClientTimelineDialog';
 import { formatCurrency, formatDate } from '@/lib/metrics-calculator';
@@ -70,6 +80,8 @@ export const ClientDashboardModal = ({
   const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string>('');
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   const handleOpenCalendar = () => {
@@ -315,6 +327,36 @@ export const ClientDashboardModal = ({
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
     );
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('client_timelines')
+        .delete()
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Cliente excluído',
+        description: 'O cliente foi removido com sucesso.',
+      });
+
+      setShowDeleteConfirm(false);
+      onClose();
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Erro ao excluir cliente:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: error.message || 'Ocorreu um erro ao excluir o cliente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -786,24 +828,39 @@ export const ClientDashboardModal = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-4 p-6 border-t border-border">
+          {/* Botão Excluir - Lado Esquerdo */}
           <Button
             type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={saving}
+            variant="destructive"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={saving || deleting}
+            className="bg-red-600 hover:bg-red-700 text-white"
           >
-            <X className="w-4 h-4 mr-2" />
-            Cancelar
+            <Trash2 className="w-4 h-4 mr-2" />
+            Excluir
           </Button>
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || !formData.client_name || !formData.start_date}
-            className="bg-green-500 hover:bg-green-600 text-white"
-          >
-            <Check className="w-4 h-4 mr-2" />
-            {saving ? 'Salvando...' : 'Salvar'}
-          </Button>
+
+          {/* Botões Cancelar e Salvar - Lado Direito */}
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={saving || deleting}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || deleting || !formData.client_name || !formData.start_date}
+              className="bg-green-500 hover:bg-green-600 text-white"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              {saving ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -813,6 +870,40 @@ export const ClientDashboardModal = ({
         isOpen={showTimeline}
         onClose={() => setShowTimeline(false)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o cliente <strong>{client.client_name}</strong>?
+              <br />
+              <br />
+              Esta ação <strong className="text-red-500">NÃO</strong> pode ser desfeita e irá remover:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Todas as informações do cliente</li>
+                <li>Timeline e eventos ({timelineEvents.length} eventos)</li>
+                <li>Boletos cadastrados ({boletos.length} boletos)</li>
+                <li>Tags associadas ({selectedTags.length} tags)</li>
+                <li>Histórico de análises ({analysisHistory.length} análises)</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? 'Excluindo...' : 'Sim, excluir cliente'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 };
