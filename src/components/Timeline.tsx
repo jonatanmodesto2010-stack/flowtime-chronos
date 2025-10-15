@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Trash2, ChevronUp, ChevronDown, Minus } from 'lucide-react';
+import { User, CheckCircle2, ChevronUp, ChevronDown, Minus } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +46,7 @@ interface TimelineProps {
   addNewLine?: () => void;
   deleteLine?: (lineId: string) => void;
   updateClientInfo: (info: ClientInfo) => void;
-  onDelete?: () => void;
+  onComplete?: () => void;
   readOnly?: boolean;
 }
 
@@ -56,7 +56,7 @@ export const Timeline = ({
   addNewLine, 
   deleteLine, 
   updateClientInfo, 
-  onDelete,
+  onComplete,
   readOnly = true 
 }: TimelineProps) => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -365,16 +365,16 @@ export const Timeline = ({
           )}
         </div>
         
-        {/* Lado direito: Lixeira */}
-        {!readOnly && onDelete && (
+        {/* Lado direito: Botão Finalizar */}
+        {!readOnly && onComplete && (
           <motion.button
-            onClick={onDelete}
-            className="p-2 bg-destructive/10 text-destructive rounded-lg transition-all hover:bg-destructive/20"
+            onClick={onComplete}
+            className="p-2 bg-green-500/10 text-green-500 rounded-lg transition-all hover:bg-green-500/20"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            title="Excluir cliente"
+            title="Finalizar cobrança"
           >
-            <Trash2 size={18} />
+            <CheckCircle2 size={18} />
           </motion.button>
         )}
       </motion.div>

@@ -110,6 +110,7 @@ const Index = () => {
         .from('client_timelines')
         .select('*')
         .eq('organization_id', organizationId)
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -424,13 +425,17 @@ const Index = () => {
     }
   };
 
-  const handleDeleteTimeline = async (timelineId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta linha de cobrança?')) return;
+  const handleCompleteTimeline = async (timelineId: string) => {
+    if (!window.confirm('Deseja finalizar esta cobrança?\n\nEla será movida para o histórico e não poderá ser editada.')) return;
 
     try {
       const { error } = await supabaseClient
         .from('client_timelines')
-        .delete()
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          is_active: false
+        })
         .eq('id', timelineId);
 
       if (error) throw error;
@@ -438,12 +443,12 @@ const Index = () => {
       loadTimelines();
 
       toast({
-        title: 'Timeline excluída',
-        description: 'Linha de cobrança removida com sucesso.',
+        title: 'Cobrança finalizada',
+        description: 'Timeline movida para o histórico com sucesso.',
       });
     } catch (error: any) {
       toast({
-        title: 'Erro ao excluir timeline',
+        title: 'Erro ao finalizar',
         description: error.message,
         variant: 'destructive',
       });
@@ -563,7 +568,7 @@ const Index = () => {
                       addNewLine={() => addNewLine(timeline.id)}
                       deleteLine={(lineId) => deleteLine(timeline.id, lineId)}
                       updateClientInfo={(info) => updateClientInfo(timeline.id, info)}
-                      onDelete={timelines.length > 1 ? () => handleDeleteTimeline(timeline.id) : undefined}
+                      onComplete={timelines.length > 1 ? () => handleCompleteTimeline(timeline.id) : undefined}
                       readOnly={false}
                     />
                   </motion.div>

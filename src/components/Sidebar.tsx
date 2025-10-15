@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Calendar, Settings, Users, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Calendar, Settings, Users, X, ChevronLeft, ChevronRight, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_NAME, getFullVersion, BUILD_VERSION } from '@/config/version';
@@ -18,6 +18,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { icon: Home, label: 'Time Line', path: '/', active: location.pathname === '/' },
     { icon: Users, label: 'Clientes', path: '/clients', active: location.pathname === '/clients' },
     { icon: Calendar, label: 'Calendário', path: '/calendar', active: location.pathname === '/calendar' },
+    { icon: Archive, label: 'Histórico', path: '/history', active: location.pathname === '/history' },
     { icon: Settings, label: 'Configurações', path: '/settings', active: location.pathname === '/settings' },
   ];
 

@@ -120,12 +120,15 @@ export type Database = {
           boleto_value: number | null
           client_id: string | null
           client_name: string
+          completed_at: string | null
+          completion_notes: string | null
           created_at: string | null
           due_date: string | null
           id: string
           is_active: boolean
           organization_id: string | null
           start_date: string
+          status: string
           updated_at: string | null
           user_id: string
         }
@@ -133,12 +136,15 @@ export type Database = {
           boleto_value?: number | null
           client_id?: string | null
           client_name: string
+          completed_at?: string | null
+          completion_notes?: string | null
           created_at?: string | null
           due_date?: string | null
           id?: string
           is_active?: boolean
           organization_id?: string | null
           start_date: string
+          status?: string
           updated_at?: string | null
           user_id: string
         }
@@ -146,12 +152,15 @@ export type Database = {
           boleto_value?: number | null
           client_id?: string | null
           client_name?: string
+          completed_at?: string | null
+          completion_notes?: string | null
           created_at?: string | null
           due_date?: string | null
           id?: string
           is_active?: boolean
           organization_id?: string | null
           start_date?: string
+          status?: string
           updated_at?: string | null
           user_id?: string
         }

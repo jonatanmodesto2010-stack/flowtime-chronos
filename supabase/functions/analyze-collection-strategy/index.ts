@@ -124,6 +124,9 @@ DADOS DO CLIENTE:
 - Nome: ${client.client_name}
 - ID: ${client.client_id || 'N/A'}
 - Status: ${client.is_active ? 'Ativo' : 'Inativo'}
+- Status da Timeline: ${client.status || 'active'}
+${client.completed_at ? `- Finalizada em: ${new Date(client.completed_at).toLocaleDateString('pt-BR')}` : ''}
+${client.completion_notes ? `- Observações de finalização: ${client.completion_notes}` : ''}
 - Valor do boleto: R$ ${parseFloat(client.boleto_value || '0').toFixed(2)}
 - Data de início: ${startDate.toLocaleDateString('pt-BR')}
 - Data de vencimento: ${dueDate ? dueDate.toLocaleDateString('pt-BR') : 'Não definida'}

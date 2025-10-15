@@ -11,6 +11,7 @@ import Calendar from "./pages/Calendar";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/auth" element={<Auth />} />
