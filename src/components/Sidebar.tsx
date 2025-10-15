@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Calendar, Settings, Users, X, ChevronLeft, ChevronRight, Archive } from 'lucide-react';
+import { Calendar, Settings, Users, X, ChevronLeft, ChevronRight, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_NAME, getFullVersion, BUILD_VERSION } from '@/config/version';
@@ -15,7 +15,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: Home, label: 'Time Line', path: '/', active: location.pathname === '/' },
     { icon: Users, label: 'Clientes', path: '/clients', active: location.pathname === '/clients' },
     { icon: Calendar, label: 'Calendário', path: '/calendar', active: location.pathname === '/calendar' },
     { icon: Settings, label: 'Configurações', path: '/settings', active: location.pathname === '/settings' },
