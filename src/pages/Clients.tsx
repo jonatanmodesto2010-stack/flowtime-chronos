@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Pencil } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientDashboardModal } from '@/components/ClientDashboardModal';
@@ -312,14 +311,6 @@ const Clients = () => {
                     className="rounded-lg p-4 flex items-center gap-4 bg-card hover:bg-card/80 transition-colors cursor-pointer"
                     onClick={() => handleOpenModal(client)}
                   >
-                    <motion.div
-                      className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-secondary/90"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      <Pencil className="w-5 h-5 text-secondary-foreground" />
-                    </motion.div>
-
                     <div className="flex-1">
                       <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
                         {client.client_name}

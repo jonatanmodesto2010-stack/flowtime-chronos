@@ -109,7 +109,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
   return (
     <div className="space-y-4 mb-6">
       {/* Search Bar */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
@@ -119,12 +119,12 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
               setSearchTerm(e.target.value);
               applyFilters();
             }}
-            className="pl-10"
+            className="pl-10 flex-1"
           />
         </div>
         <Popover open={showFilters} onOpenChange={setShowFilters}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="relative">
+            <Button variant="outline" className="relative shrink-0">
               <SlidersHorizontal className="w-4 h-4 mr-2" />
               Filtros
               {activeFiltersCount > 0 && (

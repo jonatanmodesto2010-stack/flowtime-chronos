@@ -51,7 +51,6 @@ export const ClientDashboardModal = ({
     client_name: client.client_name,
     client_id: client.client_id || '',
     start_date: client.start_date,
-    due_date: client.due_date || '',
     boleto_value: client.boleto_value || '',
     is_active: client.is_active,
   });
@@ -69,6 +68,8 @@ export const ClientDashboardModal = ({
   const [showTimeline, setShowTimeline] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>('');
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string>('');
   const { toast } = useToast();
 
   const handleOpenCalendar = () => {
@@ -83,6 +84,7 @@ export const ClientDashboardModal = ({
       loadAnalysisHistory();
       loadBoletos();
       loadTimelineEvents();
+      loadLastUpdatedBy();
     }
   }, [isOpen, client.id, client.organization_id]);
 
@@ -178,6 +180,41 @@ export const ClientDashboardModal = ({
     }
   };
 
+  const loadLastUpdatedBy = async () => {
+    try {
+      const { data: timeline, error: timelineError } = await supabase
+        .from('client_timelines')
+        .select('updated_at, user_id')
+        .eq('id', client.id)
+        .single();
+
+      if (timelineError) throw timelineError;
+
+      if (timeline) {
+        setLastUpdatedAt(timeline.updated_at);
+
+        if (timeline.user_id) {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', timeline.user_id)
+            .single();
+
+          if (!profileError && profile) {
+            setLastUpdatedBy(profile.full_name || 'Usuário');
+          } else {
+            setLastUpdatedBy('Sistema');
+          }
+        } else {
+          setLastUpdatedBy('Sistema');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar informações de atualização:', error);
+      setLastUpdatedBy('Sistema');
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -251,11 +288,6 @@ export const ClientDashboardModal = ({
   };
 
   if (!isOpen) return null;
-
-  const daysOverdue = client.due_date
-    ? Math.floor((new Date().getTime() - new Date(client.due_date).getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
-  const isOverdue = daysOverdue > 0;
 
   return (
     <motion.div
@@ -524,50 +556,6 @@ export const ClientDashboardModal = ({
 
             <Separator />
 
-            {/* Dates Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-blue-400 flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Datas
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start_date">Data de Início *</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    disabled
-                    readOnly
-                    className="mt-1 bg-muted cursor-not-allowed opacity-70"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    📅 Data de criação da timeline (não editável)
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="due_date">Data de Vencimento</Label>
-                  <Input
-                    id="due_date"
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                    className="mt-1"
-                  />
-                  {isOverdue && (
-                    <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Atrasado {daysOverdue} dia(s)
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
             {/* Tags Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-purple-400 flex items-center gap-2">
@@ -637,13 +625,16 @@ export const ClientDashboardModal = ({
               </div>
             )}
 
-            {/* Metadata */}
-            {client.created_at && (
-              <div className="space-y-2 text-xs text-muted-foreground">
-                <p>Criado em: {formatDate(client.created_at)}</p>
-                {client.updated_at && (
-                  <p>Última atualização: {formatDate(client.updated_at)}</p>
-                )}
+            {/* Last Updated Info */}
+            {lastUpdatedBy && lastUpdatedAt && (
+              <div className="p-4 bg-card/50 rounded-lg border border-border">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <span>
+                    Última atualização por: <span className="font-semibold text-foreground">{lastUpdatedBy}</span>
+                    {' '}em {formatDate(lastUpdatedAt)}
+                  </span>
+                </p>
               </div>
             )}
           </div>
