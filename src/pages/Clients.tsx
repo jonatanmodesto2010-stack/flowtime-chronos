@@ -1,32 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Pencil, X, Check } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
+import { ClientDashboardModal } from '@/components/ClientDashboardModal';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import type { User } from '@supabase/supabase-js';
 
 interface Client {
   id: string;
   client_name: string;
+  client_id?: string | null;
   start_date: string;
-  boleto_value: number | null;
-  due_date: string | null;
+  boleto_value?: string | null;
+  due_date?: string | null;
+  is_active: boolean;
   created_at: string;
-}
-
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
+  updated_at?: string;
+  organization_id?: string;
 }
 
 const Clients = () => {
@@ -35,15 +30,8 @@ const Clients = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { organizationId } = useUserRole();
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [editingClientId, setEditingClientId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    client_name: '',
-    start_date: '',
-    boleto_value: '',
-    due_date: '',
-    tag: '',
-  });
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -70,7 +58,6 @@ const Clients = () => {
   useEffect(() => {
     if (organizationId) {
       loadClients();
-      loadTags();
     }
   }, [organizationId]);
 
@@ -98,74 +85,41 @@ const Clients = () => {
     }
   };
 
-  const loadTags = async () => {
-    if (!organizationId) return;
-    
-    try {
-      const { data, error } = await supabaseClient
-        .from('tags')
-        .select('*')
-        .eq('organization_id', organizationId);
-
-      if (error) throw error;
-      setTags(data || []);
-    } catch (error: any) {
-      console.error('Erro ao carregar tags:', error);
-    }
+  const handleOpenModal = (client: Client) => {
+    setSelectedClient(client);
+    setModalOpen(true);
   };
 
-  const handleEditClient = (client: Client) => {
-    setEditingClientId(client.id);
-    setEditForm({
-      client_name: client.client_name,
-      start_date: client.start_date,
-      boleto_value: client.boleto_value?.toString() || '',
-      due_date: client.due_date || '',
-      tag: '',
-    });
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedClient(null);
   };
 
-  const handleSaveEdit = async (clientId: string) => {
-    try {
-      const boletoValue = editForm.boleto_value === '' ? 0 : parseFloat(editForm.boleto_value);
+  const handleSaveClient = async (updatedData: Partial<Client>) => {
+    if (!selectedClient) return;
 
+    try {
       const { error } = await supabaseClient
         .from('client_timelines')
-        .update({
-          client_name: editForm.client_name,
-          start_date: editForm.start_date,
-          boleto_value: boletoValue,
-          due_date: editForm.due_date,
-        })
-        .eq('id', clientId);
+        .update(updatedData)
+        .eq('id', selectedClient.id);
 
       if (error) throw error;
 
+      await loadClients();
+      
       toast({
         title: 'Cliente atualizado',
         description: 'As informações foram atualizadas com sucesso.',
       });
-
-      setEditingClientId(null);
-      loadClients();
     } catch (error: any) {
       toast({
         title: 'Erro ao salvar',
         description: error.message,
         variant: 'destructive',
       });
+      throw error;
     }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingClientId(null);
-    setEditForm({
-      client_name: '',
-      start_date: '',
-      boleto_value: '',
-      due_date: '',
-      tag: '',
-    });
   };
 
   if (loading) {
@@ -224,124 +178,31 @@ const Clients = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="rounded-lg p-4 flex items-center gap-4 bg-card"
+                    className="rounded-lg p-4 flex items-center gap-4 bg-card hover:bg-card/80 transition-colors cursor-pointer"
+                    onClick={() => handleOpenModal(client)}
                   >
-                    <Popover 
-                      open={editingClientId === client.id}
-                      onOpenChange={(open) => {
-                        if (!open) handleCancelEdit();
-                      }}
+                    <motion.div
+                      className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-secondary/90"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                     >
-                      <PopoverTrigger asChild>
-                        <motion.button
-                          onClick={() => handleEditClient(client)}
-                          className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-secondary/90"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Pencil className="w-5 h-5 text-secondary-foreground" />
-                        </motion.button>
-                      </PopoverTrigger>
-                      
-                      <PopoverContent 
-                        className="w-96 p-0 bg-popover border-border"
-                        align="start"
-                        sideOffset={8}
-                      >
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-6 space-y-4"
-                        >
-                          <div className="space-y-2">
-                            <Label htmlFor="client_name" className="text-sm text-foreground">
-                              Nome do Cliente
-                            </Label>
-                            <Input
-                              id="client_name"
-                              value={editForm.client_name}
-                              onChange={(e) => setEditForm({ ...editForm, client_name: e.target.value })}
-                              className="bg-background border-border text-foreground"
-                            />
-                          </div>
+                      <Pencil className="w-5 h-5 text-secondary-foreground" />
+                    </motion.div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="start_date" className="text-sm text-foreground">
-                              Data de Início
-                            </Label>
-                            <Input
-                              id="start_date"
-                              type="date"
-                              value={editForm.start_date}
-                              onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
-                              className="bg-background border-border text-foreground"
-                            />
-                          </div>
+                    <div className="flex-1">
+                      <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
+                        {client.client_name}
+                      </h3>
+                      {client.client_id && (
+                        <p className="text-xs text-muted-foreground">ID: {client.client_id}</p>
+                      )}
+                    </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="boleto_value" className="text-sm text-foreground">
-                              Valor do Boleto
-                            </Label>
-                            <Input
-                              id="boleto_value"
-                              type="number"
-                              step="0.01"
-                              value={editForm.boleto_value}
-                              onChange={(e) => setEditForm({ ...editForm, boleto_value: e.target.value })}
-                              className="bg-background border-border text-foreground"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="due_date" className="text-sm text-foreground">
-                              Data de Vencimento
-                            </Label>
-                            <Input
-                              id="due_date"
-                              type="date"
-                              value={editForm.due_date}
-                              onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-                              className="bg-background border-border text-foreground"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="tag" className="text-sm text-foreground">
-                              Tag
-                            </Label>
-                            <Input
-                              id="tag"
-                              value={editForm.tag}
-                              onChange={(e) => setEditForm({ ...editForm, tag: e.target.value })}
-                              placeholder="Digite uma tag..."
-                              className="bg-background border-border text-foreground"
-                            />
-                          </div>
-
-                          <div className="flex gap-2 pt-4">
-                            <Button
-                              variant="outline"
-                              className="flex-1"
-                              onClick={handleCancelEdit}
-                            >
-                              <X className="w-4 h-4 mr-2" />
-                              Cancelar
-                            </Button>
-                            <Button
-                              className="flex-1 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                              onClick={() => handleSaveEdit(client.id)}
-                            >
-                              <Check className="w-4 h-4 mr-2" />
-                              Salvar
-                            </Button>
-                          </div>
-                        </motion.div>
-                      </PopoverContent>
-                    </Popover>
-
-                    <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
-                      {client.client_name}
-                    </h3>
+                    {!client.is_active && (
+                      <div className="px-2 py-1 bg-red-500/20 text-red-500 text-xs rounded">
+                        Inativo
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>
@@ -349,6 +210,15 @@ const Clients = () => {
           </motion.div>
         </main>
       </div>
+
+      {selectedClient && (
+        <ClientDashboardModal
+          client={selectedClient}
+          isOpen={modalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveClient}
+        />
+      )}
     </div>
   );
 };

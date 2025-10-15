@@ -1,0 +1,415 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { X, Check, Calendar, DollarSign, Tag as TagIcon, User, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { AIAnalysisSection } from './AIAnalysisSection';
+import { formatCurrency, formatDate } from '@/lib/metrics-calculator';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Client {
+  id: string;
+  client_name: string;
+  client_id?: string | null;
+  start_date: string;
+  due_date?: string | null;
+  boleto_value?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  organization_id?: string;
+}
+
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface ClientDashboardModalProps {
+  client: Client;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (updatedClient: Partial<Client>) => Promise<void>;
+}
+
+export const ClientDashboardModal = ({
+  client,
+  isOpen,
+  onClose,
+  onSave,
+}: ClientDashboardModalProps) => {
+  const [formData, setFormData] = useState({
+    client_name: client.client_name,
+    client_id: client.client_id || '',
+    start_date: client.start_date,
+    due_date: client.due_date || '',
+    boleto_value: client.boleto_value || '',
+    is_active: client.is_active,
+  });
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [analysisHistory, setAnalysisHistory] = useState<any[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen && client.organization_id) {
+      loadTags();
+      loadClientTags();
+      loadAnalysisHistory();
+    }
+  }, [isOpen, client.id, client.organization_id]);
+
+  const loadTags = async () => {
+    if (!client.organization_id) return;
+
+    const { data, error } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('organization_id', client.organization_id)
+      .order('name');
+
+    if (!error && data) {
+      setTags(data);
+    }
+  };
+
+  const loadClientTags = async () => {
+    const { data, error } = await supabase
+      .from('client_timeline_tags')
+      .select('tag_id')
+      .eq('timeline_id', client.id);
+
+    if (!error && data) {
+      setSelectedTags(data.map(t => t.tag_id));
+    }
+  };
+
+  const loadAnalysisHistory = async () => {
+    const { data, error } = await supabase
+      .from('client_analysis_history')
+      .select('*')
+      .eq('timeline_id', client.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (!error && data) {
+      setAnalysisHistory(data);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(formData);
+      
+      // Update tags
+      await supabase
+        .from('client_timeline_tags')
+        .delete()
+        .eq('timeline_id', client.id);
+
+      if (selectedTags.length > 0) {
+        await supabase
+          .from('client_timeline_tags')
+          .insert(selectedTags.map(tagId => ({
+            timeline_id: client.id,
+            tag_id: tagId
+          })));
+      }
+
+      toast({
+        title: 'Cliente atualizado',
+        description: 'As informações foram salvas com sucesso.',
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um erro ao salvar as informações.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  if (!isOpen) return null;
+
+  const daysOverdue = client.due_date
+    ? Math.floor((new Date().getTime() - new Date(client.due_date).getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+  const isOverdue = daysOverdue > 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-background border-2 border-green-500/50 rounded-xl shadow-2xl w-full max-w-3xl h-[calc(100vh-100px)] flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-green-500/30">
+          <div>
+            <h2 className="text-2xl font-bold text-green-400 flex items-center gap-2">
+              <User className="w-6 h-6" />
+              Informações do Cliente
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gerencie dados e análises de cobrança
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <ScrollArea className="flex-1 p-6">
+          <div className="space-y-6">
+            {/* Basic Info Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-green-400 flex items-center gap-2">
+                📊 Informações Básicas
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="client_name">Nome do Cliente *</Label>
+                  <Input
+                    id="client_name"
+                    value={formData.client_name}
+                    onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="client_id">ID do Cliente</Label>
+                  <Input
+                    id="client_id"
+                    value={formData.client_id}
+                    onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                    className="mt-1"
+                    placeholder="Opcional"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-card rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${formData.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <Label htmlFor="is_active">Status Ativo</Label>
+                  </div>
+                  <Switch
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Financial Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-orange-400 flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Financeiro
+              </h3>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <Label htmlFor="boleto_value">Valor do Boleto (R$)</Label>
+                  <Input
+                    id="boleto_value"
+                    type="number"
+                    step="0.01"
+                    value={formData.boleto_value}
+                    onChange={(e) => setFormData({ ...formData, boleto_value: e.target.value })}
+                    className="mt-1"
+                    placeholder="0,00"
+                  />
+                  {formData.boleto_value && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {formatCurrency(formData.boleto_value)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Dates Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-blue-400 flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Datas
+              </h3>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="start_date">Data de Início *</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="due_date">Data de Vencimento</Label>
+                  <Input
+                    id="due_date"
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                    className="mt-1"
+                  />
+                  {isOverdue && (
+                    <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Atrasado {daysOverdue} dia(s)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Tags Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-purple-400 flex items-center gap-2">
+                <TagIcon className="w-5 h-5" />
+                Tags
+              </h3>
+
+              <div className="flex flex-wrap gap-2">
+                {tags.map(tag => (
+                  <Badge
+                    key={tag.id}
+                    style={{ 
+                      backgroundColor: selectedTags.includes(tag.id) ? tag.color : 'transparent',
+                      borderColor: tag.color,
+                      color: selectedTags.includes(tag.id) ? 'white' : tag.color
+                    }}
+                    className="cursor-pointer border-2 transition-all hover:scale-105"
+                    onClick={() => toggleTag(tag.id)}
+                  >
+                    {tag.name}
+                  </Badge>
+                ))}
+                {tags.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhuma tag disponível</p>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* AI Analysis Section */}
+            <AIAnalysisSection timelineId={client.id} clientName={client.client_name} />
+
+            <Separator />
+
+            {/* Analysis History */}
+            {analysisHistory.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-cyan-400 flex items-center gap-2">
+                  📝 Histórico de Análises
+                </h3>
+                <div className="space-y-2">
+                  {analysisHistory.map((analysis) => (
+                    <div
+                      key={analysis.id}
+                      className="p-3 bg-card/50 rounded-lg border border-border flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-xs text-muted-foreground">
+                          {formatDate(analysis.created_at)}
+                        </div>
+                        <Badge className={`${
+                          analysis.risk_level === 'crítico' ? 'bg-red-500' :
+                          analysis.risk_level === 'alto' ? 'bg-orange-500' :
+                          analysis.risk_level === 'médio' ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        } text-white`}>
+                          {analysis.risk_level.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="text-sm font-semibold">
+                        Score: {analysis.risk_score}/100
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Metadata */}
+            {client.created_at && (
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <p>Criado em: {formatDate(client.created_at)}</p>
+                {client.updated_at && (
+                  <p>Última atualização: {formatDate(client.updated_at)}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between gap-4 p-6 border-t border-border">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={saving}
+          >
+            <X className="w-4 h-4 mr-2" />
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving || !formData.client_name || !formData.start_date}
+            className="bg-green-500 hover:bg-green-600 text-white"
+          >
+            <Check className="w-4 h-4 mr-2" />
+            {saving ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};

@@ -44,6 +44,41 @@ export type Database = {
         }
         Relationships: []
       }
+      client_analysis_history: {
+        Row: {
+          analysis_data: Json
+          created_at: string | null
+          id: string
+          risk_level: string
+          risk_score: number
+          timeline_id: string
+        }
+        Insert: {
+          analysis_data: Json
+          created_at?: string | null
+          id?: string
+          risk_level: string
+          risk_score: number
+          timeline_id: string
+        }
+        Update: {
+          analysis_data?: Json
+          created_at?: string | null
+          id?: string
+          risk_level?: string
+          risk_score?: number
+          timeline_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_analysis_history_timeline_id_fkey"
+            columns: ["timeline_id"]
+            isOneToOne: false
+            referencedRelation: "client_timelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_timeline_tags: {
         Row: {
           created_at: string | null
@@ -88,6 +123,7 @@ export type Database = {
           created_at: string | null
           due_date: string | null
           id: string
+          is_active: boolean
           organization_id: string | null
           start_date: string
           updated_at: string | null
@@ -100,6 +136,7 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           id?: string
+          is_active?: boolean
           organization_id?: string | null
           start_date: string
           updated_at?: string | null
@@ -112,6 +149,7 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           id?: string
+          is_active?: boolean
           organization_id?: string | null
           start_date?: string
           updated_at?: string | null
