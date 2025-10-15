@@ -811,55 +811,69 @@ export const ClientDashboardModal = ({
               </div>
             )}
 
-            {/* Last Updated Info */}
-            {lastUpdatedBy && lastUpdatedAt && (
-              <div className="p-4 bg-card/50 rounded-lg border border-border">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  <span>
-                    Última atualização por: <span className="font-semibold text-foreground">{lastUpdatedBy}</span>
-                    {' '}em {formatDate(lastUpdatedAt)}
-                  </span>
-                </p>
-              </div>
-            )}
           </div>
         </ScrollArea>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-4 p-6 border-t border-border">
-          {/* Botão Excluir - Lado Esquerdo */}
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={saving || deleting}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Excluir
-          </Button>
+        <div className="border-t border-border">
+          <div className="flex flex-col gap-3 p-6">
+            {/* Linha Superior: Botão Excluir + Info de Auditoria */}
+            <div className="flex items-center justify-between">
+              {/* Lado Esquerdo: Botão Excluir + Auditoria */}
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={saving || deleting}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </Button>
+                
+                {/* Informação de Auditoria */}
+                {lastUpdatedBy && lastUpdatedAt && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    <span>
+                      Última atualização: 
+                      <span className="font-semibold text-foreground ml-1">{lastUpdatedBy}</span>
+                      {' - '}
+                      {new Date(lastUpdatedAt).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-          {/* Botões Cancelar e Salvar - Lado Direito */}
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={saving || deleting}
-            >
-              <X className="w-4 h-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={saving || deleting || !formData.client_name || !formData.start_date}
-              className="bg-green-500 hover:bg-green-600 text-white"
-            >
-              <Check className="w-4 h-4 mr-2" />
-              {saving ? 'Salvando...' : 'Salvar'}
-            </Button>
+              {/* Lado Direito: Botões Cancelar e Salvar */}
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={saving || deleting}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving || deleting || !formData.client_name || !formData.start_date}
+                  className="bg-green-500 hover:bg-green-600 text-white"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
