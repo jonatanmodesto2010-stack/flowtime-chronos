@@ -79,6 +79,47 @@ export type Database = {
           },
         ]
       }
+      client_boletos: {
+        Row: {
+          boleto_value: number
+          created_at: string | null
+          description: string | null
+          due_date: string
+          id: string
+          status: string
+          timeline_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          boleto_value: number
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          status?: string
+          timeline_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          boleto_value?: number
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          status?: string
+          timeline_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_boletos_timeline_id_fkey"
+            columns: ["timeline_id"]
+            isOneToOne: false
+            referencedRelation: "client_timelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_timeline_tags: {
         Row: {
           created_at: string | null
@@ -426,6 +467,10 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      generate_client_sequential_id: {
+        Args: { org_id: string }
+        Returns: string
       }
       get_organization_users: {
         Args: { _org_id: string }

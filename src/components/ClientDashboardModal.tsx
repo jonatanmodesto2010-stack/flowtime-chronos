@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Check, Calendar, DollarSign, Tag as TagIcon, User, Clock } from 'lucide-react';
+import { X, Check, Calendar, DollarSign, Tag as TagIcon, User, Clock, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIAnalysisSection } from './AIAnalysisSection';
 import { formatCurrency, formatDate } from '@/lib/metrics-calculator';
 import { useToast } from '@/hooks/use-toast';
@@ -57,6 +58,13 @@ export const ClientDashboardModal = ({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [analysisHistory, setAnalysisHistory] = useState<any[]>([]);
+  const [boletos, setBoletos] = useState<Array<{
+    id?: string;
+    boleto_value: string;
+    due_date: string;
+    status: string;
+    description?: string;
+  }>>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,6 +72,7 @@ export const ClientDashboardModal = ({
       loadTags();
       loadClientTags();
       loadAnalysisHistory();
+      loadBoletos();
     }
   }, [isOpen, client.id, client.organization_id]);
 
@@ -105,6 +114,24 @@ export const ClientDashboardModal = ({
     }
   };
 
+  const loadBoletos = async () => {
+    const { data, error } = await supabase
+      .from('client_boletos')
+      .select('*')
+      .eq('timeline_id', client.id)
+      .order('due_date', { ascending: true });
+
+    if (!error && data) {
+      setBoletos(data.map(b => ({
+        id: b.id,
+        boleto_value: b.boleto_value.toString(),
+        due_date: b.due_date,
+        status: b.status,
+        description: b.description || undefined
+      })));
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -123,6 +150,34 @@ export const ClientDashboardModal = ({
             timeline_id: client.id,
             tag_id: tagId
           })));
+      }
+
+      // ============================================
+      // SALVAR BOLETOS
+      // ============================================
+      // Deletar boletos antigos
+      await supabase
+        .from('client_boletos')
+        .delete()
+        .eq('timeline_id', client.id);
+
+      // Inserir novos boletos
+      if (boletos.length > 0) {
+        const boletosToInsert = boletos
+          .filter(b => b.boleto_value && b.due_date) // Apenas boletos válidos
+          .map(b => ({
+            timeline_id: client.id,
+            boleto_value: parseFloat(b.boleto_value),
+            due_date: b.due_date,
+            status: b.status,
+            description: b.description || null
+          }));
+
+        if (boletosToInsert.length > 0) {
+          await supabase
+            .from('client_boletos')
+            .insert(boletosToInsert);
+        }
       }
 
       toast({
@@ -169,7 +224,7 @@ export const ClientDashboardModal = ({
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-background border-2 border-green-500/50 rounded-xl shadow-2xl w-full max-w-3xl h-[calc(100vh-100px)] flex flex-col"
+        className="bg-background border-2 border-green-500/50 rounded-xl shadow-2xl w-full max-w-7xl h-[calc(100vh-100px)] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-green-500/30">
@@ -239,32 +294,151 @@ export const ClientDashboardModal = ({
 
             <Separator />
 
-            {/* Financial Section */}
+            {/* Multiple Boletos Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-orange-400 flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
-                Financeiro
-              </h3>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label htmlFor="boleto_value">Valor do Boleto (R$)</Label>
-                  <Input
-                    id="boleto_value"
-                    type="number"
-                    step="0.01"
-                    value={formData.boleto_value}
-                    onChange={(e) => setFormData({ ...formData, boleto_value: e.target.value })}
-                    className="mt-1"
-                    placeholder="0,00"
-                  />
-                  {formData.boleto_value && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {formatCurrency(formData.boleto_value)}
-                    </p>
-                  )}
-                </div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-orange-400 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Boletos e Vencimentos ({boletos.length})
+                </h3>
+                <Button
+                  size="sm"
+                  onClick={() => setBoletos([...boletos, { 
+                    boleto_value: '', 
+                    due_date: '', 
+                    status: 'pendente',
+                    description: ''
+                  }])}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                  type="button"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Boleto
+                </Button>
               </div>
+
+              {boletos.length === 0 ? (
+                <div className="text-center py-8 bg-card/50 rounded-lg border border-dashed border-border">
+                  <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm text-muted-foreground">Nenhum boleto adicionado</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Clique no botão acima para adicionar boletos
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {boletos.map((boleto, index) => (
+                    <div
+                      key={boleto.id || `new-${index}`}
+                      className="p-4 bg-card/50 rounded-lg border border-border hover:border-orange-500/50 transition-colors"
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs">Valor (R$) *</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={boleto.boleto_value}
+                            onChange={(e) => {
+                              const updated = [...boletos];
+                              updated[index].boleto_value = e.target.value;
+                              setBoletos(updated);
+                            }}
+                            placeholder="0,00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Vencimento *</Label>
+                          <Input
+                            type="date"
+                            value={boleto.due_date}
+                            onChange={(e) => {
+                              const updated = [...boletos];
+                              updated[index].due_date = e.target.value;
+                              setBoletos(updated);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Status</Label>
+                          <Select
+                            value={boleto.status}
+                            onValueChange={(value) => {
+                              const updated = [...boletos];
+                              updated[index].status = value;
+                              setBoletos(updated);
+                            }}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pendente">🟡 Pendente</SelectItem>
+                              <SelectItem value="pago">✅ Pago</SelectItem>
+                              <SelectItem value="atrasado">🔴 Atrasado</SelectItem>
+                              <SelectItem value="cancelado">❌ Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setBoletos(boletos.filter((_, i) => i !== index));
+                            }}
+                            className="w-full"
+                            type="button"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <Label className="text-xs">Descrição (opcional)</Label>
+                        <Input
+                          value={boleto.description || ''}
+                          onChange={(e) => {
+                            const updated = [...boletos];
+                            updated[index].description = e.target.value;
+                            setBoletos(updated);
+                          }}
+                          placeholder="Ex: Mensalidade de Abril, Parcela 1/3..."
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Total de Boletos Pendentes */}
+              {boletos.length > 0 && (
+                <div className="p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border-2 border-orange-500/30 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Pendente</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {boletos.filter(b => b.status === 'pendente' || b.status === 'atrasado').length} boletos
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-3xl font-bold text-orange-500">
+                        {formatCurrency(
+                          boletos
+                            .filter(b => (b.status === 'pendente' || b.status === 'atrasado') && b.boleto_value)
+                            .reduce((sum, b) => sum + parseFloat(b.boleto_value || '0'), 0)
+                            .toFixed(2)
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -283,9 +457,13 @@ export const ClientDashboardModal = ({
                     id="start_date"
                     type="date"
                     value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="mt-1"
+                    disabled
+                    readOnly
+                    className="mt-1 bg-muted cursor-not-allowed opacity-70"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📅 Data de criação da timeline (não editável)
+                  </p>
                 </div>
 
                 <div>

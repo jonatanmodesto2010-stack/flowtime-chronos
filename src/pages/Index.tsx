@@ -192,7 +192,7 @@ const Index = () => {
         .insert({
           user_id: user.id,
           organization_id: organizationId,
-          client_id: null,
+          // client_id será auto-gerado pelo trigger
           client_name: '',
           start_date: today,
           boleto_value: 0,

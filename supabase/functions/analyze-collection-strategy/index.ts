@@ -86,6 +86,58 @@ serve(async (req) => {
       }
     }
 
+    // ============================================
+    // ANÁLISE TEMPORAL DETALHADA DOS EVENTOS
+    // ============================================
+
+    // 1. Análise por horário
+    const eventsWithTime = allEvents.filter(e => e.event_time);
+    const morningEvents = eventsWithTime.filter(e => {
+      const hour = parseInt(e.event_time?.split(':')[0] || '0');
+      return hour >= 6 && hour < 12;
+    }).length;
+
+    const afternoonEvents = eventsWithTime.filter(e => {
+      const hour = parseInt(e.event_time?.split(':')[0] || '0');
+      return hour >= 12 && hour < 18;
+    }).length;
+
+    const eveningEvents = eventsWithTime.filter(e => {
+      const hour = parseInt(e.event_time?.split(':')[0] || '0');
+      return hour >= 18 || hour < 6;
+    }).length;
+
+    // 2. Análise por dia da semana
+    const eventsByDay: Record<string, number> = {};
+    allEvents.forEach(e => {
+      if (e.event_date && e.event_date !== '--/--') {
+        try {
+          const [day, month, year] = e.event_date.split('/');
+          const fullYear = year || new Date().getFullYear().toString();
+          const date = new Date(parseInt(fullYear), parseInt(month) - 1, parseInt(day));
+          if (!isNaN(date.getTime())) {
+            const dayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+            eventsByDay[dayName] = (eventsByDay[dayName] || 0) + 1;
+          }
+        } catch (e) {
+          console.error('Error parsing date:', e);
+        }
+      }
+    });
+
+    const mostActiveDay = Object.entries(eventsByDay).sort((a, b) => b[1] - a[1])[0];
+
+    // 3. Análise por posição
+    const topEvents = allEvents.filter(e => e.position === 'top').length;
+    const bottomEvents = allEvents.filter(e => e.position === 'bottom').length;
+
+    // 4. Análise por ícone (tipo de interação)
+    const eventsByIcon: Record<string, number> = {};
+    allEvents.forEach(e => {
+      eventsByIcon[e.icon] = (eventsByIcon[e.icon] || 0) + 1;
+    });
+    const mostUsedChannel = Object.entries(eventsByIcon).sort((a, b) => b[1] - a[1])[0];
+
     // Fetch tags
     const { data: tagData, error: tagError } = await supabaseClient
       .from('client_timeline_tags')
@@ -98,6 +150,24 @@ serve(async (req) => {
       .eq('timeline_id', timeline_id);
 
     const tags = tagData?.map((t: any) => t.tags?.name).filter(Boolean) || [];
+
+    // ============================================
+    // BUSCAR MÚLTIPLOS BOLETOS
+    // ============================================
+    const { data: boletos, error: boletosError } = await supabaseClient
+      .from('client_boletos')
+      .select('*')
+      .eq('timeline_id', timeline_id)
+      .order('due_date', { ascending: true });
+
+    const totalBoletos = boletos?.length || 0;
+    const boletosPendentes = boletos?.filter(b => b.status === 'pendente' || b.status === 'atrasado') || [];
+    const totalPendente = boletosPendentes.reduce((sum, b) => sum + parseFloat(b.boleto_value || '0'), 0);
+    const boletosVencidos = boletos?.filter(b => {
+      const venc = new Date(b.due_date);
+      return venc < now && b.status !== 'pago';
+    }).length || 0;
+    const proximoVencimento = boletosPendentes[0]?.due_date || null;
 
     // Calculate metrics
     const now = new Date();
@@ -145,8 +215,32 @@ MÉTRICAS DE INTERAÇÃO:
 
 HISTÓRICO DE EVENTOS (últimos ${Math.min(allEvents.length, 20)}):
 ${allEvents.slice(0, 20).map((e, i) => `
-${i + 1}. Data: ${e.event_date} ${e.event_time || ''} | Status: ${e.status} | Descrição: ${e.description || 'Sem descrição'}
+${i + 1}. 📅 ${e.event_date} ${e.event_time || 'sem horário'} | ${e.icon} | Posição: ${e.position} | Status: ${e.status} | Desc: ${e.description || 'Sem descrição'} | Criado: ${new Date(e.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
 `).join('')}
+
+ANÁLISE TEMPORAL DOS EVENTOS:
+- 🌅 Eventos pela manhã (6h-12h): ${morningEvents} (${totalEvents > 0 ? ((morningEvents/totalEvents)*100).toFixed(1) : 0}%)
+- ☀️ Eventos pela tarde (12h-18h): ${afternoonEvents} (${totalEvents > 0 ? ((afternoonEvents/totalEvents)*100).toFixed(1) : 0}%)
+- 🌙 Eventos à noite/madrugada: ${eveningEvents} (${totalEvents > 0 ? ((eveningEvents/totalEvents)*100).toFixed(1) : 0}%)
+- 📊 Dia mais ativo: ${mostActiveDay ? `${mostActiveDay[0]} (${mostActiveDay[1]} eventos)` : 'N/A'}
+- 🎯 Canal mais usado: ${mostUsedChannel ? `${mostUsedChannel[0]} (${mostUsedChannel[1]}x)` : 'N/A'}
+
+DISTRIBUIÇÃO POR POSIÇÃO NA TIMELINE:
+- ⬆️ Eventos no topo: ${topEvents} (${totalEvents > 0 ? ((topEvents/totalEvents)*100).toFixed(1) : 0}%)
+- ⬇️ Eventos embaixo: ${bottomEvents} (${totalEvents > 0 ? ((bottomEvents/totalEvents)*100).toFixed(1) : 0}%)
+
+INFORMAÇÕES FINANCEIRAS (MÚLTIPLOS BOLETOS):
+- 💰 Total de boletos cadastrados: ${totalBoletos}
+- 🟡 Boletos pendentes: ${boletosPendentes.length}
+- ✅ Boletos pagos: ${boletos?.filter(b => b.status === 'pago').length || 0}
+- ⏰ Boletos vencidos não pagos: ${boletosVencidos}
+- 💵 Valor total pendente: R$ ${totalPendente.toFixed(2)}
+- 📅 Próximo vencimento: ${proximoVencimento ? new Date(proximoVencimento).toLocaleDateString('pt-BR') : 'N/A'}
+
+${totalBoletos > 0 && boletos ? `LISTA DETALHADA DE BOLETOS:
+${boletos.map((b, i) => `
+${i + 1}. Valor: R$ ${parseFloat(b.boleto_value).toFixed(2)} | Vencimento: ${new Date(b.due_date).toLocaleDateString('pt-BR')} | Status: ${b.status}${b.description ? ` | ${b.description}` : ''}
+`).join('')}` : ''}
 
 CONTEXTO ADICIONAL:
 - Método atual: Cobrança ${tags.includes('COBRANÇA') ? 'ativa' : 'padrão'}
