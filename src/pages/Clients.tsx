@@ -303,15 +303,15 @@ const Clients = () => {
             ) : (
               <div className="flex flex-col gap-3 w-full">
                 {filteredClients.map((client, index) => (
-                  <motion.div
+                   <motion.div
                     key={client.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="w-full rounded-lg p-4 flex items-center justify-between bg-card hover:bg-card/80 transition-colors cursor-pointer"
+                    className="w-full rounded-lg p-4 flex items-center gap-4 bg-card hover:bg-card/80 transition-colors cursor-pointer"
                     onClick={() => handleOpenModal(client)}
                   >
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 w-full">
                       <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
                         {client.client_name}
                       </h3>
