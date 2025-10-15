@@ -597,24 +597,132 @@ export const ClientDashboardModal = ({
               </h3>
 
               <div className="flex flex-wrap gap-2">
-                {tags.map(tag => (
-                  <Badge
-                    key={tag.id}
-                    style={{ 
-                      backgroundColor: selectedTags.includes(tag.id) ? tag.color : 'transparent',
-                      borderColor: tag.color,
-                      color: selectedTags.includes(tag.id) ? 'white' : tag.color
-                    }}
-                    className="cursor-pointer border-2 transition-all hover:scale-105"
-                    onClick={() => toggleTag(tag.id)}
-                  >
-                    {tag.name}
-                  </Badge>
-                ))}
-                {tags.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Nenhuma tag disponível</p>
+                {selectedTags.length > 0 ? (
+                  tags
+                    .filter(tag => selectedTags.includes(tag.id))
+                    .map(tag => (
+                      <Badge
+                        key={tag.id}
+                        style={{ 
+                          backgroundColor: tag.color,
+                          color: 'white'
+                        }}
+                        className="border-0"
+                      >
+                        {tag.name}
+                      </Badge>
+                    ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhuma tag associada a este cliente</p>
                 )}
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Timeline Events Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-blue-400 flex items-center gap-2">
+                📅 Eventos da Timeline ({timelineEvents.length})
+              </h3>
+
+              {timelineEvents.length === 0 ? (
+                <div className="text-center py-8 bg-card/50 rounded-lg border border-dashed">
+                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm text-muted-foreground">Nenhum evento na timeline</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Clique em "Timeline" acima para adicionar eventos
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Estatísticas dos Eventos */}
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                      <p className="text-xs text-muted-foreground">Criados</p>
+                      <p className="text-2xl font-bold text-muted-foreground">
+                        {timelineEvents.filter(e => e.status === 'created').length}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/30">
+                      <p className="text-xs text-muted-foreground">Resolvidos</p>
+                      <p className="text-2xl font-bold text-green-400">
+                        {timelineEvents.filter(e => e.status === 'resolved').length}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/30">
+                      <p className="text-xs text-muted-foreground">Sem Resposta</p>
+                      <p className="text-2xl font-bold text-red-400">
+                        {timelineEvents.filter(e => e.status === 'no-response').length}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Lista de Eventos (últimos 5) */}
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {timelineEvents.slice(0, 5).map((event) => (
+                      <div
+                        key={event.id}
+                        className="p-3 bg-card/50 rounded-lg border border-border hover:border-blue-500/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 flex-1">
+                            <span className={`${event.icon_size || 'text-2xl'}`}>
+                              {event.icon || '💬'}
+                            </span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-medium">
+                                  {formatDate(event.event_date)}
+                                </span>
+                                {event.event_time && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {event.event_time}
+                                  </span>
+                                )}
+                              </div>
+                              {event.description && (
+                                <p className="text-sm text-muted-foreground">
+                                  {event.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge className={`${
+                              event.status === 'resolved' ? 'bg-green-500' :
+                              event.status === 'no-response' ? 'bg-red-500' :
+                              'bg-muted'
+                            } text-white text-xs`}>
+                              {event.status === 'resolved' ? '✅ Resolvido' :
+                               event.status === 'no-response' ? '❌ Sem Resposta' :
+                               '⚫ Criado'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {event.position === 'top' ? '⬆️ Top' : '⬇️ Bottom'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Botão Ver Timeline Completa */}
+                  {timelineEvents.length > 5 && (
+                    <div className="text-center pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowTimeline(true)}
+                        className="border-blue-500/30 hover:bg-blue-500/10"
+                      >
+                        Ver todos os {timelineEvents.length} eventos
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <Separator />
