@@ -258,17 +258,6 @@ export const ClientTimelineDialog = ({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-green-500/30 shrink-0">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="border-green-500/30 hover:bg-green-500/10"
-          >
-            Fechar
-          </Button>
-        </div>
       </motion.div>
     </motion.div>
   );
