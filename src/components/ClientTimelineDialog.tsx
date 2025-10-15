@@ -1,0 +1,211 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { X, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Timeline } from './Timeline';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface Client {
+  id: string;
+  client_name: string;
+  client_id?: string | null;
+  start_date: string;
+  due_date?: string | null;
+  boleto_value?: string | null;
+  is_active: boolean;
+  organization_id?: string;
+}
+
+interface Event {
+  id: string;
+  icon: string;
+  iconSize: string;
+  date: string;
+  description: string;
+  position: 'top' | 'bottom';
+  status: 'created' | 'resolved' | 'no_response';
+  time?: string;
+}
+
+interface TimelineLine {
+  id: string;
+  events: Event[];
+}
+
+interface TimelineData {
+  id: string;
+  organization_id?: string;
+  clientInfo: {
+    clientId?: string;
+    name: string;
+    startDate: string;
+    boletoValue: string;
+    dueDate: string;
+  };
+  lines: TimelineLine[];
+}
+
+interface ClientTimelineDialogProps {
+  client: Client;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const ClientTimelineDialog = ({
+  client,
+  isOpen,
+  onClose,
+}: ClientTimelineDialogProps) => {
+  const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      loadTimelineData();
+    }
+  }, [isOpen, client.id]);
+
+  const loadTimelineData = async () => {
+    try {
+      setLoading(true);
+
+      // Carregar linhas da timeline
+      const { data: lines, error: linesError } = await supabase
+        .from('timeline_lines')
+        .select('*')
+        .eq('timeline_id', client.id)
+        .order('position', { ascending: true });
+
+      if (linesError) throw linesError;
+
+      // Carregar eventos para cada linha
+      const linesWithEvents = await Promise.all(
+        (lines || []).map(async (line) => {
+          const { data: events, error: eventsError } = await supabase
+            .from('timeline_events')
+            .select('*')
+            .eq('line_id', line.id)
+            .order('event_order', { ascending: true });
+
+          if (eventsError) throw eventsError;
+
+          return {
+            id: line.id,
+            events: (events || []).map((e) => ({
+              id: e.id,
+              icon: e.icon,
+              iconSize: e.icon_size,
+              date: e.event_date,
+              description: e.description || '',
+              position: e.position as 'top' | 'bottom',
+              status: e.status as 'created' | 'resolved' | 'no_response',
+              time: e.event_time || undefined,
+            })),
+          };
+        })
+      );
+
+      setTimelineData({
+        id: client.id,
+        organization_id: client.organization_id,
+        clientInfo: {
+          clientId: client.client_id || undefined,
+          name: client.client_name,
+          startDate: client.start_date,
+          boletoValue: client.boleto_value || '',
+          dueDate: client.due_date || client.start_date,
+        },
+        lines: linesWithEvents,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar timeline',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-background border-2 border-green-500/50 rounded-xl shadow-2xl w-full h-[calc(100vh-50px)] flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-green-500/30 shrink-0">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-green-400 flex items-center gap-2">
+              Timeline - {client.client_name}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {client.client_id && `ID: ${client.client_id} • `}
+              Visualização completa da timeline
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full shrink-0"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-green-400 mx-auto mb-4" />
+                <p className="text-muted-foreground">Carregando timeline...</p>
+              </div>
+            </div>
+          ) : timelineData ? (
+            <div className="max-w-full">
+              <Timeline
+                timeline={timelineData}
+                updateLine={() => {}}
+                updateClientInfo={() => {}}
+                readOnly={true}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">
+                Nenhuma timeline encontrada para este cliente.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 p-6 border-t border-green-500/30 shrink-0">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="border-green-500/30 hover:bg-green-500/10"
+          >
+            Fechar
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};

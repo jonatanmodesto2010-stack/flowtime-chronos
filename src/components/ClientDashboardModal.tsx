@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Check, Calendar, DollarSign, Tag as TagIcon, User, Clock, Plus, Trash2 } from 'lucide-react';
+import { X, Check, Calendar, DollarSign, Tag as TagIcon, User, Clock, Plus, Trash2, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIAnalysisSection } from './AIAnalysisSection';
+import { ClientTimelineDialog } from './ClientTimelineDialog';
 import { formatCurrency, formatDate } from '@/lib/metrics-calculator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,7 +66,17 @@ export const ClientDashboardModal = ({
     status: string;
     description?: string;
   }>>([]);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
+
+  const handleOpenCalendar = () => {
+    toast({
+      title: 'Calendário',
+      description: 'Funcionalidade de calendário em desenvolvimento.',
+    });
+    setShowCalendar(false);
+  };
 
   useEffect(() => {
     if (isOpen && client.organization_id) {
@@ -75,6 +86,12 @@ export const ClientDashboardModal = ({
       loadBoletos();
     }
   }, [isOpen, client.id, client.organization_id]);
+
+  useEffect(() => {
+    if (showCalendar) {
+      handleOpenCalendar();
+    }
+  }, [showCalendar]);
 
   const loadTags = async () => {
     if (!client.organization_id) return;
@@ -237,14 +254,34 @@ export const ClientDashboardModal = ({
               Gerencie dados e análises de cobrança
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => setShowTimeline(true)}
+              className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Timeline
+            </Button>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => setShowCalendar(true)}
+              className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Calendário
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
@@ -588,6 +625,13 @@ export const ClientDashboardModal = ({
           </Button>
         </div>
       </motion.div>
+
+      {/* Timeline Dialog */}
+      <ClientTimelineDialog
+        client={client}
+        isOpen={showTimeline}
+        onClose={() => setShowTimeline(false)}
+      />
     </motion.div>
   );
 };
