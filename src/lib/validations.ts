@@ -34,10 +34,29 @@ export const clientInfoSchema = z.object({
     .string()
     .refine((val) => val === '' || /^\d+(\.\d{1,2})?$/.test(val), { 
       message: 'Valor inválido' 
+    })
+    .refine((val) => val === '' || parseFloat(val) > 0, {
+      message: 'Valor deve ser maior que zero'
     }),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Data inválida' }),
+});
+
+export const boletoSchema = z.object({
+  boleto_value: z
+    .number()
+    .positive({ message: 'Valor deve ser maior que zero' }),
+  due_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Data inválida' }),
+  status: z.enum(['pendente', 'pago', 'vencido']),
+  description: z
+    .string()
+    .trim()
+    .max(200, { message: 'Descrição muito longa (máximo 200 caracteres)' })
+    .optional()
+    .or(z.literal('')),
 });
 
 export const eventSchema = z.object({
@@ -58,7 +77,9 @@ export const eventSchema = z.object({
   description: z
     .string()
     .trim()
-    .max(150, { message: 'Descrição muito longa (máximo 150 caracteres)' }),
+    .max(150, { message: 'Descrição muito longa (máximo 150 caracteres)' })
+    .optional()
+    .or(z.literal('')),
   position: z.enum(['top', 'bottom']),
   status: z.enum(['created', 'resolved', 'no_response']),
 });
@@ -84,6 +105,17 @@ export const profileSchema = z.object({
     .max(20, { message: 'Telefone muito longo' })
     .optional()
     .or(z.literal('')),
+});
+
+export const tagSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { message: 'Nome da tag é obrigatório' })
+    .max(50, { message: 'Nome muito longo (máximo 50 caracteres)' }),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'Cor inválida (use formato #RRGGBB)' }),
 });
 
 export const passwordChangeSchema = z.object({
