@@ -181,6 +181,7 @@ export const ClientDashboardModal = ({
   };
 
   const loadLastUpdatedBy = async () => {
+    console.log('[ClientDashboardModal] loadLastUpdatedBy - iniciando');
     try {
       const { data: timeline, error: timelineError } = await supabase
         .from('client_timelines')
@@ -188,7 +189,12 @@ export const ClientDashboardModal = ({
         .eq('id', client.id)
         .single();
 
-      if (timelineError) throw timelineError;
+      if (timelineError) {
+        console.error('[ClientDashboardModal] Erro ao buscar timeline:', timelineError);
+        throw timelineError;
+      }
+
+      console.log('[ClientDashboardModal] timeline encontrada:', timeline);
 
       if (timeline) {
         setLastUpdatedAt(timeline.updated_at);
@@ -201,11 +207,14 @@ export const ClientDashboardModal = ({
             .single();
 
           if (!profileError && profile) {
+            console.log('[ClientDashboardModal] profile encontrado:', profile);
             setLastUpdatedBy(profile.full_name || 'Usuário');
           } else {
+            console.log('[ClientDashboardModal] profile não encontrado ou erro:', profileError);
             setLastUpdatedBy('Sistema');
           }
         } else {
+          console.log('[ClientDashboardModal] user_id não existe na timeline');
           setLastUpdatedBy('Sistema');
         }
       }
@@ -216,9 +225,20 @@ export const ClientDashboardModal = ({
   };
 
   const handleSave = async () => {
+    console.log('[ClientDashboardModal] handleSave - iniciando salvamento');
     setSaving(true);
     try {
-      await onSave(formData);
+      // Obter o user_id atual para atualizar o campo updated_by
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('[ClientDashboardModal] user obtido:', user?.id);
+      
+      const updateData = {
+        ...formData,
+        ...(user?.id && { user_id: user.id })
+      };
+      
+      console.log('[ClientDashboardModal] updateData:', updateData);
+      await onSave(updateData);
       
       // Update tags
       await supabase
@@ -267,8 +287,18 @@ export const ClientDashboardModal = ({
         title: 'Cliente atualizado',
         description: 'As informações foram salvas com sucesso.',
       });
+      
+      console.log('[ClientDashboardModal] salvamento concluído, recarregando dados');
+      
+      // Recarregar informações de atualização
+      await loadLastUpdatedBy();
+      
+      console.log('[ClientDashboardModal] dados recarregados, fechando modal');
+      
+      // Fechar o modal após salvar
       onClose();
     } catch (error) {
+      console.error('[ClientDashboardModal] Erro ao salvar:', error);
       toast({
         title: 'Erro ao salvar',
         description: 'Ocorreu um erro ao salvar as informações.',
@@ -317,6 +347,7 @@ export const ClientDashboardModal = ({
           </div>
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="outline"
               size="default"
               onClick={() => setShowTimeline(true)}
@@ -326,6 +357,7 @@ export const ClientDashboardModal = ({
               Timeline
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="default"
               onClick={() => setShowCalendar(true)}
@@ -335,6 +367,7 @@ export const ClientDashboardModal = ({
               Calendário
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               onClick={onClose}
@@ -643,6 +676,7 @@ export const ClientDashboardModal = ({
         {/* Footer */}
         <div className="flex items-center justify-between gap-4 p-6 border-t border-border">
           <Button
+            type="button"
             variant="outline"
             onClick={onClose}
             disabled={saving}
@@ -651,6 +685,7 @@ export const ClientDashboardModal = ({
             Cancelar
           </Button>
           <Button
+            type="button"
             onClick={handleSave}
             disabled={saving || !formData.client_name || !formData.start_date}
             className="bg-green-500 hover:bg-green-600 text-white"
