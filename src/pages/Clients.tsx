@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientDashboardModal } from '@/components/ClientDashboardModal';
 import { ClientSearchFilters } from '@/components/ClientSearchFilters';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +37,12 @@ const Clients = () => {
   const { organizationId } = useUserRole();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [newClientModalOpen, setNewClientModalOpen] = useState(false);
+  const [newClientData, setNewClientData] = useState({
+    client_name: '',
+    client_id: '',
+    start_date: new Date().toISOString().split('T')[0],
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -243,6 +253,81 @@ const Clients = () => {
     }
   };
 
+  const handleCreateClient = async () => {
+    if (!organizationId) {
+      toast({
+        title: 'Erro',
+        description: 'Organização não identificada.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!newClientData.client_name.trim()) {
+      toast({
+        title: 'Nome obrigatório',
+        description: 'Por favor, insira o nome do cliente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Usuário não autenticado.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from('client_timelines')
+        .insert({
+          client_name: newClientData.client_name.trim(),
+          client_id: newClientData.client_id.trim() || null,
+          start_date: newClientData.start_date,
+          is_active: true,
+          status: 'active',
+          organization_id: organizationId,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await loadClients();
+      setNewClientModalOpen(false);
+      
+      toast({
+        title: 'Cliente criado',
+        description: `Cliente "${newClientData.client_name}" foi adicionado com sucesso.`,
+      });
+      
+      if (data) {
+        setSelectedClient(data);
+        setModalOpen(true);
+      }
+      
+      setNewClientData({
+        client_name: '',
+        client_id: '',
+        start_date: new Date().toISOString().split('T')[0],
+      });
+    } catch (error: any) {
+      console.error('Erro ao criar cliente:', error);
+      toast({
+        title: 'Erro ao criar cliente',
+        description: error.message || 'Ocorreu um erro ao criar o cliente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
@@ -292,8 +377,22 @@ const Clients = () => {
               organizationId={organizationId}
             />
 
-            <div className="mb-4 text-sm text-muted-foreground">
-              Mostrando {filteredClients.length} de {clients.length} clientes
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {filteredClients.length} de {clients.length} clientes
+              </p>
+              
+              <motion.button
+                onClick={() => setNewClientModalOpen(true)}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <Plus size={18} />
+                Novo Cliente
+              </motion.button>
             </div>
 
             {filteredClients.length === 0 ? (
@@ -332,6 +431,82 @@ const Clients = () => {
           </motion.div>
         </main>
       </div>
+
+      <Dialog open={newClientModalOpen} onOpenChange={setNewClientModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Novo Cliente</DialogTitle>
+            <DialogDescription>
+              Preencha as informações básicas do novo cliente
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="new-client-name" className="text-sm font-medium">
+                Nome do Cliente *
+              </label>
+              <Input
+                id="new-client-name"
+                placeholder="Ex: João Silva"
+                value={newClientData.client_name}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, client_name: e.target.value }))}
+                className="w-full"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreateClient();
+                  }
+                }}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="new-client-id" className="text-sm font-medium">
+                ID do Cliente
+              </label>
+              <Input
+                id="new-client-id"
+                placeholder="Ex: 00064"
+                value={newClientData.client_id}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, client_id: e.target.value }))}
+                className="w-full"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="new-client-date" className="text-sm font-medium">
+                Data de Cadastro
+              </label>
+              <Input
+                id="new-client-date"
+                type="date"
+                value={newClientData.start_date}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, start_date: e.target.value }))}
+                className="w-full"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              type="button"
+              variant="outline" 
+              onClick={() => setNewClientModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="button"
+              onClick={handleCreateClient}
+              className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600"
+            >
+              Criar Cliente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {selectedClient && (
         <ClientDashboardModal
