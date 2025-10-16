@@ -118,23 +118,41 @@ serve(async (req) => {
       return hour >= 18 || hour < 6;
     }).length;
 
-    // 2. Análise por dia da semana
+    // 2. Análise por dia da semana - com validação robusta
     const eventsByDay: Record<string, number> = {};
+    let invalidDateCount = 0;
+    
     allEvents.forEach(e => {
       if (e.event_date && e.event_date !== '--/--') {
         try {
           const [day, month, year] = e.event_date.split('/');
+          
+          if (!day || !month) {
+            invalidDateCount++;
+            console.warn(`Invalid date format: ${e.event_date}`);
+            return;
+          }
+          
           const fullYear = year || new Date().getFullYear().toString();
           const date = new Date(parseInt(fullYear), parseInt(month) - 1, parseInt(day));
+          
           if (!isNaN(date.getTime())) {
             const dayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
             eventsByDay[dayName] = (eventsByDay[dayName] || 0) + 1;
+          } else {
+            invalidDateCount++;
+            console.warn(`Invalid date value: ${e.event_date}`);
           }
-        } catch (e) {
-          console.error('Error parsing date:', e);
+        } catch (error) {
+          invalidDateCount++;
+          console.error('Error parsing date:', e.event_date, error);
         }
       }
     });
+    
+    if (invalidDateCount > 0) {
+      console.log(`Found ${invalidDateCount} events with invalid dates out of ${allEvents.length} total events`);
+    }
 
     const mostActiveDay = Object.entries(eventsByDay).sort((a, b) => b[1] - a[1])[0];
 
@@ -163,6 +181,13 @@ serve(async (req) => {
     const tags = tagData?.map((t: any) => t.tags?.name).filter(Boolean) || [];
 
     // ============================================
+    // DEFINIR VARIÁVEIS DE DATA PRIMEIRO
+    // ============================================
+    const now = new Date();
+    const startDate = new Date(client.start_date);
+    const dueDate = client.due_date ? new Date(client.due_date) : null;
+    
+    // ============================================
     // BUSCAR MÚLTIPLOS BOLETOS
     // ============================================
     const { data: boletos, error: boletosError } = await supabaseClient
@@ -181,9 +206,6 @@ serve(async (req) => {
     const proximoVencimento = boletosPendentes[0]?.due_date || null;
 
     // Calculate metrics
-    const now = new Date();
-    const startDate = new Date(client.start_date);
-    const dueDate = client.due_date ? new Date(client.due_date) : null;
     
     const totalEvents = allEvents.length;
     const resolvedEvents = allEvents.filter(e => e.status === 'resolved').length;
@@ -430,11 +452,14 @@ Seja específico, prático e direto nas recomendações.`
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in analyze-collection-strategy:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
     return new Response(
       JSON.stringify({ 
         error: 'internal_error',
-        message: error instanceof Error ? error.message : 'Unknown error' 
+        message: errorMessage,
+        details: 'Verifique se todos os eventos possuem datas válidas. Eventos com "Invalid Date" devem ser corrigidos.'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

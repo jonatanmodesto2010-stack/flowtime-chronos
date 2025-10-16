@@ -80,8 +80,12 @@ export const AIAnalysisSection = ({ timelineId, clientName }: AIAnalysisSectionP
           setError('Créditos insuficientes para análise de IA. Entre em contato com o suporte.');
         } else if (invokeError.message?.includes('insufficient_data')) {
           setError('Adicione pelo menos um evento na timeline antes de analisar.');
+        } else if (invokeError.message?.includes('Invalid date') || invokeError.message?.includes('invalid dates')) {
+          setError('Erro: Alguns eventos possuem datas inválidas (formato "--/--"). Corrija as datas dos eventos antes de analisar.');
+        } else if (invokeError.message?.includes('ReferenceError') || invokeError.message?.includes('not defined')) {
+          setError('Erro interno na análise. Por favor, tente novamente.');
         } else {
-          setError(`Erro ao analisar: ${invokeError.message || 'Erro desconhecido'}`);
+          setError(`Erro ao analisar: ${invokeError.message || 'Erro desconhecido'}. Verifique se todos os eventos estão com datas válidas.`);
         }
         return;
       }
