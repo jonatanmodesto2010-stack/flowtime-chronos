@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Timeline } from './Timeline';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +59,8 @@ export const ClientTimelineDialog = ({
 }: ClientTimelineDialogProps) => {
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,6 +68,31 @@ export const ClientTimelineDialog = ({
       loadTimelineData();
     }
   }, [isOpen, client.id]);
+
+  const loadLastUpdatedBy = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_timelines')
+        .select(`
+          updated_at,
+          user_id,
+          profiles:user_id (
+            full_name
+          )
+        `)
+        .eq('id', client.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setLastUpdatedAt(data.updated_at);
+        setLastUpdatedBy((data.profiles as any)?.full_name || 'Usuário desconhecido');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar informações de auditoria:', error);
+    }
+  };
 
   const loadTimelineData = async () => {
     try {
@@ -119,6 +146,9 @@ export const ClientTimelineDialog = ({
         },
         lines: linesWithEvents,
       });
+
+      // Carregar informações de auditoria
+      await loadLastUpdatedBy();
     } catch (error: any) {
       toast({
         title: 'Erro ao carregar timeline',
@@ -209,7 +239,7 @@ export const ClientTimelineDialog = ({
             }
 
             // Recarregar dados
-            loadTimelineData();
+            await loadTimelineData();
             
             toast({
               title: 'Timeline atualizada',
@@ -235,6 +265,8 @@ export const ClientTimelineDialog = ({
               })
               .eq('id', client.id);
 
+            await loadLastUpdatedBy();
+
             toast({
               title: 'Cliente atualizado',
               description: 'As informações foram atualizadas com sucesso.',
@@ -258,6 +290,27 @@ export const ClientTimelineDialog = ({
             </div>
           )}
         </div>
+
+        {/* Footer com Auditoria */}
+        {lastUpdatedBy && lastUpdatedAt && (
+          <div className="border-t border-green-500/30 p-4 shrink-0">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="w-3 h-3" />
+              <span>
+                Última atualização: 
+                <span className="font-semibold text-foreground ml-1">{lastUpdatedBy}</span>
+                {' - '}
+                {new Date(lastUpdatedAt).toLocaleString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );
