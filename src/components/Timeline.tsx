@@ -411,8 +411,8 @@ export const Timeline = ({
                     minWidth: isVertical ? 'auto' : '100%'
                   }}
                 >
-                  {/* Contador de eventos - Dinâmico com cores */}
-                  <div className={`absolute top-[-4px] right-2 px-2 py-1 min-w-[24px] text-center ${getCounterColor((line.events || []).length)} text-white rounded-lg text-xs font-semibold z-30 transition-colors duration-300`}>
+                  {/* Contador de eventos - Circular */}
+                  <div className={`absolute top-2 right-4 w-10 h-10 ${getCounterColor((line.events || []).length)} text-white rounded-full text-sm font-bold z-30 transition-colors duration-300 flex items-center justify-center shadow-lg border-2 border-background`}>
                     {(line.events || []).length}
                   </div>
                   
@@ -477,6 +477,7 @@ export const Timeline = ({
                     );
                   })}
                   
+                  <AnimatePresence mode="popLayout">
                   {(line.events || []).map((event, index) => {
                     const totalEvents = (line.events || []).length;
                     const position = VERTICAL_START_OFFSET + (index * VERTICAL_EVENT_SPACING);
@@ -484,6 +485,7 @@ export const Timeline = ({
                     return (
                       <motion.div
                         key={event.id}
+                        layout
                         className={`absolute z-10 text-center flex-shrink-0 ${
                           isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'
                         }`}
@@ -491,16 +493,22 @@ export const Timeline = ({
                           ? { top: `${position}px` }
                           : { left: `${position}%`, transform: 'translateX(-50%)' }
                         }
-                        initial={{ opacity: 0, x: -50, scale: 0.5 }}
+                        initial={{ opacity: 0, x: -80, scale: 0.3 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -80, scale: 0.3 }}
                         transition={{ 
-                          duration: 0.6, 
-                          delay: index * 0.1,
+                          duration: 1.2,
+                          delay: index * 0.15,
                           type: "spring",
-                          stiffness: 200,
-                          damping: 15
+                          stiffness: 120,
+                          damping: 18,
+                          layout: {
+                            duration: 0.8,
+                            type: "spring",
+                            stiffness: 150,
+                            damping: 20
+                          }
                         }}
-                        layout
                       >
             {isVertical ? (
               <>
@@ -684,6 +692,7 @@ export const Timeline = ({
                     </motion.div>
                     );
                   })}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>

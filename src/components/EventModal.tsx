@@ -5,7 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -103,33 +103,62 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
   const modalVariants = {
     hidden: { 
       opacity: 0, 
-      x: position === 'left' ? -100 : 0,
+      x: position === 'left' ? -120 : 0,
       y: position === 'left' ? 0 : -50, 
-      scale: 0.9 
+      scale: position === 'left' ? 1 : 0.9 
     },
     visible: { 
       opacity: 1, 
       x: 0,
       y: 0, 
-      scale: 1 
+      scale: 1
     },
   };
 
   return (
     <motion.div
-      variants={backdropVariants}
+      variants={position === 'center' ? backdropVariants : undefined}
       initial="hidden"
       animate="visible"
       exit="hidden"
-      className={`fixed inset-0 bg-black/50 z-50 flex items-center p-4 ${
-        position === 'left' ? 'justify-start pl-12' : 'justify-center'
-      }`}
+      className={
+        position === 'left' 
+          ? 'fixed left-12 top-1/2 -translate-y-1/2 z-50'
+          : 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
+      }
+      onClick={position === 'center' ? onCancel : undefined}
     >
       <motion.div
         variants={modalVariants}
-        className="w-full max-w-sm p-6 bg-card border border-border rounded-2xl shadow-xl"
+        initial="hidden"
+        animate="visible"
+        exit="hidden"
+        transition={{
+          type: 'spring',
+          stiffness: 200,
+          damping: 20,
+          duration: 0.5
+        }}
         onClick={(e) => e.stopPropagation()}
+        className={`bg-card rounded-2xl shadow-2xl ${
+          position === 'left' 
+            ? 'w-[420px] border-2 border-border'
+            : 'w-full max-w-2xl border border-border'
+        }`}
       >
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-xl font-semibold">
+            {event.isNew ? 'Novo Evento' : 'Editar Evento'}
+          </h2>
+          <button
+            onClick={onCancel}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+            title="Fechar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6">
         <div className="flex flex-col gap-4">
           <div>
             <label className="text-xs font-semibold text-muted-foreground mb-2 block">Ícone</label>
@@ -230,6 +259,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           >
             Excluir
           </button>
+        </div>
         </div>
       </motion.div>
     </motion.div>
