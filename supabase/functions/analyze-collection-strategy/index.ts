@@ -86,6 +86,17 @@ serve(async (req) => {
       }
     }
 
+    // Validar se há dados suficientes para análise
+    if (allEvents.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'insufficient_data', 
+          message: 'Não há eventos suficientes para realizar a análise. Adicione pelo menos um evento na timeline.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // ============================================
     // ANÁLISE TEMPORAL DETALHADA DOS EVENTOS
     // ============================================
@@ -248,22 +259,21 @@ CONTEXTO ADICIONAL:
 
 Analise este caso e forneça insights acionáveis para melhorar a estratégia de cobrança.
 `;
-
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY not configured');
+ 
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Call OpenAI with tool calling for structured output
-    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call Lovable AI with tool calling for structured output
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        temperature: 0.7,
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
@@ -352,30 +362,29 @@ Seja específico, prático e direto nas recomendações.`
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('OpenAI API Error:', aiResponse.status, errorText);
+      console.error('Lovable AI Error:', aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'rate_limit', message: 'Limite de requisições da OpenAI atingido. Aguarde alguns instantes.' }),
+          JSON.stringify({ 
+            error: 'rate_limit', 
+            message: 'Limite de análises atingido. Aguarde alguns instantes e tente novamente.' 
+          }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      if (aiResponse.status === 401) {
+      if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'invalid_key', message: 'Chave da OpenAI inválida. Verifique sua API key.' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (aiResponse.status === 402 || aiResponse.status === 403) {
-        return new Response(
-          JSON.stringify({ error: 'payment_required', message: 'Créditos da OpenAI insuficientes. Adicione saldo em https://platform.openai.com/settings/organization/billing' }),
+          JSON.stringify({ 
+            error: 'payment_required', 
+            message: 'Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage.' 
+          }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      throw new Error(`OpenAI API error: ${aiResponse.status}`);
+      throw new Error(`Lovable AI error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();

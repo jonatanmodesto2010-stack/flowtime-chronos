@@ -68,14 +68,21 @@ export const AIAnalysisSection = ({ timelineId, clientName }: AIAnalysisSectionP
       });
 
       if (invokeError) {
+        console.error('Invoke error details:', {
+          message: invokeError.message,
+          status: (invokeError as any).status,
+          details: invokeError
+        });
+        
         if (invokeError.message?.includes('429') || invokeError.message?.includes('rate_limit')) {
           setError('Limite de análises atingido. Aguarde alguns instantes e tente novamente.');
         } else if (invokeError.message?.includes('402') || invokeError.message?.includes('payment_required')) {
-          setError('Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage.');
+          setError('Créditos insuficientes para análise de IA. Entre em contato com o suporte.');
+        } else if (invokeError.message?.includes('insufficient_data')) {
+          setError('Adicione pelo menos um evento na timeline antes de analisar.');
         } else {
-          setError('Erro ao analisar. Tente novamente.');
+          setError(`Erro ao analisar: ${invokeError.message || 'Erro desconhecido'}`);
         }
-        console.error('Invoke error:', invokeError);
         return;
       }
 

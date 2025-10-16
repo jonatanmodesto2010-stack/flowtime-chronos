@@ -291,6 +291,13 @@ serve(async (req) => {
         line = newLine;
       }
 
+      if (!line) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to get or create line' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
       const { data, error } = await supabase
         .from('timeline_events')
         .insert({
