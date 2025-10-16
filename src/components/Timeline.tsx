@@ -66,6 +66,10 @@ export const Timeline = ({
   const [showAllDescriptions, setShowAllDescriptions] = useState(true);
   const [isVertical, setIsVertical] = useState(true);
   
+  // Constantes de layout da timeline vertical
+  const VERTICAL_EVENT_SPACING = 80; // pixels entre eventos
+  const VERTICAL_START_OFFSET = 60;   // offset inicial do topo
+  
   const toggleAllDescriptions = () => {
     setShowAllDescriptions(prev => !prev);
   };
@@ -383,7 +387,7 @@ export const Timeline = ({
                       : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
-                    minHeight: isVertical ? 'calc(100vh - 250px)' : '250px',
+                    minHeight: isVertical ? `${Math.max(600, VERTICAL_START_OFFSET + ((line.events?.length || 0) * VERTICAL_EVENT_SPACING) + VERTICAL_START_OFFSET)}px` : '250px',
                     minWidth: isVertical ? 'auto' : '100%'
                   }}
                 >
@@ -399,7 +403,7 @@ export const Timeline = ({
                       disabled={readOnly}
                       className={`absolute bg-foreground/30 z-0 transition-all ${
                         isVertical
-                          ? 'left-1/2 w-1 h-[calc(100%-56px)] top-7 -translate-x-1/2'
+                          ? 'left-1/2 w-2 h-[calc(100%-56px)] top-7 -translate-x-1/2'
                           : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
                       } ${
                         !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
@@ -410,7 +414,7 @@ export const Timeline = ({
                     <div 
                       className={`absolute bg-foreground/30 z-0 ${
                         isVertical
-                          ? 'left-1/2 w-1 h-[calc(100%-48px)] top-6 -translate-x-1/2'
+                          ? 'left-1/2 w-2 h-[calc(100%-48px)] top-6 -translate-x-1/2'
                           : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
                       }`}
                     />
@@ -424,10 +428,10 @@ export const Timeline = ({
                     const segmentColor = getLineSegmentColor(event, nextEvent);
                     const isSameDate = event.date === nextEvent?.date;
                     
-                    // Cálculo preciso baseado no centro dos ícones
+                    // Cálculo preciso baseado em pixels fixos
                     const totalEvents = (line.events || []).length;
-                    const currentIconCenter = totalEvents === 1 ? 50 : 1.5 + (index / (totalEvents - 1)) * 97;
-                    const nextIconCenter = totalEvents === 1 ? 50 : 1.5 + ((index + 1) / (totalEvents - 1)) * 97;
+                    const currentIconCenter = VERTICAL_START_OFFSET + (index * VERTICAL_EVENT_SPACING);
+                    const nextIconCenter = VERTICAL_START_OFFSET + ((index + 1) * VERTICAL_EVENT_SPACING);
                     
                     return (
                       <button
@@ -436,14 +440,14 @@ export const Timeline = ({
                         disabled={readOnly}
                         className={`absolute ${segmentColor} z-10 transition-all ${
                           isVertical
-                            ? 'left-1/2 w-1 -translate-x-1/2'
+                            ? 'left-1/2 w-2 -translate-x-1/2'
                             : 'top-1/2 h-1 -translate-y-1/2'
                         } ${
                           !readOnly ? 'cursor-pointer' : 'cursor-default'
                         } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
                         style={isVertical ? {
-                          top: `${currentIconCenter}%`,
-                          bottom: `${100 - nextIconCenter}%`
+                          top: `${currentIconCenter}px`,
+                          height: `${nextIconCenter - currentIconCenter}px`
                         } : {
                           left: `${currentIconCenter}%`,
                           right: `${100 - nextIconCenter}%`
@@ -455,7 +459,7 @@ export const Timeline = ({
                   
                   {(line.events || []).map((event, index) => {
                     const totalEvents = (line.events || []).length;
-                    const position = totalEvents === 1 ? 50 : 1.5 + (index / (totalEvents - 1)) * 97;
+                    const position = VERTICAL_START_OFFSET + (index * VERTICAL_EVENT_SPACING);
                     
                     return (
                       <motion.div
@@ -464,7 +468,7 @@ export const Timeline = ({
                           isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'
                         }`}
                         style={isVertical 
-                          ? { top: `${position}%` }
+                          ? { top: `${position}px` }
                           : { left: `${position}%`, transform: 'translateX(-50%)' }
                         }
                         initial={{ opacity: 0, y: 20 }}
