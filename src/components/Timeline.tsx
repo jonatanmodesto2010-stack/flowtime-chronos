@@ -504,10 +504,21 @@ export const Timeline = ({
                       >
             {isVertical ? (
               <>
-                {/* Marcador numerado - sempre fixo na linha */}
+                {/* Contador numerado - decorativo (acima da linha) */}
                 <div 
-                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full ${getMarkerColor(event.status)} flex items-center justify-center z-20 border-2 border-background shadow-lg transition-all cursor-pointer hover:scale-110`}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center z-10 pointer-events-none"
+                  style={{ transform: 'translate(-50%, -50%) translateY(-12px)' }}
+                >
+                  <span className="text-foreground/70 font-bold text-xs">
+                    {index + 1}
+                  </span>
+                </div>
+
+                {/* Botão de status - funcional (na linha) */}
+                <button
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
                   onClick={(e) => {
+                    e.stopPropagation();
                     handleStatusToggle(e, line.id, event.id);
                   }}
                   onDoubleClick={(e) => {
@@ -516,10 +527,18 @@ export const Timeline = ({
                   }}
                   title={`${event.icon} ${event.description} - Clique para mudar status, duplo clique para editar`}
                 >
-                  <span className="text-white font-bold text-sm">
-                    {index + 1}
-                  </span>
-                </div>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={event.status}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {renderStatusIcon(event.status)}
+                    </motion.div>
+                  </AnimatePresence>
+                </button>
 
                 {/* Elementos ao redor do status */}
                 {event.status === 'no_response' ? (
