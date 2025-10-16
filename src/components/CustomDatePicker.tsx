@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { parseEventDate, formatEventDate } from '@/lib/date-utils';
 
 interface CustomDatePickerProps {
   value: string;
@@ -13,9 +14,11 @@ export const CustomDatePicker = ({ value, onChange, onClose }: CustomDatePickerP
 
   useEffect(() => {
     if (value && value.includes('/')) {
-      const [day, month] = value.split('/');
-      const year = new Date().getFullYear();
-      setSelectedDate(new Date(year, parseInt(month) - 1, parseInt(day)));
+      const parsedDate = parseEventDate(value);
+      if (parsedDate) {
+        setSelectedDate(parsedDate);
+        setCurrentDate(parsedDate);
+      }
     }
   }, [value]);
 
@@ -64,7 +67,7 @@ export const CustomDatePicker = ({ value, onChange, onClose }: CustomDatePickerP
     if (!day.isCurrentMonth) return;
     const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day.day);
     setSelectedDate(newDate);
-    const formattedDate = `${String(day.day).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+    const formattedDate = formatEventDate(newDate);
     onChange(formattedDate);
     onClose();
   };

@@ -97,62 +97,85 @@ serve(async (req) => {
       );
     }
 
-    // ============================================
-    // ANÁLISE TEMPORAL DETALHADA DOS EVENTOS
-    // ============================================
+  // ============================================
+  // INFORMAÇÕES TEMPORAIS
+  // ============================================
+  const now = new Date();
+  const startDate = new Date(client.start_date);
+  const dueDate = client.due_date ? new Date(client.due_date) : null;
+  
+  const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysUntilDue = dueDate ? Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const isOverdue = dueDate ? now > dueDate : false;
+  const daysOverdue = isOverdue && dueDate ? Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
-    // 1. Análise por horário
-    const eventsWithTime = allEvents.filter(e => e.event_time);
-    const morningEvents = eventsWithTime.filter(e => {
-      const hour = parseInt(e.event_time?.split(':')[0] || '0');
-      return hour >= 6 && hour < 12;
-    }).length;
+  // ============================================
+  // ANÁLISE TEMPORAL DETALHADA DOS EVENTOS
+  // ============================================
 
-    const afternoonEvents = eventsWithTime.filter(e => {
-      const hour = parseInt(e.event_time?.split(':')[0] || '0');
-      return hour >= 12 && hour < 18;
-    }).length;
+  // 1. Análise por horário
+  const eventsWithTime = allEvents.filter(e => e.event_time);
+  const morningEvents = eventsWithTime.filter(e => {
+    const hour = parseInt(e.event_time?.split(':')[0] || '0');
+    return hour >= 6 && hour < 12;
+  }).length;
 
-    const eveningEvents = eventsWithTime.filter(e => {
-      const hour = parseInt(e.event_time?.split(':')[0] || '0');
-      return hour >= 18 || hour < 6;
-    }).length;
+  const afternoonEvents = eventsWithTime.filter(e => {
+    const hour = parseInt(e.event_time?.split(':')[0] || '0');
+    return hour >= 12 && hour < 18;
+  }).length;
 
-    // 2. Análise por dia da semana - com validação robusta
-    const eventsByDay: Record<string, number> = {};
-    let invalidDateCount = 0;
-    
-    allEvents.forEach(e => {
-      if (e.event_date && e.event_date !== '--/--') {
-        try {
-          const [day, month, year] = e.event_date.split('/');
-          
-          if (!day || !month) {
-            invalidDateCount++;
-            console.warn(`Invalid date format: ${e.event_date}`);
-            return;
-          }
-          
-          const fullYear = year || new Date().getFullYear().toString();
-          const date = new Date(parseInt(fullYear), parseInt(month) - 1, parseInt(day));
-          
-          if (!isNaN(date.getTime())) {
-            const dayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
-            eventsByDay[dayName] = (eventsByDay[dayName] || 0) + 1;
-          } else {
-            invalidDateCount++;
-            console.warn(`Invalid date value: ${e.event_date}`);
-          }
-        } catch (error) {
-          invalidDateCount++;
-          console.error('Error parsing date:', e.event_date, error);
-        }
-      }
-    });
-    
-    if (invalidDateCount > 0) {
-      console.log(`Found ${invalidDateCount} events with invalid dates out of ${allEvents.length} total events`);
+  const eveningEvents = eventsWithTime.filter(e => {
+    const hour = parseInt(e.event_time?.split(':')[0] || '0');
+    return hour >= 18 || hour < 6;
+  }).length;
+
+  // 2. Análise por dia da semana - com validação robusta
+  const eventsByDay: Record<string, number> = {};
+  let invalidDateCount = 0;
+  
+  allEvents.forEach(e => {
+    if (!e.event_date || e.event_date === '--/--') {
+      invalidDateCount++;
+      return;
     }
+    
+    try {
+      // Parse DD/MM ou DD/MM/YYYY
+      const parts = e.event_date.trim().split('/');
+      if (parts.length < 2) {
+        invalidDateCount++;
+        console.warn(`Invalid date format: ${e.event_date}`);
+        return;
+      }
+      
+      const day = parseInt(parts[0]);
+      const month = parseInt(parts[1]) - 1; // JavaScript months are 0-indexed
+      const year = parts.length === 3 ? parseInt(parts[2]) : now.getFullYear();
+      
+      if (isNaN(day) || isNaN(month) || day < 1 || day > 31 || month < 0 || month > 11) {
+        invalidDateCount++;
+        console.warn(`Invalid date values: ${e.event_date}`);
+        return;
+      }
+      
+      const date = new Date(year, month, day);
+      
+      if (isNaN(date.getTime())) {
+        invalidDateCount++;
+        console.warn(`Invalid date object: ${e.event_date}`);
+        return;
+      }
+      
+      const dayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+      eventsByDay[dayName] = (eventsByDay[dayName] || 0) + 1;
+    } catch (error) {
+      invalidDateCount++;
+      console.error('Error parsing date:', e.event_date, error);
+    }
+  });
+  
+  console.log(`Total events: ${allEvents.length}, Invalid dates: ${invalidDateCount}, Valid dates: ${allEvents.length - invalidDateCount}`);
 
     const mostActiveDay = Object.entries(eventsByDay).sort((a, b) => b[1] - a[1])[0];
 
@@ -181,13 +204,6 @@ serve(async (req) => {
     const tags = tagData?.map((t: any) => t.tags?.name).filter(Boolean) || [];
 
     // ============================================
-    // DEFINIR VARIÁVEIS DE DATA PRIMEIRO
-    // ============================================
-    const now = new Date();
-    const startDate = new Date(client.start_date);
-    const dueDate = client.due_date ? new Date(client.due_date) : null;
-    
-    // ============================================
     // BUSCAR MÚLTIPLOS BOLETOS
     // ============================================
     const { data: boletos, error: boletosError } = await supabaseClient
@@ -210,11 +226,6 @@ serve(async (req) => {
     const totalEvents = allEvents.length;
     const resolvedEvents = allEvents.filter(e => e.status === 'resolved').length;
     const noResponseEvents = allEvents.filter(e => e.status === 'no_response').length;
-    
-    const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const daysUntilDue = dueDate ? Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
-    const isOverdue = dueDate ? now > dueDate : false;
-    const daysOverdue = isOverdue && dueDate ? Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
     const responseRate = totalEvents > 0 ? (resolvedEvents / totalEvents * 100).toFixed(1) : '0';
     const noResponseRate = totalEvents > 0 ? (noResponseEvents / totalEvents * 100).toFixed(1) : '0';

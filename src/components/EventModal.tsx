@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseEventDate, formatEventDate } from '@/lib/date-utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -53,22 +54,18 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
 
   useEffect(() => {
     setFormData(event);
-    // Try to parse the date if it's in DD/MM format
+    // Parse the date using the centralized function
     if (event.date && event.date !== '--/--') {
-      const [day, month] = event.date.split('/');
-      if (day && month) {
-        const currentYear = new Date().getFullYear();
-        const date = new Date(currentYear, parseInt(month) - 1, parseInt(day));
-        if (!isNaN(date.getTime())) {
-          setSelectedDate(date);
-        }
+      const parsedDate = parseEventDate(event.date);
+      if (parsedDate) {
+        setSelectedDate(parsedDate);
       }
     }
   }, [event]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      const formattedDate = format(date, 'dd/MM', { locale: ptBR });
+      const formattedDate = formatEventDate(date);
       setSelectedDate(date);
       setFormData({ ...formData, date: formattedDate });
     }

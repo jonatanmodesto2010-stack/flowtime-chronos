@@ -1,3 +1,5 @@
+import { normalizeDisplayDate } from './date-utils';
+
 export interface ClientMetrics {
   totalEvents: number;
   responseRate: number;
@@ -85,26 +87,8 @@ export function formatCurrency(value: string | number): string {
 }
 
 export function formatDate(dateString: string): string {
-  // Se for o placeholder de data vazia
-  if (!dateString || dateString === '--/--') {
-    return 'Data não definida';
-  }
-  
-  // Se já estiver no formato DD/MM ou DD/MM/YYYY, retornar como está
-  if (/^\d{1,2}\/\d{1,2}(\/\d{4})?$/.test(dateString)) {
-    return dateString;
-  }
-  
-  // Se for formato ISO (YYYY-MM-DD), converter para DD/MM/YYYY
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateString)) {
-    const date = new Date(dateString);
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleDateString('pt-BR');
-    }
-  }
-  
-  // Caso não reconheça o formato, retornar a string original
-  return dateString;
+  // Esta função agora usa a biblioteca centralizada
+  return normalizeDisplayDate(dateString);
 }
 
 export function daysBetween(date1: Date, date2: Date): number {

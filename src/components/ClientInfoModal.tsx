@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toISODate } from '@/lib/date-utils';
 import { clientInfoSchema } from '@/lib/validations';
 import { z } from 'zod';
 import { CalendarIcon } from 'lucide-react';
@@ -101,7 +102,7 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
   const handleStartDateSelect = (date: Date | undefined) => {
     if (date) {
       // Date → ISO string (YYYY-MM-DD) para backend
-      const isoDate = date.toISOString().split('T')[0];
+      const isoDate = toISODate(date);
       setSelectedStartDate(date);
       handleChange('startDate', isoDate);
       setStartDateOpen(false);
@@ -111,7 +112,7 @@ export const ClientInfoModal = ({ clientInfo, onSave, onCancel }: ClientInfoModa
   const handleDueDateSelect = (date: Date | undefined) => {
     if (date) {
       // Date → ISO string (YYYY-MM-DD) para backend
-      const isoDate = date.toISOString().split('T')[0];
+      const isoDate = toISODate(date);
       setSelectedDueDate(date);
       handleChange('dueDate', isoDate);
       setDueDateOpen(false);

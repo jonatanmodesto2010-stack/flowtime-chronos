@@ -22,6 +22,7 @@ import {
 import { AIAnalysisSection } from './AIAnalysisSection';
 import { ClientTimelineDialog } from './ClientTimelineDialog';
 import { formatCurrency, formatDate } from '@/lib/metrics-calculator';
+import { normalizeDisplayDate, formatDateTimeBR } from '@/lib/date-utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -717,8 +718,8 @@ export const ClientDashboardModal = ({
                             </span>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-medium">
-                                  {formatDate(event.event_date)}
+                                 <span className="text-sm font-medium">
+                                  {normalizeDisplayDate(event.event_date)}
                                 </span>
                                 {event.event_time && (
                                   <span className="text-xs text-muted-foreground">
@@ -791,7 +792,7 @@ export const ClientDashboardModal = ({
                     >
                       <div className="flex items-center gap-3">
                         <div className="text-xs text-muted-foreground">
-                          {formatDate(analysis.created_at)}
+                          {formatDateTimeBR(analysis.created_at)}
                         </div>
                         <Badge className={`${
                           analysis.risk_level === 'crítico' ? 'bg-red-500' :

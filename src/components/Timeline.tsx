@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, CheckCircle2, Minus } from 'lucide-react';
+import { formatEventDate, toISODate } from '@/lib/date-utils';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
@@ -91,11 +92,12 @@ export const Timeline = ({
   };
   
   const lines = timeline.lines || [];
+  const today = new Date();
   const clientInfo = timeline.clientInfo || {
     name: '',
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: toISODate(today),
     boletoValue: '',
-    dueDate: new Date().toISOString().split('T')[0]
+    dueDate: toISODate(today)
   };
 
   const loadTimelineTags = async () => {
@@ -148,8 +150,8 @@ export const Timeline = ({
     const newId = crypto.randomUUID();
     const lastEvent = lineEvents[lineEvents.length - 1];
     const newPosition = lastEvent?.position === 'top' ? 'bottom' : 'top';
-    const today = new Date();
-    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const todayDate = new Date();
+    const dateStr = formatEventDate(todayDate);
 
     const newEvent: Event = {
       id: newId,
