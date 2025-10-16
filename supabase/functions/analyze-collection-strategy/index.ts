@@ -7,6 +7,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper para formatar datas de forma segura
+function safeFormatDate(dateValue: any, format: 'date' | 'datetime' = 'date'): string {
+  if (!dateValue) return 'N/A';
+  
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return 'Data inválida';
+    
+    if (format === 'datetime') {
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    return date.toLocaleDateString('pt-BR');
+  } catch (error) {
+    console.error('Error formatting date:', dateValue, error);
+    return 'Data inválida';
+  }
+}
+
+// Helper para formatar valores monetários
+function safeFormatCurrency(value: any): string {
+  try {
+    const num = parseFloat(value || '0');
+    return isNaN(num) ? 'R$ 0,00' : `R$ ${num.toFixed(2)}`;
+  } catch (error) {
+    return 'R$ 0,00';
+  }
+}
+
+// Helper para formatar event_date (DD/MM)
+function safeFormatEventDate(eventDate: any): string {
+  if (!eventDate || eventDate === '--/--') return '--/--';
+  return String(eventDate);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -96,6 +137,10 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Log de debug
+    console.log(`Processing timeline ${timeline_id} with ${allEvents.length} events`);
+    console.log('Sample event:', allEvents[0] ? JSON.stringify(allEvents[0]) : 'No events');
 
   // ============================================
   // INFORMAÇÕES TEMPORAIS
@@ -231,7 +276,9 @@ serve(async (req) => {
     const noResponseRate = totalEvents > 0 ? (noResponseEvents / totalEvents * 100).toFixed(1) : '0';
 
     // Prepare context for AI
-    const contextForAI = `
+    let contextForAI = '';
+    try {
+      contextForAI = `
 Análise de Cliente - Sistema de Cobrança
 
 DADOS DO CLIENTE:
@@ -239,11 +286,11 @@ DADOS DO CLIENTE:
 - ID: ${client.client_id || 'N/A'}
 - Status: ${client.is_active ? 'Ativo' : 'Inativo'}
 - Status da Timeline: ${client.status || 'active'}
-${client.completed_at ? `- Finalizada em: ${new Date(client.completed_at).toLocaleDateString('pt-BR')}` : ''}
+${client.completed_at ? `- Finalizada em: ${safeFormatDate(client.completed_at)}` : ''}
 ${client.completion_notes ? `- Observações de finalização: ${client.completion_notes}` : ''}
-- Valor do boleto: R$ ${parseFloat(client.boleto_value || '0').toFixed(2)}
-- Data de início: ${startDate.toLocaleDateString('pt-BR')}
-- Data de vencimento: ${dueDate ? dueDate.toLocaleDateString('pt-BR') : 'Não definida'}
+- Valor do boleto: ${safeFormatCurrency(client.boleto_value)}
+- Data de início: ${safeFormatDate(client.start_date)}
+- Data de vencimento: ${dueDate ? safeFormatDate(client.due_date) : 'Não definida'}
 - Dias desde início: ${daysSinceStart}
 - Dias até vencimento: ${daysUntilDue !== null ? daysUntilDue : 'N/A'}
 - Em atraso: ${isOverdue ? `Sim (${daysOverdue} dias)` : 'Não'}
@@ -258,9 +305,14 @@ MÉTRICAS DE INTERAÇÃO:
 - Frequência de contato: ${totalEvents > 0 ? (totalEvents / Math.max(daysSinceStart, 1)).toFixed(2) : 0} eventos/dia
 
 HISTÓRICO DE EVENTOS (últimos ${Math.min(allEvents.length, 20)}):
-${allEvents.slice(0, 20).map((e, i) => `
-${i + 1}. 📅 ${e.event_date} ${e.event_time || 'sem horário'} | ${e.icon} | Posição: ${e.position} | Status: ${e.status} | Desc: ${e.description || 'Sem descrição'} | Criado: ${new Date(e.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-`).join('')}
+${allEvents.slice(0, 20).map((e, i) => {
+  const eventDate = safeFormatEventDate(e.event_date);
+  const eventTime = e.event_time || 'sem horário';
+  const createdAt = safeFormatDate(e.created_at, 'datetime');
+  const desc = e.description || 'Sem descrição';
+  
+  return `${i + 1}. 📅 ${eventDate} ${eventTime} | ${e.icon} | Posição: ${e.position} | Status: ${e.status} | Desc: ${desc} | Criado: ${createdAt}`;
+}).join('\n')}
 
 ANÁLISE TEMPORAL DOS EVENTOS:
 - 🌅 Eventos pela manhã (6h-12h): ${morningEvents} (${totalEvents > 0 ? ((morningEvents/totalEvents)*100).toFixed(1) : 0}%)
@@ -278,13 +330,16 @@ INFORMAÇÕES FINANCEIRAS (MÚLTIPLOS BOLETOS):
 - 🟡 Boletos pendentes: ${boletosPendentes.length}
 - ✅ Boletos pagos: ${boletos?.filter(b => b.status === 'pago').length || 0}
 - ⏰ Boletos vencidos não pagos: ${boletosVencidos}
-- 💵 Valor total pendente: R$ ${totalPendente.toFixed(2)}
-- 📅 Próximo vencimento: ${proximoVencimento ? new Date(proximoVencimento).toLocaleDateString('pt-BR') : 'N/A'}
+- 💵 Valor total pendente: ${safeFormatCurrency(totalPendente)}
+- 📅 Próximo vencimento: ${proximoVencimento ? safeFormatDate(proximoVencimento) : 'N/A'}
 
 ${totalBoletos > 0 && boletos ? `LISTA DETALHADA DE BOLETOS:
-${boletos.map((b, i) => `
-${i + 1}. Valor: R$ ${parseFloat(b.boleto_value).toFixed(2)} | Vencimento: ${new Date(b.due_date).toLocaleDateString('pt-BR')} | Status: ${b.status}${b.description ? ` | ${b.description}` : ''}
-`).join('')}` : ''}
+${boletos.map((b, i) => {
+  const valor = safeFormatCurrency(b.boleto_value);
+  const vencimento = safeFormatDate(b.due_date);
+  const desc = b.description ? ` | ${b.description}` : '';
+  return `${i + 1}. Valor: ${valor} | Vencimento: ${vencimento} | Status: ${b.status}${desc}`;
+}).join('\n')}` : ''}
 
 CONTEXTO ADICIONAL:
 - Método atual: Cobrança ${tags.includes('COBRANÇA') ? 'ativa' : 'padrão'}
@@ -292,6 +347,17 @@ CONTEXTO ADICIONAL:
 
 Analise este caso e forneça insights acionáveis para melhorar a estratégia de cobrança.
 `;
+    } catch (contextError) {
+      console.error('Error building context for AI:', contextError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'context_build_error',
+          message: 'Erro ao preparar dados para análise. Verifique se todos os campos estão preenchidos corretamente.',
+          details: contextError instanceof Error ? contextError.message : 'Unknown error'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
  
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -464,13 +530,16 @@ Seja específico, prático e direto nas recomendações.`
 
   } catch (error) {
     console.error('Error in analyze-collection-strategy:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     
     return new Response(
       JSON.stringify({ 
         error: 'internal_error',
         message: errorMessage,
-        details: 'Verifique se todos os eventos possuem datas válidas. Eventos com "Invalid Date" devem ser corrigidos.'
+        details: 'Erro ao processar análise. Verifique os logs para mais informações.',
+        stack: error instanceof Error ? error.stack : undefined
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
