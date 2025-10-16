@@ -410,10 +410,11 @@ const Clients = () => {
               Clientes
             </h2>
 
-            <ClientSearchFilters
-              onFilterChange={handleFilterChange}
-              organizationId={organizationId}
-            />
+          <ClientSearchFilters 
+            onFilterChange={handleFilterChange} 
+            organizationId={organizationId}
+            pageName="clients"
+          />
 
             <div className="mb-4 flex items-center justify-between gap-4">
               <p className="text-sm text-muted-foreground">

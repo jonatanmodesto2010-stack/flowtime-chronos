@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationFilters, FilterValues } from '@/hooks/useOrganizationFilters';
 
 interface Tag {
   id: string;
@@ -13,33 +14,14 @@ interface Tag {
   color: string;
 }
 
-interface FilterValues {
-  searchTerm: string;
-  statusFilter: string;
-  tagsFilter: string[];
-  dateFrom: string;
-  dateTo: string;
-  updateDateFrom: string;
-  updateDateTo: string;
-  boletoFilter: string;
-  timelineFilter: string;
-}
-
 interface ClientSearchFiltersProps {
   onFilterChange: (filters: FilterValues) => void;
   organizationId: string | null;
+  pageName: string;
 }
 
-export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSearchFiltersProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [tagsFilter, setTagsFilter] = useState<string[]>([]);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [updateDateFrom, setUpdateDateFrom] = useState('');
-  const [updateDateTo, setUpdateDateTo] = useState('');
-  const [boletoFilter, setBoletoFilter] = useState('all');
-  const [timelineFilter, setTimelineFilter] = useState('all');
+export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }: ClientSearchFiltersProps) => {
+  const { filters, updateFilters, isLoading } = useOrganizationFilters(pageName);
   const [tags, setTags] = useState<Tag[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -48,6 +30,12 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
       loadTags();
     }
   }, [organizationId]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      onFilterChange(filters);
+    }
+  }, [filters, isLoading, onFilterChange]);
 
   const loadTags = async () => {
     if (!organizationId) return;
@@ -63,31 +51,13 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
     }
   };
 
-  const applyFilters = () => {
-    onFilterChange({
-      searchTerm,
-      statusFilter,
-      tagsFilter,
-      dateFrom,
-      dateTo,
-      updateDateFrom,
-      updateDateTo,
-      boletoFilter,
-      timelineFilter,
-    });
+  const applyFilters = (newFilters: Partial<FilterValues>) => {
+    const updatedFilters = { ...filters, ...newFilters };
+    updateFilters(updatedFilters);
   };
 
   const clearFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('all');
-    setTagsFilter([]);
-    setDateFrom('');
-    setDateTo('');
-    setUpdateDateFrom('');
-    setUpdateDateTo('');
-    setBoletoFilter('all');
-    setTimelineFilter('all');
-    onFilterChange({
+    updateFilters({
       searchTerm: '',
       statusFilter: 'all',
       tagsFilter: [],
@@ -101,20 +71,19 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
   };
 
   const toggleTag = (tagId: string) => {
-    setTagsFilter(prev =>
-      prev.includes(tagId)
-        ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
-    );
+    const newTagsFilter = filters.tagsFilter.includes(tagId)
+      ? filters.tagsFilter.filter(id => id !== tagId)
+      : [...filters.tagsFilter, tagId];
+    applyFilters({ tagsFilter: newTagsFilter });
   };
 
   const activeFiltersCount = [
-    statusFilter !== 'all',
-    tagsFilter.length > 0,
-    dateFrom || dateTo,
-    updateDateFrom || updateDateTo,
-    boletoFilter !== 'all',
-    timelineFilter !== 'all',
+    filters.statusFilter !== 'all',
+    filters.tagsFilter.length > 0,
+    filters.dateFrom || filters.dateTo,
+    filters.updateDateFrom || filters.updateDateTo,
+    filters.boletoFilter !== 'all',
+    filters.timelineFilter !== 'all',
   ].filter(Boolean).length;
 
   return (
@@ -125,10 +94,9 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             placeholder="Buscar por nome ou ID do cliente..."
-            value={searchTerm}
+            value={filters.searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
-              applyFilters();
+              applyFilters({ searchTerm: e.target.value });
             }}
             className="pl-10 flex-1"
           />
@@ -165,7 +133,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
               {/* Status */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Status</label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={filters.statusFilter} onValueChange={(value) => applyFilters({ statusFilter: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -186,9 +154,9 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
                       <Badge
                         key={tag.id}
                         style={{
-                          backgroundColor: tagsFilter.includes(tag.id) ? tag.color : 'transparent',
+                          backgroundColor: filters.tagsFilter.includes(tag.id) ? tag.color : 'transparent',
                           borderColor: tag.color,
-                          color: tagsFilter.includes(tag.id) ? 'white' : tag.color
+                          color: filters.tagsFilter.includes(tag.id) ? 'white' : tag.color
                         }}
                         className="cursor-pointer border-2 transition-all hover:scale-105"
                         onClick={() => toggleTag(tag.id)}
@@ -207,8 +175,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
                   <div>
                     <Input
                       type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
+                      value={filters.dateFrom}
+                      onChange={(e) => applyFilters({ dateFrom: e.target.value })}
                       placeholder="De"
                       className="text-sm"
                     />
@@ -216,8 +184,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
                   <div>
                     <Input
                       type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
+                      value={filters.dateTo}
+                      onChange={(e) => applyFilters({ dateTo: e.target.value })}
                       placeholder="Até"
                       className="text-sm"
                     />
@@ -232,8 +200,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
                   <div>
                     <Input
                       type="date"
-                      value={updateDateFrom}
-                      onChange={(e) => setUpdateDateFrom(e.target.value)}
+                      value={filters.updateDateFrom}
+                      onChange={(e) => applyFilters({ updateDateFrom: e.target.value })}
                       placeholder="De"
                       className="text-sm"
                     />
@@ -241,8 +209,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
                   <div>
                     <Input
                       type="date"
-                      value={updateDateTo}
-                      onChange={(e) => setUpdateDateTo(e.target.value)}
+                      value={filters.updateDateTo}
+                      onChange={(e) => applyFilters({ updateDateTo: e.target.value })}
                       placeholder="Até"
                       className="text-sm"
                     />
@@ -253,7 +221,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
               {/* Boletos */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Boletos</label>
-                <Select value={boletoFilter} onValueChange={setBoletoFilter}>
+                <Select value={filters.boletoFilter} onValueChange={(value) => applyFilters({ boletoFilter: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -269,7 +237,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
               {/* Timeline */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Timeline</label>
-                <Select value={timelineFilter} onValueChange={setTimelineFilter}>
+                <Select value={filters.timelineFilter} onValueChange={(value) => applyFilters({ timelineFilter: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -283,8 +251,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
               </div>
 
               {/* Apply Button */}
-              <Button onClick={() => { applyFilters(); setShowFilters(false); }} className="w-full">
-                Aplicar Filtros
+              <Button onClick={() => setShowFilters(false)} className="w-full">
+                Fechar
               </Button>
             </div>
           </PopoverContent>
@@ -294,57 +262,57 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
       {/* Active Filters Display */}
       {activeFiltersCount > 0 && (
         <div className="flex flex-wrap gap-2">
-          {statusFilter !== 'all' && (
+          {filters.statusFilter !== 'all' && (
             <Badge variant="secondary" className="gap-1">
-              Status: {statusFilter === 'active' ? 'Ativos' : 'Inativos'}
+              Status: {filters.statusFilter === 'active' ? 'Ativos' : 'Inativos'}
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => setStatusFilter('all')}
+                onClick={() => applyFilters({ statusFilter: 'all' })}
               />
             </Badge>
           )}
-          {tagsFilter.length > 0 && (
+          {filters.tagsFilter.length > 0 && (
             <Badge variant="secondary" className="gap-1">
-              {tagsFilter.length} tag(s)
+              {filters.tagsFilter.length} tag(s)
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => setTagsFilter([])}
+                onClick={() => applyFilters({ tagsFilter: [] })}
               />
             </Badge>
           )}
-          {(dateFrom || dateTo) && (
+          {(filters.dateFrom || filters.dateTo) && (
             <Badge variant="secondary" className="gap-1">
-              Cadastro: {dateFrom || '...'} até {dateTo || '...'}
+              Cadastro: {filters.dateFrom || '...'} até {filters.dateTo || '...'}
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => { setDateFrom(''); setDateTo(''); applyFilters(); }}
+                onClick={() => applyFilters({ dateFrom: '', dateTo: '' })}
               />
             </Badge>
           )}
-          {(updateDateFrom || updateDateTo) && (
+          {(filters.updateDateFrom || filters.updateDateTo) && (
             <Badge variant="secondary" className="gap-1">
-              Atualização: {updateDateFrom || '...'} até {updateDateTo || '...'}
+              Atualização: {filters.updateDateFrom || '...'} até {filters.updateDateTo || '...'}
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => { setUpdateDateFrom(''); setUpdateDateTo(''); applyFilters(); }}
+                onClick={() => applyFilters({ updateDateFrom: '', updateDateTo: '' })}
               />
             </Badge>
           )}
-          {boletoFilter !== 'all' && (
+          {filters.boletoFilter !== 'all' && (
             <Badge variant="secondary" className="gap-1">
               Boletos
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => setBoletoFilter('all')}
+                onClick={() => applyFilters({ boletoFilter: 'all' })}
               />
             </Badge>
           )}
-          {timelineFilter !== 'all' && (
+          {filters.timelineFilter !== 'all' && (
             <Badge variant="secondary" className="gap-1">
               Timeline
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => setTimelineFilter('all')}
+                onClick={() => applyFilters({ timelineFilter: 'all' })}
               />
             </Badge>
           )}

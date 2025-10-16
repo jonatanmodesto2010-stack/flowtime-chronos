@@ -222,6 +222,41 @@ export type Database = {
           },
         ]
       }
+      organization_filters: {
+        Row: {
+          filter_data: Json
+          id: string
+          organization_id: string
+          page_name: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          filter_data?: Json
+          id?: string
+          organization_id: string
+          page_name: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          filter_data?: Json
+          id?: string
+          organization_id?: string
+          page_name?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_filters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
