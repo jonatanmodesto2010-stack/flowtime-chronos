@@ -177,39 +177,31 @@ export const Timeline = ({
       // Tentar consolidar com a próxima linha primeiro
       if (currentLineIndex < lines.length - 1) {
         const nextLine = lines[currentLineIndex + 1];
-        const totalEvents = updatedEvents.length + (nextLine.events?.length || 0);
+        const mergedEvents = [...updatedEvents, ...(nextLine.events || [])];
+        updateLine(editingLineId, mergedEvents);
         
-        if (totalEvents <= 20) {
-          const mergedEvents = [...updatedEvents, ...(nextLine.events || [])];
-          updateLine(editingLineId, mergedEvents);
-          
-          if (deleteLine) {
-            deleteLine(nextLine.id);
-          }
-          
-          setEditingEvent(null);
-          setEditingLineId(null);
-          return;
+        if (deleteLine) {
+          deleteLine(nextLine.id);
         }
+        
+        setEditingEvent(null);
+        setEditingLineId(null);
+        return;
       }
       
       // Se não consolidou com a próxima, tentar com a anterior
       if (currentLineIndex > 0) {
         const prevLine = lines[currentLineIndex - 1];
-        const totalEvents = (prevLine.events?.length || 0) + updatedEvents.length;
+        const mergedEvents = [...(prevLine.events || []), ...updatedEvents];
+        updateLine(prevLine.id, mergedEvents);
         
-        if (totalEvents <= 20) {
-          const mergedEvents = [...(prevLine.events || []), ...updatedEvents];
-          updateLine(prevLine.id, mergedEvents);
-          
-          if (deleteLine) {
-            deleteLine(editingLineId);
-          }
-          
-          setEditingEvent(null);
-          setEditingLineId(null);
-          return;
+        if (deleteLine) {
+          deleteLine(editingLineId);
         }
+        
+        setEditingEvent(null);
+        setEditingLineId(null);
+        return;
       }
     }
     
@@ -312,6 +304,18 @@ export const Timeline = ({
             >
               {showAllDescriptions ? '👁️ Ocultar' : '📝 Ver Descrições'}
             </motion.button>
+
+            {!readOnly && (
+              <motion.button
+                onClick={() => handleAddEvent(lines[0]?.id)}
+                className="px-3 py-2 font-semibold rounded-lg transition-all text-xs flex items-center gap-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Adicionar novo evento"
+              >
+                ➕ Evento
+              </motion.button>
+            )}
           
             {/* Tag Selector com Dropdown ou Tags read-only */}
             {!readOnly ? (
@@ -393,7 +397,7 @@ export const Timeline = ({
                 >
                   {/* Contador de eventos - Verde */}
                   <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
-                    {(line.events || []).length} / 20
+                    {(line.events || []).length} {(line.events || []).length === 1 ? 'Evento' : 'Eventos'}
                   </div>
                   
                   {/* Linha base - sempre visível e clicável quando há 0 ou 1 evento */}
