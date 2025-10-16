@@ -18,6 +18,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     localStorage.setItem('theme', theme);
+    
+    // Reaplica a paleta de cores ao mudar o tema (claro/escuro)
+    const savedPalette = localStorage.getItem('colorPalette');
+    if (savedPalette) {
+      window.dispatchEvent(new CustomEvent('theme-changed'));
+    }
   }, [theme]);
 
   const toggleTheme = () => {

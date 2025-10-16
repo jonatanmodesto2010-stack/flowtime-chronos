@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, History } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { ClientDashboardModal } from '@/components/ClientDashboardModal';
@@ -105,7 +105,7 @@ const Clients = () => {
           )
         `)
         .eq('organization_id', organizationId)
-        .order('updated_at', { ascending: false, nullsFirst: false });
+        .order('updated_at', { ascending: true, nullsFirst: false });
 
       if (error) throw error;
       setClients(data || []);
@@ -162,8 +162,8 @@ const Clients = () => {
       query = query.lte('updated_at', filters.updateDateTo);
     }
 
-    // Sempre ordenar por data de atualização (mais recente primeiro)
-    query = query.order('updated_at', { ascending: false, nullsFirst: false });
+    // Sempre ordenar por data de atualização (mais antigo primeiro)
+    query = query.order('updated_at', { ascending: true, nullsFirst: false });
 
     try {
       const { data, error } = await query;
@@ -420,17 +420,31 @@ const Clients = () => {
                 Mostrando {filteredClients.length} de {clients.length} clientes
               </p>
               
-              <motion.button
-                onClick={() => setNewClientModalOpen(true)}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap"
-              >
-                <Plus size={18} />
-                Novo Cliente
-              </motion.button>
+              <div className="flex items-center gap-3">
+                <motion.button
+                  onClick={() => navigate('/history')}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap"
+                >
+                  <History size={18} />
+                  Histórico
+                </motion.button>
+
+                <motion.button
+                  onClick={() => setNewClientModalOpen(true)}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Plus size={18} />
+                  Novo Cliente
+                </motion.button>
+              </div>
             </div>
 
             {filteredClients.length === 0 ? (
@@ -448,29 +462,24 @@ const Clients = () => {
                     className="w-full rounded-lg p-4 flex items-center gap-4 bg-card hover:bg-card/80 transition-colors cursor-pointer"
                     onClick={() => handleOpenModal(client)}
                   >
-                    <div className="flex-1 w-full">
-                      <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
-                        {client.client_name}
-                      </h3>
-                      
-                      {/* ID do Cliente */}
-                      {client.client_id && (
-                        <p className="text-xs text-muted-foreground">ID: {client.client_id}</p>
-                      )}
-                      
-                      {/* Última Atualização */}
-                      {client.updated_at && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-xs">🕐</span>
-                          <p className="text-xs text-muted-foreground">
-                            Última atualização: {formatLastUpdate(
-                              client.updated_at, 
-                              client.profiles?.full_name
-                            )}
-                          </p>
-                        </div>
-                      )}
+                <div className="flex-1 w-full">
+                  <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
+                    {client.client_name}
+                  </h3>
+                  
+                  {/* Última Atualização */}
+                  {client.updated_at && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-xs">🕐</span>
+                      <p className="text-xs text-muted-foreground">
+                        Última atualização: {formatLastUpdate(
+                          client.updated_at, 
+                          client.profiles?.full_name
+                        )}
+                      </p>
                     </div>
+                  )}
+                </div>
 
                     {!client.is_active && (
                       <div className="px-2 py-1 bg-red-500/20 text-red-500 text-xs rounded flex-shrink-0">

@@ -8,6 +8,7 @@ import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { UserProfile } from '@/components/settings/UserProfile';
 import { TagsManagement } from '@/components/settings/TagsManagement';
 import { HistorySettings } from '@/components/settings/HistorySettings';
+import { ColorThemeSettings } from '@/components/settings/ColorThemeSettings';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -63,12 +64,13 @@ const Settings = () => {
             {canManageUsers && (
               <TabsTrigger value="users">Usuários</TabsTrigger>
             )}
-            {canManageSettings && (
-              <>
-                <TabsTrigger value="general">Geral</TabsTrigger>
-                <TabsTrigger value="tags">Tags</TabsTrigger>
-              </>
-            )}
+              {canManageSettings && (
+                <>
+                  <TabsTrigger value="general">Geral</TabsTrigger>
+                  <TabsTrigger value="colors">Paleta de Cores</TabsTrigger>
+                  <TabsTrigger value="tags">Tags</TabsTrigger>
+                </>
+              )}
             <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
 
@@ -82,16 +84,19 @@ const Settings = () => {
             </TabsContent>
           )}
 
-          {canManageSettings && (
-            <>
-              <TabsContent value="general">
-                <GeneralSettings />
-              </TabsContent>
-              <TabsContent value="tags">
-                <TagsManagement />
-              </TabsContent>
-            </>
-          )}
+            {canManageSettings && (
+              <>
+                <TabsContent value="general">
+                  <GeneralSettings />
+                </TabsContent>
+                <TabsContent value="colors">
+                  <ColorThemeSettings />
+                </TabsContent>
+                <TabsContent value="tags">
+                  <TagsManagement />
+                </TabsContent>
+              </>
+            )}
 
           <TabsContent value="history">
             <HistorySettings />
