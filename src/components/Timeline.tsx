@@ -385,15 +385,15 @@ export const Timeline = ({
             className="relative"
           >
               
-              <div className={isVertical ? "overflow-y-auto overflow-x-visible scrollbar-hide" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
+              <div className={isVertical ? "overflow-y-auto overflow-x-visible scrollbar-hide scroll-smooth" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
                 <div 
                   className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
                     isVertical 
-                      ? 'flex flex-col items-center py-8 px-12' 
+                      ? 'flex flex-col items-center py-8 px-12 h-full' 
                       : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
-                    minHeight: isVertical ? '700px' : '250px',
+                    minHeight: isVertical ? 'auto' : '250px',
                     minWidth: isVertical ? 'auto' : '100%'
                   }}
                 >
