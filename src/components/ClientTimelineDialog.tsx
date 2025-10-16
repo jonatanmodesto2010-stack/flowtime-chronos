@@ -181,7 +181,7 @@ export const ClientTimelineDialog = ({
         <div className="flex items-center justify-between p-6 border-b border-green-500/30 shrink-0">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-green-400 flex items-center gap-2">
-              Timeline - {client.client_name}
+              {client.client_name}
             </h2>
             {lastUpdatedBy && lastUpdatedAt && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
