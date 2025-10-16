@@ -176,14 +176,9 @@ export const ClientTimelineDialog = ({
         exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
         className="bg-background border-2 border-green-500/50 rounded-xl shadow-2xl w-full h-[calc(100vh-50px)] flex flex-col"
-        drag
-        dragConstraints={{ left: -200, right: 200, top: -100, bottom: 100 }}
-        dragElastic={0.1}
-        dragMomentum={false}
-        whileDrag={{ scale: 1.02 }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-green-500/30 shrink-0 cursor-move">
+        <div className="flex items-center justify-between p-6 border-b border-green-500/30 shrink-0">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-green-400 flex items-center gap-2">
               Timeline - {client.client_name}

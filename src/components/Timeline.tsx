@@ -63,8 +63,8 @@ export const Timeline = ({
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
-  const [showAllDescriptions, setShowAllDescriptions] = useState(false);
-  const [isVertical, setIsVertical] = useState(false);
+  const [showAllDescriptions, setShowAllDescriptions] = useState(true);
+  const [isVertical, setIsVertical] = useState(true);
   
   const toggleAllDescriptions = () => {
     setShowAllDescriptions(prev => !prev);
@@ -293,16 +293,6 @@ export const Timeline = ({
             >
               <User size={16} />
               {clientInfo.clientId ? `${clientInfo.clientId} - ${clientInfo.name}` : clientInfo.name}
-            </motion.button>
-
-            <motion.button
-              onClick={() => setIsVertical(!isVertical)}
-              className="px-2 py-2 rounded-lg hover:bg-accent transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title={isVertical ? "Alternar para horizontal" : "Alternar para vertical"}
-            >
-              <Minus size={20} className={isVertical ? "rotate-90" : ""} />
             </motion.button>
 
             <motion.button
