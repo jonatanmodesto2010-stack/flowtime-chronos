@@ -199,7 +199,7 @@ export const ClientTimelineDialog = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-hidden p-6">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">

@@ -385,18 +385,18 @@ export const Timeline = ({
             className="relative"
           >
               
-              <div className={isVertical ? "overflow-y-auto overflow-x-visible scrollbar-hide" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
-                <div 
-                  className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
-                    isVertical 
-                      ? 'flex flex-col items-center py-8 px-12' 
-                      : 'flex items-center py-12 px-8'
-                  }`}
-                  style={{ 
-                    minHeight: isVertical ? '700px' : '250px',
-                    minWidth: isVertical ? 'auto' : '100%'
-                  }}
-                >
+              <div className={isVertical ? "overflow-y-auto overflow-x-visible scrollbar-hide scroll-smooth" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
+          <div 
+            className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
+              isVertical 
+                ? 'flex flex-col items-center py-8 px-12 h-full' 
+                : 'flex items-center py-12 px-8'
+            }`}
+            style={{ 
+              minHeight: isVertical ? 'auto' : '250px',
+              minWidth: isVertical ? 'auto' : '100%'
+            }}
+          >
                   {/* Contador de eventos - Verde */}
                   <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
                     {(line.events || []).length} / 28
