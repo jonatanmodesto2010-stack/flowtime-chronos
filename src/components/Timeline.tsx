@@ -379,7 +379,7 @@ export const Timeline = ({
             className="relative"
           >
               
-              <div className={isVertical ? "overflow-y-auto overflow-x-visible scrollbar-hide scroll-smooth min-h-[calc(100vh-250px)]" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
+              <div className={isVertical ? "overflow-y-auto overflow-x-visible custom-scrollbar scroll-smooth min-h-[calc(100vh-250px)]" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
                 <div 
                   className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
                     isVertical 
@@ -401,23 +401,23 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-                      className={`absolute bg-foreground/30 z-0 transition-all ${
-                        isVertical
-                          ? 'left-1/2 w-2 h-[calc(100%-56px)] top-7 -translate-x-1/2'
-                          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
-                      } ${
-                        !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
-                      }`}
+      className={`absolute bg-foreground/30 z-0 transition-all ${
+        isVertical
+          ? 'left-1/2 w-1 h-[calc(100%-28px)] top-7 -translate-x-1/2'
+          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+      } ${
+        !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
+      }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
-                    <div 
-                      className={`absolute bg-foreground/30 z-0 ${
-                        isVertical
-                          ? 'left-1/2 w-2 h-[calc(100%-48px)] top-6 -translate-x-1/2'
-                          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
-                      }`}
-                    />
+    <div 
+      className={`absolute bg-foreground/30 z-0 ${
+        isVertical
+          ? 'left-1/2 w-1 h-[calc(100%-24px)] top-6 -translate-x-1/2'
+          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+      }`}
+    />
                   )}
 
                   {/* Segmentos coloridos sobrepostos (apenas quando há 2+ eventos) */}
@@ -438,13 +438,13 @@ export const Timeline = ({
                         key={`segment-${event.id}-${nextEvent?.id}`}
                         onClick={() => handleAddEvent(line.id)}
                         disabled={readOnly}
-                        className={`absolute ${segmentColor} z-10 transition-all ${
-                          isVertical
-                            ? 'left-1/2 w-2 -translate-x-1/2'
-                            : 'top-1/2 h-1 -translate-y-1/2'
-                        } ${
-                          !readOnly ? 'cursor-pointer' : 'cursor-default'
-                        } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
+        className={`absolute ${segmentColor} z-10 transition-all ${
+          isVertical
+            ? 'left-1/2 w-1 -translate-x-1/2'
+            : 'top-1/2 h-1 -translate-y-1/2'
+        } ${
+          !readOnly ? 'cursor-pointer' : 'cursor-default'
+        } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
                         style={isVertical ? {
                           top: `${currentIconCenter}px`,
                           height: `${nextIconCenter - currentIconCenter}px`
