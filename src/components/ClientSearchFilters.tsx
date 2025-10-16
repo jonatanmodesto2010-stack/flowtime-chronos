@@ -19,6 +19,8 @@ interface FilterValues {
   tagsFilter: string[];
   dateFrom: string;
   dateTo: string;
+  updateDateFrom: string;
+  updateDateTo: string;
   boletoFilter: string;
   timelineFilter: string;
 }
@@ -34,6 +36,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
   const [tagsFilter, setTagsFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [updateDateFrom, setUpdateDateFrom] = useState('');
+  const [updateDateTo, setUpdateDateTo] = useState('');
   const [boletoFilter, setBoletoFilter] = useState('all');
   const [timelineFilter, setTimelineFilter] = useState('all');
   const [tags, setTags] = useState<Tag[]>([]);
@@ -66,6 +70,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
       tagsFilter,
       dateFrom,
       dateTo,
+      updateDateFrom,
+      updateDateTo,
       boletoFilter,
       timelineFilter,
     });
@@ -77,6 +83,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
     setTagsFilter([]);
     setDateFrom('');
     setDateTo('');
+    setUpdateDateFrom('');
+    setUpdateDateTo('');
     setBoletoFilter('all');
     setTimelineFilter('all');
     onFilterChange({
@@ -85,6 +93,8 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
       tagsFilter: [],
       dateFrom: '',
       dateTo: '',
+      updateDateFrom: '',
+      updateDateTo: '',
       boletoFilter: 'all',
       timelineFilter: 'all',
     });
@@ -102,6 +112,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
     statusFilter !== 'all',
     tagsFilter.length > 0,
     dateFrom || dateTo,
+    updateDateFrom || updateDateTo,
     boletoFilter !== 'all',
     timelineFilter !== 'all',
   ].filter(Boolean).length;
@@ -214,6 +225,31 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
                 </div>
               </div>
 
+              {/* Data de Atualização */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Data de Atualização</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input
+                      type="date"
+                      value={updateDateFrom}
+                      onChange={(e) => setUpdateDateFrom(e.target.value)}
+                      placeholder="De"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      type="date"
+                      value={updateDateTo}
+                      onChange={(e) => setUpdateDateTo(e.target.value)}
+                      placeholder="Até"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Boletos */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Boletos</label>
@@ -278,10 +314,19 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId }: ClientSe
           )}
           {(dateFrom || dateTo) && (
             <Badge variant="secondary" className="gap-1">
-              Período
+              Cadastro: {dateFrom || '...'} até {dateTo || '...'}
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                onClick={() => { setDateFrom(''); setDateTo(''); applyFilters(); }}
+              />
+            </Badge>
+          )}
+          {(updateDateFrom || updateDateTo) && (
+            <Badge variant="secondary" className="gap-1">
+              Atualização: {updateDateFrom || '...'} até {updateDateTo || '...'}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => { setUpdateDateFrom(''); setUpdateDateTo(''); applyFilters(); }}
               />
             </Badge>
           )}

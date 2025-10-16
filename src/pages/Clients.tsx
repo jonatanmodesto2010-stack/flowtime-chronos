@@ -26,6 +26,9 @@ interface Client {
   created_at: string;
   updated_at?: string;
   organization_id?: string;
+  profiles?: {
+    full_name: string;
+  } | null;
 }
 
 const Clients = () => {
@@ -45,6 +48,22 @@ const Clients = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const formatLastUpdate = (updatedAt?: string, userName?: string | null) => {
+    if (!updatedAt) return null;
+    
+    const date = new Date(updatedAt);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    const formattedDate = `${day}/${month}/${year}, ${hours}:${minutes}`;
+    const displayName = userName || 'Usuário desconhecido';
+    
+    return `${displayName} - ${formattedDate}`;
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -79,9 +98,14 @@ const Clients = () => {
       setLoading(true);
       const { data, error } = await supabaseClient
         .from('client_timelines')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            full_name
+          )
+        `)
         .eq('organization_id', organizationId)
-        .order('client_name', { ascending: true });
+        .order('updated_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
       setClients(data || []);
@@ -102,7 +126,12 @@ const Clients = () => {
 
     let query = supabaseClient
       .from('client_timelines')
-      .select('*')
+      .select(`
+        *,
+        profiles:user_id (
+          full_name
+        )
+      `)
       .eq('organization_id', organizationId);
 
     // Search term (nome ou ID)
@@ -117,7 +146,7 @@ const Clients = () => {
       query = query.eq('is_active', false);
     }
 
-    // Date range filter
+    // Date range filter (data de cadastro)
     if (filters.dateFrom) {
       query = query.gte('start_date', filters.dateFrom);
     }
@@ -125,7 +154,16 @@ const Clients = () => {
       query = query.lte('start_date', filters.dateTo);
     }
 
-    query = query.order('client_name', { ascending: true });
+    // Update date range filter (data de atualização)
+    if (filters.updateDateFrom) {
+      query = query.gte('updated_at', filters.updateDateFrom);
+    }
+    if (filters.updateDateTo) {
+      query = query.lte('updated_at', filters.updateDateTo);
+    }
+
+    // Sempre ordenar por data de atualização (mais recente primeiro)
+    query = query.order('updated_at', { ascending: false, nullsFirst: false });
 
     try {
       const { data, error } = await query;
@@ -414,8 +452,23 @@ const Clients = () => {
                       <h3 className="text-card-foreground font-bold text-lg uppercase tracking-wide">
                         {client.client_name}
                       </h3>
+                      
+                      {/* ID do Cliente */}
                       {client.client_id && (
                         <p className="text-xs text-muted-foreground">ID: {client.client_id}</p>
+                      )}
+                      
+                      {/* Última Atualização */}
+                      {client.updated_at && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-xs">🕐</span>
+                          <p className="text-xs text-muted-foreground">
+                            Última atualização: {formatLastUpdate(
+                              client.updated_at, 
+                              client.profiles?.full_name
+                            )}
+                          </p>
+                        </div>
                       )}
                     </div>
 
