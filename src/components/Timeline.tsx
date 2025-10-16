@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, CheckCircle2, ChevronUp, ChevronDown, Minus } from 'lucide-react';
+import { User, CheckCircle2, Minus } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +63,6 @@ export const Timeline = ({
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showAllDescriptions, setShowAllDescriptions] = useState(false);
   const [isVertical, setIsVertical] = useState(false);
   
@@ -394,7 +393,7 @@ export const Timeline = ({
                       : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
-                    minHeight: isVertical ? '700px' : `${isExpanded ? 550 : 250}px`,
+                    minHeight: isVertical ? '700px' : '250px',
                     minWidth: isVertical ? 'auto' : '100%'
                   }}
                 >
@@ -402,17 +401,6 @@ export const Timeline = ({
                   <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
                     {(line.events || []).length} / 28
                   </div>
-                  
-                  {/* Botão toggle único - centralizado no canto inferior */}
-                  {!readOnly && !isVertical && (
-                    <button
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className="absolute bottom-[8px] left-1/2 -translate-x-1/2 z-40 w-10 h-10 rounded-full bg-background/90 border-2 border-border hover:bg-accent flex items-center justify-center shadow-lg transition-all"
-                      title={isExpanded ? "Diminuir altura" : "Aumentar altura"}
-                    >
-                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </button>
-                  )}
                   
                   {/* Linha base - sempre visível e clicável quando há 0 ou 1 evento */}
                   {(line.events || []).length < 2 ? (

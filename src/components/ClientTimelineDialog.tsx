@@ -212,39 +212,55 @@ export const ClientTimelineDialog = ({
       <Timeline
         timeline={timelineData}
         updateLine={async (lineId, events) => {
-          try {
-            // Deletar eventos antigos da linha
+        try {
+          // Deletar eventos antigos da linha
+          await supabase
+            .from('timeline_events')
+            .delete()
+            .eq('line_id', lineId);
+          
+          // Inserir novos eventos
+          if (events.length > 0) {
+            const eventsToInsert = events.map((event, index) => ({
+              line_id: lineId,
+              event_date: event.date,
+              event_time: event.time || null,
+              description: event.description,
+              position: event.position,
+              status: event.status,
+              icon: event.icon,
+              icon_size: event.iconSize,
+              event_order: index,
+            }));
+
             await supabase
               .from('timeline_events')
-              .delete()
-              .eq('line_id', lineId);
+              .insert(eventsToInsert);
+          }
 
-            // Inserir novos eventos
-            if (events.length > 0) {
-              const eventsToInsert = events.map((event, index) => ({
-                line_id: lineId,
-                event_date: event.date,
-                event_time: event.time || null,
-                description: event.description,
-                position: event.position,
-                status: event.status,
-                icon: event.icon,
-                icon_size: event.iconSize,
-                event_order: index,
-              }));
+          // Atualizar estado local ao invés de recarregar tudo
+          setTimelineData(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              lines: prev.lines.map(line => 
+                line.id === lineId ? { ...line, events } : line
+              )
+            };
+          });
 
-              await supabase
-                .from('timeline_events')
-                .insert(eventsToInsert);
-            }
-
-            // Recarregar dados
-            await loadTimelineData();
-            
+          // Atualizar apenas a auditoria
+          await loadLastUpdatedBy();
+          
+          // Toast apenas para eventos NOVOS ou EDITADOS (não para mudança de status)
+          const hasNewEvent = events.some(e => e.isNew);
+          const isEditing = events.length === 1;
+          if (hasNewEvent || isEditing) {
             toast({
               title: 'Timeline atualizada',
               description: 'Os eventos foram salvos com sucesso.',
             });
+          }
           } catch (error: any) {
             toast({
               title: 'Erro ao salvar',
