@@ -73,6 +73,22 @@ export const Timeline = ({
   const toggleAllDescriptions = () => {
     setShowAllDescriptions(prev => !prev);
   };
+
+  // Helper para determinar cor do contador baseado no número de eventos
+  const getCounterColor = (count: number) => {
+    if (count <= 5) return 'bg-green-500';
+    if (count <= 9) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  // Helper para determinar cor do marcador baseado no status
+  const getMarkerColor = (status: string) => {
+    switch(status) {
+      case 'resolved': return 'bg-green-500';
+      case 'no_response': return 'bg-red-500';
+      default: return 'bg-blue-500';
+    }
+  };
   
   const lines = timeline.lines || [];
   const clientInfo = timeline.clientInfo || {
@@ -395,8 +411,8 @@ export const Timeline = ({
                     minWidth: isVertical ? 'auto' : '100%'
                   }}
                 >
-                  {/* Contador de eventos - Verde */}
-                  <div className="absolute top-[-4px] right-2 px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold z-30">
+                  {/* Contador de eventos - Dinâmico com cores */}
+                  <div className={`absolute top-[-4px] right-2 px-3 py-1 ${getCounterColor((line.events || []).length)} text-white rounded-lg text-xs font-semibold z-30 transition-colors duration-300`}>
                     {(line.events || []).length} {(line.events || []).length === 1 ? 'Evento' : 'Eventos'}
                   </div>
                   
@@ -475,37 +491,40 @@ export const Timeline = ({
                           ? { top: `${position}px` }
                           : { left: `${position}%`, transform: 'translateX(-50%)' }
                         }
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                        initial={{ opacity: 0, x: -50, scale: 0.5 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ 
+                          duration: 0.6, 
+                          delay: index * 0.1,
+                          type: "spring",
+                          stiffness: 200,
+                          damping: 15
+                        }}
                         layout
                       >
             {isVertical ? (
               <>
-                {/* Status SEMPRE fixo na linha */}
-                <button
+                {/* Marcador numerado - sempre fixo na linha */}
+                <div 
+                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full ${getMarkerColor(event.status)} flex items-center justify-center z-20 border-2 border-background shadow-lg transition-all cursor-pointer hover:scale-110`}
                   onClick={(e) => {
                     handleStatusToggle(e, line.id, event.id);
                   }}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform cursor-pointer"
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    handleEventClick(event, line.id);
+                  }}
+                  title={`${event.icon} ${event.description} - Clique para mudar status, duplo clique para editar`}
                 >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={event.status}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {renderStatusIcon(event.status)}
-                    </motion.div>
-                  </AnimatePresence>
-                </button>
+                  <span className="text-white font-bold text-sm">
+                    {index + 1}
+                  </span>
+                </div>
 
                 {/* Elementos ao redor do status */}
                 {event.status === 'no_response' ? (
                   // Elementos à ESQUERDA do status: Descrição → Data → Ícone
-                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+20px)]">
+                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+30px)]">
                     <div
                       className="text-2xl cursor-pointer hover:scale-105 transition-transform"
                       onClick={(e) => {
@@ -534,7 +553,7 @@ export const Timeline = ({
                   </div>
                 ) : (
                   // Elementos à DIREITA do status: Ícone → Data → Descrição
-                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+20px)]">
+                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+30px)]">
                     <div
                       className="text-2xl cursor-pointer hover:scale-105 transition-transform"
                       onClick={(e) => {

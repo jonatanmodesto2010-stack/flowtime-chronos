@@ -44,9 +44,10 @@ interface EventModalProps {
   onSave: (event: Event) => void;
   onDelete: (id: string) => void;
   onCancel: () => void;
+  position?: 'center' | 'left';
 }
 
-export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProps) => {
+export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left' }: EventModalProps) => {
   const [formData, setFormData] = useState(event);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
@@ -100,8 +101,18 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
   };
 
   const modalVariants = {
-    hidden: { opacity: 0, y: -50, scale: 0.9 },
-    visible: { opacity: 1, y: 0, scale: 1 },
+    hidden: { 
+      opacity: 0, 
+      x: position === 'left' ? -100 : 0,
+      y: position === 'left' ? 0 : -50, 
+      scale: 0.9 
+    },
+    visible: { 
+      opacity: 1, 
+      x: 0,
+      y: 0, 
+      scale: 1 
+    },
   };
 
   return (
@@ -110,7 +121,9 @@ export const EventModal = ({ event, onSave, onDelete, onCancel }: EventModalProp
       initial="hidden"
       animate="visible"
       exit="hidden"
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 bg-black/50 z-50 flex items-center p-4 ${
+        position === 'left' ? 'justify-start pl-12' : 'justify-center'
+      }`}
     >
       <motion.div
         variants={modalVariants}
