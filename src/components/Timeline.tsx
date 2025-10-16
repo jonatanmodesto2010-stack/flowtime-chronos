@@ -412,8 +412,8 @@ export const Timeline = ({
                   }}
                 >
                   {/* Contador de eventos - Dinâmico com cores */}
-                  <div className={`absolute top-[-4px] right-2 px-3 py-1 ${getCounterColor((line.events || []).length)} text-white rounded-lg text-xs font-semibold z-30 transition-colors duration-300`}>
-                    {(line.events || []).length} {(line.events || []).length === 1 ? 'Evento' : 'Eventos'}
+                  <div className={`absolute top-[-4px] right-2 px-2 py-1 min-w-[24px] text-center ${getCounterColor((line.events || []).length)} text-white rounded-lg text-xs font-semibold z-30 transition-colors duration-300`}>
+                    {(line.events || []).length}
                   </div>
                   
                   {/* Linha base - sempre visível e clicável quando há 0 ou 1 evento */}
@@ -504,16 +504,6 @@ export const Timeline = ({
                       >
             {isVertical ? (
               <>
-                {/* Contador numerado - decorativo (acima da linha) */}
-                <div 
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center z-10 pointer-events-none"
-                  style={{ transform: 'translate(-50%, -50%) translateY(-12px)' }}
-                >
-                  <span className="text-foreground/70 font-bold text-xs">
-                    {index + 1}
-                  </span>
-                </div>
-
                 {/* Botão de status - funcional (na linha) */}
                 <button
                   className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
