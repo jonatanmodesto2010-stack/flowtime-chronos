@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { useUserRole } from './useUserRole';
@@ -31,6 +31,7 @@ export const useOrganizationFilters = (pageName: string) => {
   const { organizationId } = useUserRole();
   const [filters, setFilters] = useState<FilterValues>(DEFAULT_FILTERS);
   const [isLoading, setIsLoading] = useState(true);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Carregar filtros salvos
   useEffect(() => {
@@ -93,38 +94,79 @@ export const useOrganizationFilters = (pageName: string) => {
     };
   }, [organizationId, pageName]);
 
-  // Atualizar filtros (salvar no banco)
+  // Atualizar filtros localmente (imediato)
+  const setLocalFilters = useCallback((newFilters: FilterValues) => {
+    setFilters(newFilters);
+  }, []);
+
+  // Atualizar filtros (salvar no banco com debounce)
   const updateFilters = useCallback(
-    async (newFilters: FilterValues) => {
+    (newFilters: FilterValues) => {
       if (!organizationId) return;
 
-      try {
-        const { data: currentUser } = await supabase.auth.getUser();
-        
-        const { error } = await supabase
-          .from('organization_filters')
-          .upsert({
-            organization_id: organizationId,
-            page_name: pageName,
-            filter_data: newFilters as any,
-            updated_by: currentUser.user?.id || null,
-            updated_at: new Date().toISOString(),
-          });
+      // Atualizar estado local imediatamente para UI responsiva
+      setFilters(newFilters);
 
-        if (error) throw error;
-
-        // Atualizar localmente também
-        setFilters(newFilters);
-      } catch (error) {
-        console.error('Erro ao atualizar filtros:', error);
+      // Limpar timer anterior
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
+
+      // Criar novo timer para salvar no banco após 500ms
+      debounceTimerRef.current = setTimeout(async () => {
+        try {
+          const { data: currentUser } = await supabase.auth.getUser();
+          
+          // Retry logic para lidar com race conditions
+          let retries = 3;
+          while (retries > 0) {
+            const { error } = await supabase
+              .from('organization_filters')
+              .upsert({
+                organization_id: organizationId,
+                page_name: pageName,
+                filter_data: newFilters as any,
+                updated_by: currentUser.user?.id || null,
+                updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'organization_id,page_name',
+                ignoreDuplicates: false
+              });
+
+            if (!error) {
+              break;
+            }
+
+            // Se for erro de duplicate key, tentar novamente
+            if (error.code === '23505' && retries > 1) {
+              retries--;
+              await new Promise(r => setTimeout(r, 100));
+              continue;
+            }
+
+            throw error;
+          }
+        } catch (error) {
+          console.error('Erro ao atualizar filtros:', error);
+        }
+      }, 500);
     },
     [organizationId, pageName]
   );
 
+  // Cleanup do debounce timer
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   return {
     filters,
     updateFilters,
+    setLocalFilters,
     isLoading,
   };
 };
