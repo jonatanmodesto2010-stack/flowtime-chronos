@@ -230,6 +230,7 @@ export type Database = {
           page_name: string
           updated_at: string | null
           updated_by: string | null
+          user_id: string | null
         }
         Insert: {
           filter_data?: Json
@@ -238,6 +239,7 @@ export type Database = {
           page_name: string
           updated_at?: string | null
           updated_by?: string | null
+          user_id?: string | null
         }
         Update: {
           filter_data?: Json
@@ -246,6 +248,7 @@ export type Database = {
           page_name?: string
           updated_at?: string | null
           updated_by?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

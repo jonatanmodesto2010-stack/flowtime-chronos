@@ -31,11 +31,21 @@ export const useOrganizationFilters = (pageName: string) => {
   const { organizationId } = useUserRole();
   const [filters, setFilters] = useState<FilterValues>(DEFAULT_FILTERS);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Obter userId do usuário autenticado
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getUserId();
+  }, []);
 
   // Carregar filtros salvos
   useEffect(() => {
-    if (!organizationId) {
+    if (!organizationId || !userId) {
       setIsLoading(false);
       return;
     }
@@ -47,6 +57,7 @@ export const useOrganizationFilters = (pageName: string) => {
           .select('filter_data')
           .eq('organization_id', organizationId)
           .eq('page_name', pageName)
+          .eq('user_id', userId)
           .maybeSingle();
 
         if (error) throw error;
@@ -62,37 +73,7 @@ export const useOrganizationFilters = (pageName: string) => {
     };
 
     loadFilters();
-  }, [organizationId, pageName]);
-
-  // Configurar Realtime
-  useEffect(() => {
-    if (!organizationId) return;
-
-    const channel = supabase
-      .channel(`org-filters-${organizationId}-${pageName}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'organization_filters',
-          filter: `organization_id=eq.${organizationId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            const newData = payload.new as any;
-            if (newData.page_name === pageName && newData.filter_data) {
-              setFilters({ ...DEFAULT_FILTERS, ...(newData.filter_data as any) });
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [organizationId, pageName]);
+  }, [organizationId, pageName, userId]);
 
   // Atualizar filtros localmente (imediato)
   const setLocalFilters = useCallback((newFilters: FilterValues) => {
@@ -102,7 +83,7 @@ export const useOrganizationFilters = (pageName: string) => {
   // Atualizar filtros (salvar no banco com debounce)
   const updateFilters = useCallback(
     (newFilters: FilterValues) => {
-      if (!organizationId) return;
+      if (!organizationId || !userId) return;
 
       // Atualizar estado local imediatamente para UI responsiva
       setFilters(newFilters);
@@ -125,11 +106,12 @@ export const useOrganizationFilters = (pageName: string) => {
               .upsert({
                 organization_id: organizationId,
                 page_name: pageName,
+                user_id: userId,
                 filter_data: newFilters as any,
-                updated_by: currentUser.user?.id || null,
+                updated_by: userId,
                 updated_at: new Date().toISOString(),
               }, {
-                onConflict: 'organization_id,page_name',
+                onConflict: 'organization_id,page_name,user_id',
                 ignoreDuplicates: false
               });
 
@@ -151,7 +133,7 @@ export const useOrganizationFilters = (pageName: string) => {
         }
       }, 500);
     },
-    [organizationId, pageName]
+    [organizationId, pageName, userId]
   );
 
   // Cleanup do debounce timer
