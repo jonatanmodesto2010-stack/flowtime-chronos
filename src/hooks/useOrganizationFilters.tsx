@@ -93,7 +93,11 @@ export const useOrganizationFilters = (pageName: string) => {
         clearTimeout(debounceTimerRef.current);
       }
 
-      // Criar novo timer para salvar no banco após 500ms
+      // Se o searchTerm foi limpo, salvar imediatamente (sem debounce)
+      const isSearchCleared = newFilters.searchTerm === '' && filters.searchTerm !== '';
+      const delay = isSearchCleared ? 0 : 300; // 300ms para outras mudanças, 0ms para limpar busca
+
+      // Criar novo timer para salvar no banco
       debounceTimerRef.current = setTimeout(async () => {
         try {
           const { data: currentUser } = await supabase.auth.getUser();
@@ -131,9 +135,9 @@ export const useOrganizationFilters = (pageName: string) => {
         } catch (error) {
           console.error('Erro ao atualizar filtros:', error);
         }
-      }, 500);
+      }, delay);
     },
-    [organizationId, pageName, userId]
+    [organizationId, pageName, userId, filters.searchTerm]
   );
 
   // Cleanup do debounce timer

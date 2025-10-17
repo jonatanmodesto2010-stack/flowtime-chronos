@@ -98,8 +98,14 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
             onChange={(e) => {
               applyFilters({ searchTerm: e.target.value });
             }}
-            className="pl-10 flex-1"
+            className="pl-10 pr-10 flex-1"
           />
+          {filters.searchTerm && (
+            <X
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 cursor-pointer hover:text-foreground transition-colors"
+              onClick={() => applyFilters({ searchTerm: '' })}
+            />
+          )}
         </div>
         <Popover open={showFilters} onOpenChange={setShowFilters}>
           <PopoverTrigger asChild>
