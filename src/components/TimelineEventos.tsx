@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Phone, Calendar, XCircle, Clock, Lightbulb } from 'lucide-react';
+import { MessageCircle, Phone, Calendar, XCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -35,31 +35,75 @@ const formatarDataCompleta = (data: string): string => {
 
 // ==================== MAPEAMENTO DE ÍCONES E CORES ====================
 const getIconConfig = (icon: string) => {
-  const iconMap: Record<string, { component: JSX.Element; color: string; label: string }> = {
-    '💬': { component: <MessageCircle size={20} />, color: 'bg-primary', label: 'Mensagem' },
-    '📞': { component: <Phone size={20} />, color: 'bg-[hsl(var(--status-resolved))]', label: 'Ligação' },
-    '📅': { component: <Calendar size={20} />, color: 'bg-secondary', label: 'Agendamento' },
-    '❌': { component: <XCircle size={20} />, color: 'bg-[hsl(var(--status-no-response))]', label: 'Cancelamento' },
-    '🔴': { component: <XCircle size={20} />, color: 'bg-[hsl(var(--status-no-response))]', label: 'Cancelado' },
-    '⚠️': { component: <Clock size={20} />, color: 'bg-destructive', label: 'Importante' },
-    '📄': { component: <Clock size={20} />, color: 'bg-muted', label: 'Boleto' },
-    '🟢': { component: <Clock size={20} />, color: 'bg-[hsl(var(--status-resolved))]', label: 'Pago' },
-    '🤝': { component: <Clock size={20} />, color: 'bg-accent', label: 'Acordo' },
-    '👨‍🔧': { component: <Clock size={20} />, color: 'bg-muted', label: 'Técnico' },
+  const iconMap: Record<string, { component: React.ReactNode; iconColor: string; badgeColor: string; label: string }> = {
+    '💬': { 
+      component: <MessageCircle size={20} />, 
+      iconColor: 'bg-[#3b82f6]', // Azul
+      badgeColor: 'bg-[#3b82f6]', 
+      label: 'Mensagem' 
+    },
+    '📞': { 
+      component: <Phone size={20} />, 
+      iconColor: 'bg-[#10b981]', // Verde
+      badgeColor: 'bg-[#10b981]', 
+      label: 'Ligação' 
+    },
+    '📅': { 
+      component: <Calendar size={20} />, 
+      iconColor: 'bg-[#a855f7]', // Roxo
+      badgeColor: 'bg-[#a855f7]', 
+      label: 'Reunião' 
+    },
+    '❌': { 
+      component: <XCircle size={20} />, 
+      iconColor: 'bg-[#ef4444]', // Vermelho
+      badgeColor: 'bg-[#ef4444]', 
+      label: 'Cancelamento' 
+    },
+    '🔴': { 
+      component: <XCircle size={20} />, 
+      iconColor: 'bg-[#ef4444]', 
+      badgeColor: 'bg-[#ef4444]', 
+      label: 'Cancelado' 
+    },
+    '⚠️': { 
+      component: <Clock size={20} />, 
+      iconColor: 'bg-[#f59e0b]', // Laranja
+      badgeColor: 'bg-[#f59e0b]', 
+      label: 'Importante' 
+    },
+    '📄': { 
+      component: <Clock size={20} />, 
+      iconColor: 'bg-[#6b7280]', // Cinza
+      badgeColor: 'bg-[#6b7280]', 
+      label: 'Boleto' 
+    },
+    '🟢': { 
+      component: <Clock size={20} />, 
+      iconColor: 'bg-[#10b981]', 
+      badgeColor: 'bg-[#10b981]', 
+      label: 'Pago' 
+    },
+    '🤝': { 
+      component: <Clock size={20} />, 
+      iconColor: 'bg-[#8b5cf6]', 
+      badgeColor: 'bg-[#8b5cf6]', 
+      label: 'Acordo' 
+    },
+    '👨‍🔧': { 
+      component: <Clock size={20} />, 
+      iconColor: 'bg-[#6b7280]', 
+      badgeColor: 'bg-[#6b7280]', 
+      label: 'Técnico' 
+    },
   };
   
-  return iconMap[icon] || { component: <Clock size={20} />, color: 'bg-muted', label: 'Evento' };
-};
-
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'resolved':
-      return 'bg-[hsl(var(--status-resolved))]';
-    case 'no_response':
-      return 'bg-[hsl(var(--status-no-response))]';
-    default:
-      return 'bg-primary';
-  }
+  return iconMap[icon] || { 
+    component: <Clock size={20} />, 
+    iconColor: 'bg-[#6b7280]', 
+    badgeColor: 'bg-[#6b7280]', 
+    label: 'Evento' 
+  };
 };
 
 // ==================== COMPONENTE EVENTO TIMELINE ====================
@@ -85,7 +129,7 @@ const EventoTimeline: React.FC<EventoTimelineProps> = ({ evento, index, isLast, 
         {/* Ícone Circular */}
         <button
           onClick={() => onEditar(evento)}
-          className={`${config.color} w-10 h-10 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform cursor-pointer shadow-lg z-10`}
+          className={`${config.iconColor} w-10 h-10 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform cursor-pointer shadow-lg z-10 flex-shrink-0`}
           title="Clique para editar"
         >
           {config.component}
@@ -93,31 +137,31 @@ const EventoTimeline: React.FC<EventoTimelineProps> = ({ evento, index, isLast, 
         
         {/* Linha Vertical */}
         {!isLast && (
-          <div className="w-0.5 h-full min-h-[100px] bg-border mt-1"></div>
+          <div className="w-[1px] h-full min-h-[80px] bg-[#374151] mt-2"></div>
         )}
       </div>
 
       {/* Card do Evento */}
       <div className="flex-1 mb-6">
-        <div className="bg-card rounded-lg p-4 border border-border hover:border-primary/50 transition-colors">
+        <div className="bg-[#1e293b] rounded-lg p-4 border border-[#334155] hover:border-[#475569] transition-colors">
           {/* Cabeçalho: Data e Badge */}
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-card-foreground font-bold text-lg">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-white font-bold text-base">
               {formatarData(evento.date)}
             </span>
-            <span className={`${getStatusColor(evento.status)} text-white text-xs font-medium px-3 py-1 rounded`}>
+            <span className={`${config.badgeColor} text-white text-xs font-medium px-3 py-1 rounded`}>
               {config.label}
             </span>
           </div>
 
           {/* Descrição */}
-          <p className="text-card-foreground text-sm mb-3">
+          <p className="text-[#94a3b8] text-sm mb-3 leading-relaxed">
             {evento.description}
           </p>
 
           {/* Dica de Edição */}
-          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <Lightbulb className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 text-[#64748b] text-xs">
+            <span>💡</span>
             <span>Clique no ícone para editar</span>
           </div>
         </div>
