@@ -119,48 +119,49 @@ const EventoTimeline: React.FC<EventoTimelineProps> = ({ evento, index, isLast, 
 
   return (
     <motion.div 
-      className="flex gap-4 mb-0"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      className="flex gap-4 mb-8"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
     >
       {/* Coluna do Ícone com Linha Vertical */}
       <div className="flex flex-col items-center">
         {/* Ícone Circular */}
         <button
           onClick={() => onEditar(evento)}
-          className={`${config.iconColor} w-10 h-10 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform cursor-pointer shadow-lg z-10 flex-shrink-0`}
+          className={`${config.iconColor} w-12 h-12 rounded-full flex items-center justify-center text-white hover:scale-110 hover:shadow-2xl transition-transform duration-300 cursor-pointer shadow-lg z-10 flex-shrink-0`}
           title="Clique para editar"
+          aria-label={`Editar evento de ${config.label}`}
         >
           {config.component}
         </button>
         
         {/* Linha Vertical */}
         {!isLast && (
-          <div className="w-[1px] h-full min-h-[80px] bg-[#374151] mt-2"></div>
+          <div className="w-[2px] h-full min-h-[120px] bg-[#334155] mt-3"></div>
         )}
       </div>
 
       {/* Card do Evento */}
       <div className="flex-1 mb-6">
-        <div className="bg-[#1e293b] rounded-lg p-4 border border-[#334155] hover:border-[#475569] transition-colors">
+        <div className="bg-[#1e293b] rounded-xl p-5 border border-[#334155] hover:border-[#475569] transition-all duration-300 hover:shadow-lg" role="article" aria-label={`Evento de ${formatarData(evento.date)}`}>
           {/* Cabeçalho: Data e Badge */}
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-white font-bold text-base">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-lg font-semibold text-white">
               {formatarData(evento.date)}
             </span>
-            <span className={`${config.badgeColor} text-white text-xs font-medium px-3 py-1 rounded`}>
+            <span className={`${config.badgeColor} text-white text-xs font-medium px-3 py-1.5 rounded-md`}>
               {config.label}
             </span>
           </div>
 
           {/* Descrição */}
-          <p className="text-[#94a3b8] text-sm mb-3 leading-relaxed">
+          <p className="text-sm text-[#94a3b8] mb-3 leading-relaxed">
             {evento.description}
           </p>
 
           {/* Dica de Edição */}
-          <div className="flex items-center gap-1.5 text-[#64748b] text-xs">
+          <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
             <span>💡</span>
             <span>Clique no ícone para editar</span>
           </div>
@@ -181,23 +182,25 @@ export const TimelineEventos: React.FC<TimelineEventosProps> = ({
   onEditarEvento
 }) => {
   return (
-    <div className="max-w-4xl mx-auto">
-      {eventos.length > 0 ? (
-        eventos.map((evento, index) => (
-          <EventoTimeline
-            key={evento.id}
-            evento={evento}
-            index={index}
-            isLast={index === eventos.length - 1}
-            onEditar={onEditarEvento}
-          />
-        ))
-      ) : (
-        <div className="text-center text-muted-foreground py-12">
-          <Clock size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Nenhum evento registrado</p>
-        </div>
-      )}
+    <div className="min-h-screen bg-[#0a1628] p-8">
+      <div className="max-w-5xl mx-auto">
+        {eventos.length > 0 ? (
+          eventos.map((evento, index) => (
+            <EventoTimeline
+              key={evento.id}
+              evento={evento}
+              index={index}
+              isLast={index === eventos.length - 1}
+              onEditar={onEditarEvento}
+            />
+          ))
+        ) : (
+          <div className="text-center text-[#94a3b8] py-12">
+            <Clock size={48} className="mx-auto mb-4 opacity-50" />
+            <p>Nenhum evento registrado</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
