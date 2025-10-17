@@ -557,16 +557,19 @@ export const Timeline = ({
                     <div className="text-xs font-semibold text-foreground whitespace-nowrap">
                       {event.date}
                     </div>
-                    {showAllDescriptions && event.description && (
+                     {showAllDescriptions && event.description && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, x: -20 }}
                         transition={{ duration: 0.3 }}
+                        className="max-w-xs"
                       >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                        </p>
+                        <div className="bg-card rounded-xl px-4 py-3 shadow-lg border border-border">
+                          <p className="text-card-foreground text-sm font-medium leading-relaxed">
+                            {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
+                          </p>
+                        </div>
                       </motion.div>
                     )}
                   </div>
@@ -588,14 +591,17 @@ export const Timeline = ({
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, x: 20 }}
                         transition={{ duration: 0.3 }}
+                        className="max-w-xs"
                       >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                        </p>
+                        <div className="bg-card rounded-xl px-4 py-3 shadow-lg border border-border">
+                          <p className="text-card-foreground text-sm font-medium leading-relaxed">
+                            {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
+                          </p>
+                        </div>
                       </motion.div>
                     )}
                   </div>
@@ -676,15 +682,17 @@ export const Timeline = ({
                                   marginLeft: '20px',
                                 }}
                               >
-                                <p 
-                                  className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
-                                  title={event.description}
-                                >
-                                  {event.description.length > 40 
-                                    ? `${event.description.substring(0, 40)}...` 
-                                    : event.description
-                                  }
-                                </p>
+                                <div className="bg-card rounded-xl px-3 py-2 shadow-lg border border-border">
+                                  <p 
+                                    className="text-card-foreground text-sm font-medium"
+                                    title={event.description}
+                                  >
+                                    {event.description.length > 40 
+                                      ? `${event.description.substring(0, 40)}...` 
+                                      : event.description
+                                    }
+                                  </p>
+                                </div>
                               </motion.div>
                             )}
                           </AnimatePresence>
