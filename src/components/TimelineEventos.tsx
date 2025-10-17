@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Phone, Calendar, XCircle, Clock, Edit2, Trash2, Lightbulb } from 'lucide-react';
+import { MessageCircle, Phone, Calendar, XCircle, Clock, Lightbulb } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -66,93 +66,59 @@ const getStatusColor = (status: string): string => {
 interface EventoTimelineProps {
   evento: Evento;
   index: number;
+  isLast: boolean;
   onEditar: (evento: Evento) => void;
-  onExcluir: (evento: Evento) => void;
 }
 
-const EventoTimeline: React.FC<EventoTimelineProps> = ({ evento, index, onEditar, onExcluir }) => {
+const EventoTimeline: React.FC<EventoTimelineProps> = ({ evento, index, isLast, onEditar }) => {
   const config = getIconConfig(evento.icon);
 
   return (
     <motion.div 
-      className="flex gap-4 items-start mb-6 group"
+      className="flex gap-4 mb-0"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
-      {/* Coluna vazia à esquerda */}
-      <div className="flex-1"></div>
-      
-      {/* Ícone Central */}
-      <div className="relative flex flex-col items-center">
+      {/* Coluna do Ícone com Linha Vertical */}
+      <div className="flex flex-col items-center">
+        {/* Ícone Circular */}
         <button
           onClick={() => onEditar(evento)}
-          className={`${config.color} p-2 rounded-full text-white hover:scale-110 transition-all duration-300 cursor-pointer hover:shadow-lg`}
+          className={`${config.color} w-10 h-10 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform cursor-pointer shadow-lg z-10`}
           title="Clique para editar"
         >
           {config.component}
         </button>
-        {/* Linha vertical */}
-        <div className="w-0.5 flex-1 bg-border absolute top-10 bottom-0"></div>
+        
+        {/* Linha Vertical */}
+        {!isLast && (
+          <div className="w-0.5 h-full min-h-[100px] bg-border mt-1"></div>
+        )}
       </div>
-      
-      {/* Card do Evento à Direita */}
-      <div className="flex-1">
-        <div className="bg-card rounded-2xl p-5 border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:transform hover:scale-[1.02]">
-          <div className="flex items-start justify-between gap-3">
-            {/* Conteúdo do Evento */}
-            <div className="flex-1">
-              {/* Data e Badge do Tipo */}
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm font-bold text-card-foreground">
-                  {formatarData(evento.date)}
-                </span>
-                {evento.time && (
-                  <span className="text-xs text-muted-foreground">
-                    {evento.time}
-                  </span>
-                )}
-                <span className={`text-xs px-3 py-1 rounded-full ${getStatusColor(evento.status)} text-white font-semibold`}>
-                  {config.label}
-                </span>
-              </div>
-              
-              {/* Data completa */}
-              <div className="text-xs font-semibold text-muted-foreground mb-3">
-                {formatarDataCompleta(evento.date)}
-              </div>
-              
-              {/* Descrição */}
-              <p className="text-sm text-card-foreground leading-relaxed mb-4">
-                {evento.description}
-              </p>
-              
-              {/* Dica */}
-              <div className="flex items-center gap-2 pt-3 border-t border-border/50">
-                <Lightbulb className="w-4 h-4 text-primary" />
-                <span className="text-xs text-muted-foreground">
-                  Clique no ícone para editar
-                </span>
-              </div>
-            </div>
-            
-            {/* Botões de Ação (aparecem no hover) */}
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <button
-                onClick={() => onEditar(evento)}
-                className="p-1.5 bg-primary hover:bg-primary/80 text-primary-foreground rounded transition-all duration-300 hover:scale-110"
-                title="Editar evento"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onExcluir(evento)}
-                className="p-1.5 bg-destructive hover:bg-destructive/80 text-destructive-foreground rounded transition-all duration-300 hover:scale-110"
-                title="Excluir evento"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+
+      {/* Card do Evento */}
+      <div className="flex-1 mb-6">
+        <div className="bg-card rounded-lg p-4 border border-border hover:border-primary/50 transition-colors">
+          {/* Cabeçalho: Data e Badge */}
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-card-foreground font-bold text-lg">
+              {formatarData(evento.date)}
+            </span>
+            <span className={`${getStatusColor(evento.status)} text-white text-xs font-medium px-3 py-1 rounded`}>
+              {config.label}
+            </span>
+          </div>
+
+          {/* Descrição */}
+          <p className="text-card-foreground text-sm mb-3">
+            {evento.description}
+          </p>
+
+          {/* Dica de Edição */}
+          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+            <Lightbulb className="w-4 h-4" />
+            <span>Clique no ícone para editar</span>
           </div>
         </div>
       </div>
@@ -164,34 +130,30 @@ const EventoTimeline: React.FC<EventoTimelineProps> = ({ evento, index, onEditar
 interface TimelineEventosProps {
   eventos: Evento[];
   onEditarEvento: (evento: Evento) => void;
-  onExcluirEvento: (evento: Evento) => void;
 }
 
 export const TimelineEventos: React.FC<TimelineEventosProps> = ({ 
   eventos, 
-  onEditarEvento, 
-  onExcluirEvento 
+  onEditarEvento
 }) => {
   return (
-    <div className="max-w-6xl mx-auto p-8">
-      <div className="relative">
-        {eventos.length > 0 ? (
-          eventos.map((evento, index) => (
-            <EventoTimeline
-              key={evento.id}
-              evento={evento}
-              index={index}
-              onEditar={onEditarEvento}
-              onExcluir={onExcluirEvento}
-            />
-          ))
-        ) : (
-          <div className="text-center text-muted-foreground py-12">
-            <Clock size={48} className="mx-auto mb-4 opacity-50" />
-            <p>Nenhum evento registrado</p>
-          </div>
-        )}
-      </div>
+    <div className="max-w-4xl mx-auto">
+      {eventos.length > 0 ? (
+        eventos.map((evento, index) => (
+          <EventoTimeline
+            key={evento.id}
+            evento={evento}
+            index={index}
+            isLast={index === eventos.length - 1}
+            onEditar={onEditarEvento}
+          />
+        ))
+      ) : (
+        <div className="text-center text-muted-foreground py-12">
+          <Clock size={48} className="mx-auto mb-4 opacity-50" />
+          <p>Nenhum evento registrado</p>
+        </div>
+      )}
     </div>
   );
 };
