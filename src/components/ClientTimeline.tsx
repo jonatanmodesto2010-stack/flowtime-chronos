@@ -36,15 +36,9 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
   const [loading, setLoading] = useState(true);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
-  const [showAllDescriptions, setShowAllDescriptions] = useState(false);
-  const [isVertical, setIsVertical] = useState(false);
   const [isLocalUpdate, setIsLocalUpdate] = useState(false);
   const reloadTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
-  
-  const toggleAllDescriptions = () => {
-    setShowAllDescriptions(prev => !prev);
-  };
 
   useEffect(() => {
     loadTimeline();
@@ -350,20 +344,26 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-[#0a1628]/95 flex items-center justify-center z-50 p-4"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.9 }}
+          initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
-          className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+          className="bg-[#0f1729] border border-[#1e293b] rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-6">
-            <div className="h-8 bg-muted animate-pulse rounded w-64 mb-4" />
-            <div className="space-y-4">
-              <div className="h-32 bg-muted animate-pulse rounded" />
-              <div className="h-32 bg-muted animate-pulse rounded" />
+          <div className="p-8 bg-[#0a1628]">
+            <div className="h-8 bg-[#1e293b] animate-pulse rounded w-64 mb-6" />
+            <div className="space-y-6">
+              <div className="flex gap-6">
+                <div className="w-12 h-12 bg-[#1e293b] animate-pulse rounded-full" />
+                <div className="flex-1 h-32 bg-[#1e293b] animate-pulse rounded-xl" />
+              </div>
+              <div className="flex gap-6">
+                <div className="w-12 h-12 bg-[#1e293b] animate-pulse rounded-full" />
+                <div className="flex-1 h-32 bg-[#1e293b] animate-pulse rounded-xl" />
+              </div>
             </div>
           </div>
         </motion.div>
@@ -371,61 +371,51 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
     );
   }
 
+  // Helper para configuração dos ícones
+  const getEventConfig = (icon: string) => {
+    const configs: Record<string, { iconBg: string; badgeBg: string; label: string }> = {
+      '💬': { iconBg: 'bg-blue-500', badgeBg: 'bg-blue-600', label: 'Mensagem' },
+      '📞': { iconBg: 'bg-green-500', badgeBg: 'bg-green-600', label: 'Ligação' },
+      '📅': { iconBg: 'bg-purple-500', badgeBg: 'bg-purple-600', label: 'Reunião' },
+      '❌': { iconBg: 'bg-red-500', badgeBg: 'bg-red-600', label: 'Cancelamento' },
+    };
+    return configs[icon] || { iconBg: 'bg-gray-500', badgeBg: 'bg-gray-600', label: 'Outros' };
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-[#0a1628]/95 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, y: -20 }}
+        initial={{ scale: 0.95, y: -20 }}
         animate={{ scale: 1, y: 0 }}
-        className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+        className="bg-[#0f1729] border border-[#1e293b] rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-[#1e293b] bg-[#0a1628]">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold text-white">
                 {clientName}
               </h2>
               <Badge className="bg-red-500 text-white hover:bg-red-600">
                 COBRANÇA
               </Badge>
-              <motion.button
-                onClick={() => setIsVertical(!isVertical)}
-                className="px-2 py-2 rounded-lg hover:bg-accent transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title={isVertical ? "Alternar para horizontal" : "Alternar para vertical"}
-              >
-                <Minus size={20} className={isVertical ? "rotate-90" : ""} />
-              </motion.button>
-              <motion.button
-                onClick={toggleAllDescriptions}
-                className={`px-3 py-1.5 font-semibold rounded-lg transition-all text-xs flex items-center gap-2 ${
-                  showAllDescriptions 
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                    : 'bg-primary/10 text-primary hover:bg-primary/20'
-                }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title={showAllDescriptions ? "Ocultar todas descrições" : "Mostrar todas descrições"}
-              >
-                {showAllDescriptions ? '👁️ Ocultar' : '📝 Ver Descrições'}
-              </motion.button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Gerencie as linhas e eventos deste cliente
+            <p className="text-sm text-gray-400">
+              Timeline de eventos do cliente
             </p>
           </div>
           
           <div className="flex items-center gap-3">
             <motion.button
               onClick={handleAddLine}
-              className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg shadow-lg flex items-center gap-2"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg flex items-center gap-2 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -435,7 +425,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
             
             <motion.button
               onClick={onClose}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="p-2 hover:bg-[#1e293b] rounded-lg transition-colors text-gray-400 hover:text-white"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
@@ -444,41 +434,43 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        {/* Content */}
+        <div className="p-8 overflow-y-auto max-h-[calc(90vh-120px)] bg-[#0a1628]">
           {lines.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">Nenhuma linha criada ainda</p>
+              <p className="text-gray-400 mb-4">Nenhuma linha criada ainda</p>
               <button
                 onClick={handleAddLine}
-                className="px-6 py-3 bg-gradient-primary text-primary-foreground font-semibold rounded-xl"
+                className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors"
               >
                 Criar Primeira Linha
               </button>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-12">
               {lines.map((line, lineIndex) => (
-                <div key={line.id} className="bg-card border border-border rounded-xl p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div key={line.id}>
+                  {/* Header da linha */}
+                  <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-muted-foreground">
+                      <span className="text-lg font-bold text-gray-400">
                         Linha {lineIndex + 1}
                       </span>
                       <motion.button
                         onClick={() => handleAddEvent(line.id)}
-                        className="px-3 py-1.5 text-sm bg-gradient-primary text-primary-foreground rounded-lg flex items-center gap-1"
+                        className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1 transition-colors"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
                         <Plus size={16} />
-                        Adicionar Evento
+                        Evento
                       </motion.button>
                     </div>
                     
                     {lines.length > 1 && (
                       <motion.button
                         onClick={() => handleDeleteLine(line.id)}
-                        className="p-2 bg-destructive text-destructive-foreground rounded-lg"
+                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         title="Excluir linha"
@@ -489,200 +481,120 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                   </div>
 
                   {line.events.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-8 text-gray-500">
                       Nenhum evento nesta linha
                     </div>
                   ) : (
-                    <div className={`timeline-container relative w-full py-12 transition-all duration-300 ${
-                      isVertical 
-                        ? 'flex flex-col items-center min-h-[600px] px-12' 
-                        : 'flex justify-around items-start overflow-x-auto'
-                    }`}>
-                      <div className={`absolute bg-foreground/30 z-0 ${
-                        isVertical
-                          ? 'left-1/2 w-1 h-[calc(100%-48px)] top-6 -translate-x-1/2'
-                          : 'top-1/2 left-0 w-full h-0.5 -translate-y-1/2'
-                      }`} />
-                      {line.events.map((event, index) => {
-                        const totalEvents = line.events.length;
-                        const position = totalEvents === 1 ? 50 : 6 + (index / (totalEvents - 1)) * 88;
-                        
-                        return (
-                          <div
-                            key={event.id}
-                            className={`relative z-10 text-center ${
-                              isVertical 
-                                ? 'my-4 absolute left-1/2 -translate-x-1/2' 
-                                : 'w-32'
-                            }`}
-                            style={isVertical ? { top: `${position}%` } : {}}
-                          >
-            {isVertical ? (
-              <>
-                {/* Status SEMPRE fixo na linha */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleStatusToggle(line.id, event.id);
-                  }}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-110 transition-transform cursor-pointer"
-                >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={event.status}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {renderStatusIcon(event.status)}
-                    </motion.div>
-                  </AnimatePresence>
-                </button>
+                    <div className="relative pl-8">
+                      {/* Linha vertical */}
+                      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#334155]" />
+                      
+                      {/* Eventos */}
+                      <div className="space-y-6">
+                        {line.events.map((event, index) => {
+                          const config = getEventConfig(event.icon);
+                          const isLast = index === line.events.length - 1;
+                          
+                          return (
+                            <motion.div
+                              key={event.id}
+                              initial={{ opacity: 0, x: -30 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ 
+                                duration: 0.5, 
+                                delay: index * 0.1,
+                                ease: [0.22, 1, 0.36, 1]
+                              }}
+                              className="relative flex gap-6 items-start"
+                            >
+                              {/* Ícone circular grande */}
+                              <motion.button
+                                onClick={() => handleEventClick(event, line.id)}
+                                className={`
+                                  ${config.iconBg}
+                                  w-12 h-12 min-w-[48px]
+                                  rounded-full
+                                  flex items-center justify-center
+                                  text-white text-xl
+                                  shadow-lg
+                                  hover:scale-110
+                                  hover:shadow-2xl
+                                  hover:rotate-[5deg]
+                                  transition-all duration-300
+                                  cursor-pointer
+                                  z-10
+                                  absolute -left-[52px] top-0
+                                `}
+                                whileHover={{ 
+                                  boxShadow: "0 0 20px rgba(59, 130, 246, 0.5)" 
+                                }}
+                                title="Clique para editar"
+                              >
+                                {event.icon}
+                              </motion.button>
 
-                {/* Elementos ao redor do status */}
-                {event.status === 'no_response' ? (
-                  // Elementos à ESQUERDA do status: Descrição → Data → Ícone
-                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+20px)]">
-                    <div
-                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
-                    >
-                      {event.icon}
-                    </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
-                    </div>
-                    {showAllDescriptions && event.description && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
-                        </p>
-                      </motion.div>
-                    )}
-                  </div>
-                ) : (
-                  // Elementos à DIREITA do status: Ícone → Data → Descrição
-                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+20px)]">
-                    <div
-                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
-                    >
-                      {event.icon}
-                    </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
-                    </div>
-                    {showAllDescriptions && event.description && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 30 ? `${event.description.substring(0, 30)}...` : event.description}
-                        </p>
-                      </motion.div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-                            <>
-                              <button
-                                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
-                                onClick={() => handleStatusToggle(line.id, event.id)}
-                              >
-                                <div className="flex items-center justify-center">
-                                  {renderStatusIcon(event.status)}
-                                </div>
-                              </button>
-                              
-                              <div
-                                className={`absolute w-full flex flex-col items-center gap-1 ${
-                                  event.position === 'bottom' ? 'top-5 left-1/2 -translate-x-1/2' : 'bottom-5 left-1/2 -translate-x-1/2'
-                                }`}
-                              >
-                                <div
-                                  className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
-                                  onClick={() => handleEventClick(event, line.id)}
-                                  title={event.description}
+                              {/* Card expandido */}
+                              <div className="flex-1 ml-2">
+                                <motion.div
+                                  className="
+                                    bg-[#1e293b]
+                                    rounded-xl
+                                    p-5
+                                    border border-[#334155]
+                                    hover:border-[#475569]
+                                    hover:shadow-xl
+                                    hover:transform
+                                    hover:scale-[1.01]
+                                    transition-all
+                                    duration-300
+                                  "
+                                  whileHover={{ y: -2 }}
                                 >
-                                  {event.position === 'bottom' ? (
-                                    <>
-                                      <div className="text-sm font-semibold text-foreground mb-2">
-                                        {event.date}
-                                      </div>
-                                      <div className={`${event.iconSize || 'text-2xl'}`}>
-                                        {event.icon}
-                                      </div>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
-                                        {event.icon}
-                                      </div>
-                                      <div className="text-sm font-semibold text-foreground">
-                                        {event.date}
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                                
-                                <AnimatePresence>
-                                  {showAllDescriptions && event.description && (
-                                    <motion.div
-                                      initial={{ opacity: 0, scale: 0.8, rotate: 0 }}
-                                      animate={{ 
-                                        opacity: 1, 
-                                        scale: 1,
-                                        rotate: event.position === 'bottom' ? 45 : -45
+                                  {/* Data + Badge */}
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <span className="text-lg font-bold text-white">
+                                      {event.date}
+                                    </span>
+                                    <span className={`
+                                      ${config.badgeBg}
+                                      text-white
+                                      text-xs
+                                      font-medium
+                                      px-3
+                                      py-1.5
+                                      rounded-md
+                                    `}>
+                                      {config.label}
+                                    </span>
+                                    
+                                    {/* Status badge */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusToggle(line.id, event.id);
                                       }}
-                                      exit={{ opacity: 0, scale: 0.8, rotate: 0 }}
-                                      transition={{ duration: 0.3 }}
-                                      className={`absolute whitespace-nowrap z-50 pointer-events-none ${
-                                        event.position === 'bottom' 
-                                          ? 'top-12' 
-                                          : 'bottom-12'
-                                      }`}
-                                      style={{
-                                        transformOrigin: event.position === 'bottom' ? 'top left' : 'bottom left',
-                                        left: '0',
-                                        marginLeft: '20px',
-                                      }}
+                                      className="ml-auto hover:scale-110 transition-transform"
                                     >
-                                      <p 
-                                        className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
-                                        title={event.description}
-                                      >
-                                        {event.description.length > 30 
-                                          ? `${event.description.substring(0, 30)}...` 
-                                          : event.description
-                                        }
-                                      </p>
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
+                                      {renderStatusIcon(event.status)}
+                                    </button>
+                                  </div>
+
+                                  {/* Descrição */}
+                                  <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                                    {event.description || 'Sem descrição'}
+                                  </p>
+
+                                  {/* Dica */}
+                                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                                    <span>💡</span>
+                                    <span>Clique no ícone para editar</span>
+                                  </div>
+                                </motion.div>
                               </div>
-                            </>
-                          )}
-                        </div>
-                        );
-                      })}
+                            </motion.div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

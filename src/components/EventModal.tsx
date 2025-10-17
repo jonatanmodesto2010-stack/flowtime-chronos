@@ -121,7 +121,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
       className={
         position === 'left' 
           ? 'fixed left-12 top-1/2 -translate-y-1/2 z-50'
-          : 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
+          : 'fixed inset-0 bg-[#0a1628]/90 z-50 flex items-center justify-center p-4'
       }
       onClick={position === 'center' ? onCancel : undefined}
     >
@@ -137,19 +137,19 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           duration: 0.5
         }}
         onClick={(e) => e.stopPropagation()}
-        className={`bg-card rounded-2xl shadow-2xl ${
+        className={`bg-[#1e293b] rounded-2xl shadow-2xl ${
           position === 'left' 
-            ? 'w-[420px] border-2 border-border'
-            : 'w-full max-w-2xl border border-border'
+            ? 'w-[420px] border-2 border-[#334155]'
+            : 'w-full max-w-2xl border border-[#334155]'
         }`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-semibold">
+        <div className="flex items-center justify-between p-6 border-b border-[#334155]">
+          <h2 className="text-xl font-semibold text-white">
             {event.isNew ? 'Novo Evento' : 'Editar Evento'}
           </h2>
           <button
             onClick={onCancel}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#334155] transition-colors text-gray-400 hover:text-white"
             title="Fechar"
           >
             <X className="w-5 h-5" />
@@ -158,14 +158,14 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
         <div className="p-6">
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Ícone</label>
+            <label className="text-xs font-semibold text-gray-400 mb-2 block">Ícone</label>
             <Select value={formData.icon} onValueChange={(value) => setFormData({ ...formData, icon: value })}>
-              <SelectTrigger className="w-full bg-background">
+              <SelectTrigger className="w-full bg-[#0f1729] border-[#334155] text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-[#1e293b] border-[#334155]">
                 {iconOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem key={option.value} value={option.value} className="text-white hover:bg-[#334155]">
                     {option.label}
                   </SelectItem>
                 ))}
@@ -174,21 +174,21 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Data</label>
+            <label className="text-xs font-semibold text-gray-400 mb-2 block">Data</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal bg-background",
-                    !selectedDate && "text-muted-foreground"
+                    "w-full justify-start text-left font-normal bg-[#0f1729] border-[#334155] text-white hover:bg-[#1e293b]",
+                    !selectedDate && "text-gray-400"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate ? format(selectedDate, "dd/MM", { locale: ptBR }) : formData.date || "Selecione a data"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 bg-[#1e293b] border-[#334155]" align="start">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -202,17 +202,17 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Hora</label>
+            <label className="text-xs font-semibold text-gray-400 mb-2 block">Hora</label>
             <input
               type="time"
               value={formData.time || ''}
               onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="w-full p-3 bg-background rounded-md border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full p-3 bg-[#0f1729] rounded-md border border-[#334155] text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">
+            <label className="text-xs font-semibold text-gray-400 mb-2 block">
               Descrição
               <span className="float-right text-xs">
                 {formData.description.length}/150
@@ -222,7 +222,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
               value={formData.description} 
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
               maxLength={150}
-              className="w-full p-3 bg-background rounded-md border border-border h-20 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full p-3 bg-[#0f1729] rounded-md border border-[#334155] h-20 resize-none text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Descreva o evento..."
               autoFocus={event.isNew}
             />
@@ -230,7 +230,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
 
           {/* Log de criação */}
           {!event.isNew && event.created_at && (
-            <div className="text-xs text-muted-foreground border-t pt-3 mt-2">
+            <div className="text-xs text-gray-500 border-t border-[#334155] pt-3 mt-2">
               <span className="font-semibold">Criado em:</span>{' '}
               {format(new Date(event.created_at), "dd/MM/yyyy 'às' HH:mm")}
             </div>
@@ -239,20 +239,20 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           <div className="flex gap-2 mt-2">
             <button 
               onClick={handleCancel} 
-              className="flex-1 py-2 text-sm font-semibold bg-muted text-muted-foreground rounded-lg transition-colors hover:bg-secondary"
+              className="flex-1 py-2 text-sm font-semibold bg-[#334155] text-gray-300 rounded-lg transition-colors hover:bg-[#475569]"
             >
               Cancelar
             </button>
             <button 
               onClick={handleSave} 
-              className="flex-1 py-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg transition-transform hover:scale-105"
+              className="flex-1 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all hover:scale-105"
             >
               Salvar
             </button>
           </div>
           <button 
             onClick={handleDelete} 
-            className="w-full py-2 text-sm font-semibold text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg transition-colors hover:bg-red-500/20 mt-1"
+            className="w-full py-2 text-sm font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg transition-colors hover:bg-red-500/20 mt-1"
           >
             Excluir
           </button>
