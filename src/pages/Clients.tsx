@@ -136,7 +136,7 @@ const Clients = () => {
 
     // Search term (nome ou ID)
     if (filters.searchTerm) {
-      query = query.or(`client_name.ilike.%${filters.searchTerm}%,client_id.ilike.%${filters.searchTerm}%`);
+      query = query.or(`client_name.ilike.${filters.searchTerm}%,client_id.ilike.${filters.searchTerm}%`);
     }
 
     // Status filter
