@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, MessageCircle, Phone, Calendar, XCircle, Clock, ChevronLeft, Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { z } from 'zod';
+import { X, Plus, MessageCircle, Phone, Calendar, XCircle, Clock, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 
-// ==================== VALIDATION SCHEMAS ====================
-const eventoSchema = z.object({
-  tipo: z.enum(['mensagem', 'ligacao', 'reuniao', 'cancelamento', 'outros']),
-  descricao: z.string()
-    .trim()
-    .min(1, { message: "A descrição não pode estar vazia" })
-    .max(500, { message: "A descrição deve ter no máximo 500 caracteres" }),
-  data: z.string().min(1, { message: "A data é obrigatória" })
-});
-
-// ==================== TYPES ====================
 interface Cliente {
   id: string;
   codigo: string;
@@ -31,7 +18,6 @@ interface Evento {
   criadoPor: string;
 }
 
-// ==================== HELPER FUNCTIONS ====================
 const formatarData = (data: string): string => {
   const d = new Date(data);
   return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -42,92 +28,7 @@ const formatarDataHora = (data: string): string => {
   return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}, ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 };
 
-// ==================== EVENTO TIMELINE COMPONENT ====================
-const EventoTimeline: React.FC<{ 
-  evento: Evento; 
-  index: number;
-  onEditar: (evento: Evento) => void;
-  onExcluir: (evento: Evento) => void;
-  isLast: boolean;
-}> = ({ evento, index, onEditar, onExcluir, isLast }) => {
-  const iconeConfig = {
-    mensagem: { icon: <MessageCircle size={20} />, cor: 'bg-primary', nome: 'Mensagem' },
-    ligacao: { icon: <Phone size={20} />, cor: 'bg-[hsl(var(--status-resolved))]', nome: 'Ligação' },
-    reuniao: { icon: <Calendar size={20} />, cor: 'bg-secondary', nome: 'Reunião' },
-    cancelamento: { icon: <XCircle size={20} />, cor: 'bg-[hsl(var(--status-no-response))]', nome: 'Cancelamento' },
-    outros: { icon: <Clock size={20} />, cor: 'bg-muted', nome: 'Outros' }
-  };
 
-  const config = iconeConfig[evento.tipo];
-
-  return (
-    <motion.div 
-      className="flex gap-4 mb-0 group"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-    >
-      {/* Coluna do Ícone com Linha Vertical */}
-      <div className="flex flex-col items-center">
-        <button
-          onClick={() => onEditar(evento)}
-          className={`${config.cor} w-10 h-10 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform cursor-pointer shadow-lg z-10`}
-          title="Clique para editar"
-        >
-          {config.icon}
-        </button>
-        {!isLast && (
-          <div className="w-0.5 h-full min-h-[100px] bg-border mt-1"></div>
-        )}
-      </div>
-
-      {/* Card do Evento */}
-      <div className="flex-1 mb-6">
-        <div className="bg-card rounded-lg p-4 border border-border hover:border-primary/50 transition-colors">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-card-foreground font-bold text-lg">
-                  {formatarData(evento.data)}
-                </span>
-                <span className={`${config.cor} text-white text-xs font-medium px-3 py-1 rounded`}>
-                  {config.nome}
-                </span>
-              </div>
-              <p className="text-card-foreground text-sm mb-3">
-                {evento.descricao}
-              </p>
-              <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                <span>💡</span>
-                <span>Clique no ícone para editar</span>
-              </div>
-            </div>
-            
-            {/* Botões de Ação */}
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <button
-                onClick={() => onEditar(evento)}
-                className="p-1.5 bg-primary hover:bg-primary/80 text-primary-foreground rounded transition-all duration-300 hover:scale-110"
-                title="Editar evento"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onExcluir(evento)}
-                className="p-1.5 bg-destructive hover:bg-destructive/80 text-destructive-foreground rounded transition-all duration-300 hover:scale-110"
-                title="Excluir evento"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// ==================== MAIN COMPONENT ====================
 export default function CRMTimeline() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -138,7 +39,6 @@ export default function CRMTimeline() {
   const [eventoEditando, setEventoEditando] = useState<Evento | null>(null);
   const [timelineOculta, setTimelineOculta] = useState(false);
   const [usuario] = useState('Jonatan Modesto');
-  const [errosValidacao, setErrosValidacao] = useState<Record<string, string>>({});
   
   const [novoEvento, setNovoEvento] = useState({
     tipo: 'mensagem' as Evento['tipo'],
@@ -153,21 +53,21 @@ export default function CRMTimeline() {
         codigo: '00059',
         nome: 'ANTONIO FRANCISCO DA SILVA NETO',
         status: 'CANCELAMENTO INADIMPLENCIA / RETIRADA DE EQUIPAMEN',
-        statusCor: 'bg-[hsl(var(--status-no-response))]'
+        statusCor: 'bg-red-600'
       },
       {
         id: '2',
         codigo: '00102',
         nome: 'MARIA SILVA SANTOS',
         status: 'ATIVO',
-        statusCor: 'bg-[hsl(var(--status-resolved))]'
+        statusCor: 'bg-green-600'
       },
       {
         id: '3',
         codigo: '00203',
         nome: 'JOÃO OLIVEIRA COSTA',
         status: 'AGUARDANDO RESPOSTA',
-        statusCor: 'bg-muted'
+        statusCor: 'bg-yellow-600'
       }
     ];
 
@@ -203,33 +103,14 @@ export default function CRMTimeline() {
     setClienteSelecionado(clientesDemo[0]);
   }, []);
 
-  const validarEvento = (): boolean => {
-    try {
-      eventoSchema.parse(novoEvento);
-      setErrosValidacao({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const erros: Record<string, string> = {};
-        error.issues.forEach(err => {
-          if (err.path[0]) {
-            erros[err.path[0].toString()] = err.message;
-          }
-        });
-        setErrosValidacao(erros);
-      }
-      return false;
-    }
-  };
-
   const adicionarEvento = () => {
-    if (!clienteSelecionado || !validarEvento()) return;
+    if (!clienteSelecionado || !novoEvento.descricao.trim()) return;
 
     const evento: Evento = {
       id: Date.now().toString(),
       clienteId: clienteSelecionado.id,
       tipo: novoEvento.tipo,
-      descricao: novoEvento.descricao.trim(),
+      descricao: novoEvento.descricao,
       data: new Date(novoEvento.data).toISOString(),
       criadoPor: usuario
     };
@@ -239,7 +120,6 @@ export default function CRMTimeline() {
     ));
     setNovoEvento({ tipo: 'mensagem', descricao: '', data: new Date().toISOString().slice(0, 16) });
     setMostrarFormEvento(false);
-    setErrosValidacao({});
   };
 
   const iniciarEdicao = (evento: Evento) => {
@@ -250,15 +130,14 @@ export default function CRMTimeline() {
       data: new Date(evento.data).toISOString().slice(0, 16)
     });
     setMostrarFormEvento(true);
-    setErrosValidacao({});
   };
 
   const salvarEdicao = () => {
-    if (!eventoEditando || !validarEvento()) return;
+    if (!eventoEditando || !novoEvento.descricao.trim()) return;
 
     const eventosAtualizados = eventos.map(e =>
       e.id === eventoEditando.id
-        ? { ...e, tipo: novoEvento.tipo, descricao: novoEvento.descricao.trim(), data: new Date(novoEvento.data).toISOString() }
+        ? { ...e, tipo: novoEvento.tipo, descricao: novoEvento.descricao, data: new Date(novoEvento.data).toISOString() }
         : e
     ).sort((a, b) => 
       new Date(b.data).getTime() - new Date(a.data).getTime()
@@ -268,7 +147,6 @@ export default function CRMTimeline() {
     setEventoEditando(null);
     setNovoEvento({ tipo: 'mensagem', descricao: '', data: new Date().toISOString().slice(0, 16) });
     setMostrarFormEvento(false);
-    setErrosValidacao({});
   };
 
   const confirmarExclusao = (evento: Evento) => {
@@ -288,35 +166,103 @@ export default function CRMTimeline() {
     setMostrarFormEvento(false);
     setEventoEditando(null);
     setNovoEvento({ tipo: 'mensagem', descricao: '', data: new Date().toISOString().slice(0, 16) });
-    setErrosValidacao({});
   };
 
   const eventosDoCliente = eventos
     .filter(e => e.clienteId === clienteSelecionado?.id)
     .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
+  const EventoTimeline: React.FC<{ evento: Evento; index: number }> = ({ evento, index }) => {
+    const iconeConfig = {
+      mensagem: { icon: <MessageCircle size={20} />, cor: 'bg-blue-500', nome: 'Mensagem' },
+      ligacao: { icon: <Phone size={20} />, cor: 'bg-green-500', nome: 'Ligação' },
+      reuniao: { icon: <Calendar size={20} />, cor: 'bg-purple-500', nome: 'Reunião' },
+      cancelamento: { icon: <XCircle size={20} />, cor: 'bg-red-500', nome: 'Cancelamento' },
+      outros: { icon: <Clock size={20} />, cor: 'bg-gray-500', nome: 'Outros' }
+    };
+
+    const config = iconeConfig[evento.tipo];
+
+    return (
+      <div 
+        className="flex gap-4 items-start mb-6 group animate-slideIn"
+        style={{ 
+          animationDelay: `${index * 0.1}s`,
+          opacity: 0,
+          animation: `slideIn 0.5s ease-out ${index * 0.1}s forwards`
+        }}
+      >
+        <div className="flex-1"></div>
+        <div className="relative flex flex-col items-center">
+          <button
+            onClick={() => iniciarEdicao(evento)}
+            className={`${config.cor} p-2 rounded-full text-white hover:scale-110 transition-all duration-300 cursor-pointer hover:shadow-lg hover:shadow-${config.cor}/50`}
+            title="Clique para editar"
+          >
+            {config.icon}
+          </button>
+          <div className="w-0.5 h-full bg-gray-700 absolute top-10"></div>
+        </div>
+        <div className="flex-1">
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-lg hover:transform hover:scale-[1.02] relative">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="text-white font-bold">{formatarData(evento.data)}</span>
+                  <span className={`text-xs px-2 py-1 rounded ${config.cor} text-white`}>
+                    {config.nome}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm">{evento.descricao}</p>
+                <p className="text-gray-600 text-xs mt-2">💡 Clique no ícone para editar</p>
+              </div>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <button
+                  onClick={() => iniciarEdicao(evento)}
+                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-all duration-300 hover:scale-110"
+                  title="Editar evento"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => confirmarExclusao(evento)}
+                  className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition-all duration-300 hover:scale-110"
+                  title="Excluir evento"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!clienteSelecionado) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-gray-950 p-6">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-primary mb-6">Selecione um Cliente</h1>
+          <h1 className="text-3xl font-bold text-green-400 mb-6">Selecione um Cliente</h1>
           <div className="grid gap-3">
             {clientes.map(cliente => (
-              <motion.div
+              <div
                 key={cliente.id}
                 onClick={() => setClienteSelecionado(cliente)}
-                className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="bg-gray-900 border border-green-800 rounded-lg p-4 cursor-pointer hover:border-green-600 transition-colors"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-muted-foreground text-sm">{cliente.codigo}</span>
+                  <span className="text-gray-400 text-sm">{cliente.codigo}</span>
                   <span className={`text-xs px-3 py-1 rounded ${cliente.statusCor} text-white font-medium`}>
                     {cliente.status}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-card-foreground">{cliente.nome}</h3>
-              </motion.div>
+                <h3 className="text-lg font-bold text-white">{cliente.nome}</h3>
+              </div>
             ))}
           </div>
         </div>
@@ -325,21 +271,51 @@ export default function CRMTimeline() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-950">
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
       {/* Header */}
-      <div className="bg-card border-b border-border p-4">
+      <div className="bg-gray-900 border-b border-green-800 p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-primary">
+            <h1 className="text-2xl font-bold text-green-400">
               Timeline - {clienteSelecionado.nome}
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-gray-400 text-sm mt-1">
               🕒 Última atualização: {usuario} - {formatarDataHora(new Date().toISOString())}
             </p>
           </div>
           <button
             onClick={() => setClienteSelecionado(null)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-gray-400 hover:text-white transition-colors"
           >
             <X size={24} />
           </button>
@@ -347,9 +323,9 @@ export default function CRMTimeline() {
       </div>
 
       {/* Barra de Ações */}
-      <div className="bg-card border-b border-border p-4">
+      <div className="bg-gray-900 border-b border-gray-800 p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-card-foreground">
+          <div className="flex items-center gap-2 text-white">
             <span className="font-mono">👤</span>
             <span className="font-medium">
               {clienteSelecionado.codigo} - {clienteSelecionado.nome}
@@ -358,7 +334,7 @@ export default function CRMTimeline() {
           
           <button
             onClick={() => setTimelineOculta(!timelineOculta)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
           >
             {timelineOculta ? <Eye size={16} /> : <EyeOff size={16} />}
             {timelineOculta ? 'Mostrar' : 'Ocultar'}
@@ -366,7 +342,7 @@ export default function CRMTimeline() {
 
           <button
             onClick={() => setMostrarFormEvento(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
           >
             <Plus size={16} />
             Evento
@@ -379,201 +355,166 @@ export default function CRMTimeline() {
       </div>
 
       {/* Timeline */}
-      <AnimatePresence>
-        {!timelineOculta && (
-          <motion.div 
-            className="max-w-4xl mx-auto p-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+      {!timelineOculta && (
+        <div className="max-w-6xl mx-auto p-8">
+          <div className="relative">
             {eventosDoCliente.length > 0 ? (
               eventosDoCliente.map((evento, index) => (
-                <EventoTimeline 
-                  key={evento.id} 
-                  evento={evento} 
-                  index={index}
-                  isLast={index === eventosDoCliente.length - 1}
-                  onEditar={iniciarEdicao}
-                  onExcluir={confirmarExclusao}
-                />
+                <EventoTimeline key={evento.id} evento={evento} index={index} />
               ))
             ) : (
-              <div className="text-center text-muted-foreground py-12">
+              <div className="text-center text-gray-500 py-12">
                 <Clock size={48} className="mx-auto mb-4 opacity-50" />
                 <p>Nenhum evento registrado</p>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Botão Flutuante Voltar */}
-      <motion.button
+      <button
         onClick={() => setClienteSelecionado(null)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-primary hover:bg-primary/80 text-primary-foreground rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-green-600/50"
+        style={{ animation: 'slideIn 0.5s ease-out 0.5s backwards' }}
         title="Voltar para lista"
       >
         <ChevronLeft size={24} />
-      </motion.button>
+      </button>
 
       {/* Modal Adicionar/Editar Evento */}
-      <AnimatePresence>
-        {mostrarFormEvento && (
-          <motion.div 
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={cancelarModal}
+      {mostrarFormEvento && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 animate-fadeIn"
+          style={{ animation: 'fadeIn 0.3s ease-out' }}
+          onClick={cancelarModal}
+        >
+          <div 
+            className="bg-gray-900 rounded-lg border border-green-800 w-full max-w-2xl transform transition-all"
+            style={{ animation: 'slideIn 0.3s ease-out' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div 
-              className="bg-card rounded-lg border border-border w-full max-w-2xl"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center p-4 border-b border-border">
-                <h2 className="text-lg font-semibold text-primary">
-                  {eventoEditando ? 'Editar Evento' : 'Adicionar Evento'}
-                </h2>
-                <button 
-                  onClick={cancelarModal}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+            <div className="flex justify-between items-center p-4 border-b border-green-800">
+              <h2 className="text-lg font-semibold text-green-400">
+                {eventoEditando ? 'Editar Evento' : 'Adicionar Evento'}
+              </h2>
+              <button 
+                onClick={cancelarModal}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-gray-400 mb-1.5 text-sm font-medium">Data e Hora *</label>
+                <input
+                  type="datetime-local"
+                  value={novoEvento.data}
+                  onChange={(e) => setNovoEvento({ ...novoEvento, data: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-600 transition-colors text-sm"
+                />
+                <p className="text-gray-500 text-xs mt-1">📅 Os eventos serão reordenados automaticamente por data</p>
+              </div>
+
+              <div>
+                <label className="block text-gray-400 mb-1.5 text-sm font-medium">Tipo de Evento</label>
+                <select
+                  value={novoEvento.tipo}
+                  onChange={(e) => setNovoEvento({ ...novoEvento, tipo: e.target.value as Evento['tipo'] })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-600 transition-colors text-sm"
                 >
-                  <X size={20} />
+                  <option value="mensagem">💬 Mensagem</option>
+                  <option value="ligacao">📞 Ligação</option>
+                  <option value="reuniao">📅 Reunião</option>
+                  <option value="cancelamento">❌ Cancelamento</option>
+                  <option value="outros">📝 Outros</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-400 mb-1.5 text-sm font-medium">Descrição do Evento *</label>
+                <textarea
+                  value={novoEvento.descricao}
+                  onChange={(e) => setNovoEvento({ ...novoEvento, descricao: e.target.value })}
+                  rows={3}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-600 transition-colors resize-none text-sm"
+                  placeholder="Descreva o que aconteceu neste contato..."
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-3">
+                <button
+                  onClick={cancelarModal}
+                  className="px-4 py-2 border border-gray-600 rounded-lg text-gray-400 hover:bg-gray-800 transition-colors text-sm font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={eventoEditando ? salvarEdicao : adicionarEvento}
+                  disabled={!novoEvento.descricao.trim()}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  {eventoEditando ? 'Salvar Alterações' : 'Adicionar Evento'}
                 </button>
               </div>
-
-              <div className="p-4 space-y-3">
-                <div>
-                  <label className="block text-card-foreground mb-1.5 text-sm font-medium">Data e Hora *</label>
-                  <input
-                    type="datetime-local"
-                    value={novoEvento.data}
-                    onChange={(e) => setNovoEvento({ ...novoEvento, data: e.target.value })}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-primary transition-colors text-sm"
-                  />
-                  {errosValidacao.data && (
-                    <p className="text-destructive text-xs mt-1">{errosValidacao.data}</p>
-                  )}
-                  <p className="text-muted-foreground text-xs mt-1">📅 Os eventos serão reordenados automaticamente por data</p>
-                </div>
-
-                <div>
-                  <label className="block text-card-foreground mb-1.5 text-sm font-medium">Tipo de Evento</label>
-                  <select
-                    value={novoEvento.tipo}
-                    onChange={(e) => setNovoEvento({ ...novoEvento, tipo: e.target.value as Evento['tipo'] })}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-primary transition-colors text-sm"
-                  >
-                    <option value="mensagem">💬 Mensagem</option>
-                    <option value="ligacao">📞 Ligação</option>
-                    <option value="reuniao">📅 Reunião</option>
-                    <option value="cancelamento">❌ Cancelamento</option>
-                    <option value="outros">📝 Outros</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-card-foreground mb-1.5 text-sm font-medium">
-                    Descrição do Evento * ({novoEvento.descricao.length}/500)
-                  </label>
-                  <textarea
-                    value={novoEvento.descricao}
-                    onChange={(e) => setNovoEvento({ ...novoEvento, descricao: e.target.value })}
-                    rows={3}
-                    maxLength={500}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-primary transition-colors resize-none text-sm"
-                    placeholder="Descreva o que aconteceu neste contato..."
-                  />
-                  {errosValidacao.descricao && (
-                    <p className="text-destructive text-xs mt-1">{errosValidacao.descricao}</p>
-                  )}
-                </div>
-
-                <div className="flex gap-3 justify-end pt-3">
-                  <button
-                    onClick={cancelarModal}
-                    className="px-4 py-2 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors text-sm font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={eventoEditando ? salvarEdicao : adicionarEvento}
-                    className="px-4 py-2 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors text-sm font-medium"
-                  >
-                    {eventoEditando ? 'Salvar Alterações' : 'Adicionar Evento'}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Confirmação de Exclusão */}
-      <AnimatePresence>
-        {mostrarConfirmacao && eventoParaExcluir && (
-          <motion.div 
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setMostrarConfirmacao(false)}
+      {mostrarConfirmacao && eventoParaExcluir && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-start pl-8 z-50 p-4"
+          style={{ animation: 'fadeIn 0.3s ease-out' }}
+          onClick={() => setMostrarConfirmacao(false)}
+        >
+          <div 
+            className="bg-gray-900 rounded-lg border border-red-800 w-full max-w-sm"
+            style={{ animation: 'slideIn 0.3s ease-out' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div 
-              className="bg-card rounded-lg border border-destructive w-full max-w-sm"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center p-4 border-b border-destructive">
-                <h2 className="text-lg font-semibold text-destructive">Confirmar Exclusão</h2>
-                <button 
+            <div className="flex justify-between items-center p-4 border-b border-red-800">
+              <h2 className="text-lg font-semibold text-red-400">Confirmar Exclusão</h2>
+              <button 
+                onClick={() => setMostrarConfirmacao(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <p className="text-gray-300 mb-2 text-sm">Tem certeza que deseja excluir este evento?</p>
+              <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 mb-4">
+                <p className="text-sm text-gray-400">
+                  <strong className="text-white">{formatarData(eventoParaExcluir.data)}</strong> - {eventoParaExcluir.descricao}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  📅 {formatarDataHora(eventoParaExcluir.data)}
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
                   onClick={() => setMostrarConfirmacao(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="px-4 py-2 border border-gray-600 rounded-lg text-gray-400 hover:bg-gray-800 transition-colors text-sm font-medium"
                 >
-                  <X size={20} />
+                  Cancelar
+                </button>
+                <button
+                  onClick={excluirEvento}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  Excluir Evento
                 </button>
               </div>
-
-              <div className="p-4">
-                <p className="text-card-foreground mb-2 text-sm">Tem certeza que deseja excluir este evento?</p>
-                <div className="bg-muted rounded-lg p-3 border border-border mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    <strong className="text-foreground">{formatarData(eventoParaExcluir.data)}</strong> - {eventoParaExcluir.descricao}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    📅 {formatarDataHora(eventoParaExcluir.data)}
-                  </p>
-                </div>
-
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={() => setMostrarConfirmacao(false)}
-                    className="px-4 py-2 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors text-sm font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={excluirEvento}
-                    className="px-4 py-2 bg-destructive hover:bg-destructive/80 text-destructive-foreground rounded-lg transition-colors text-sm font-medium"
-                  >
-                    Excluir Evento
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
