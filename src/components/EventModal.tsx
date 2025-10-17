@@ -21,7 +21,7 @@ const iconOptions = [
   { value: '📅', label: '📅 Agendamento' },
   { value: '📄', label: '📄 Boleto' },
   { value: '📞', label: '📞 Ligação' },
-  { value: '✅', label: '✅ Pago' },
+  { value: '🟢', label: '🟢 Pago' },
   { value: '🤝', label: '🤝 Acordo' },
   { value: '⚠️', label: '⚠️ Importante' },
   { value: '👨‍🔧', label: '👨‍🔧 Técnico' },

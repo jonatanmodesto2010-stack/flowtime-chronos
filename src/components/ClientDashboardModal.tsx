@@ -740,8 +740,8 @@ export const ClientDashboardModal = ({
                               event.status === 'no-response' ? 'bg-red-500' :
                               'bg-muted'
                             } text-white text-xs`}>
-                              {event.status === 'resolved' ? '✅ Resolvido' :
-                               event.status === 'no-response' ? '❌ Sem Resposta' :
+                              {event.status === 'resolved' ? '🟢 Resolvido' :
+                               event.status === 'no-response' ? '🔴 Sem Resposta' :
                                '⚫ Criado'}
                             </Badge>
                             <span className="text-xs text-muted-foreground">

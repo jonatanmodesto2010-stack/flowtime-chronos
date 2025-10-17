@@ -337,9 +337,9 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
   const renderStatusIcon = (status: string) => {
     switch (status) {
       case 'resolved':
-        return <span className="text-lg">✅</span>;
+        return <span className="text-lg">🟢</span>;
       case 'no_response':
-        return <span className="text-lg">🚫</span>;
+        return <span className="text-lg">🔴</span>;
       default:
         return <div className="w-1.5 h-1.5 bg-foreground/20 rounded-full" />;
     }

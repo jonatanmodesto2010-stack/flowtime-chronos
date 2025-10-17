@@ -233,7 +233,7 @@ const History = () => {
                               : 'bg-gray-500/20 text-gray-500 border-gray-500/50'
                           }
                         >
-                          {timeline.status === 'completed' ? '✅ Concluída' : '📦 Arquivada'}
+                          {timeline.status === 'completed' ? '🟢 Concluída' : '📦 Arquivada'}
                         </Badge>
                       </div>
                       
