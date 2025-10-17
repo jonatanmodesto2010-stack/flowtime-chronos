@@ -113,7 +113,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 Filtros Rápidos
               </h3>
               <div className="space-y-1">
-                {['⚫ Criados', '🟢 Resolvidos', '🔴 Sem Resposta'].map((filter, index) => (
+                {['⚫ Criados', '✅ Resolvidos', '❌ Sem Resposta'].map((filter, index) => (
                   <motion.button
                     key={filter}
                     initial={{ opacity: 0, x: -20 }}

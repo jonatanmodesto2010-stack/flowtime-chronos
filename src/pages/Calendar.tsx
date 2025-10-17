@@ -423,7 +423,7 @@ const Calendar = () => {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    🟢 Respondeu
+                    ✅ Respondeu
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -434,7 +434,7 @@ const Calendar = () => {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    🔴 Não Respondeu
+                    🚫 Não Respondeu
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -466,8 +466,8 @@ const Calendar = () => {
                     <SelectContent className="bg-background z-50">
                       <SelectItem value="all">Todos os Status</SelectItem>
                       <SelectItem value="created">📝 Criados</SelectItem>
-                      <SelectItem value="resolved">🟢 Respondeu</SelectItem>
-                      <SelectItem value="no_response">🔴 Não Respondeu</SelectItem>
+                      <SelectItem value="resolved">✅ Respondeu</SelectItem>
+                      <SelectItem value="no_response">🚫 Não Respondeu</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -614,8 +614,8 @@ const Calendar = () => {
                                 'secondary'
                               }>
                                 {event.status === 'created' && '📝 Criado'}
-                                {event.status === 'resolved' && '🟢 Respondeu'}
-                                {event.status === 'no_response' && '🔴 Não Respondeu'}
+                                {event.status === 'resolved' && '✅ Respondeu'}
+                                {event.status === 'no_response' && '🚫 Não Respondeu'}
                               </Badge>
                             </div>
                           </motion.div>
@@ -705,12 +705,12 @@ const Calendar = () => {
                                 )}
                                 {statusCounts.resolved > 0 && (
                                   <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                    🟢 {statusCounts.resolved}
+                                    ✅ {statusCounts.resolved}
                                   </Badge>
                                 )}
                                 {statusCounts.no_response > 0 && (
                                   <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
-                                    🔴 {statusCounts.no_response}
+                                    🚫 {statusCounts.no_response}
                                   </Badge>
                                 )}
                               </div>
@@ -785,8 +785,8 @@ const Calendar = () => {
                                   className="text-[10px] h-4"
                                 >
                                   {event.status === 'created' && '📝'}
-                                  {event.status === 'resolved' && '🟢'}
-                                  {event.status === 'no_response' && '🔴'}
+                                  {event.status === 'resolved' && '✅'}
+                                  {event.status === 'no_response' && '🚫'}
                                 </Badge>
                               </motion.div>
                             ))}
@@ -811,11 +811,11 @@ const Calendar = () => {
                   <span className="text-sm text-muted-foreground">Criados</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🟢</span>
+                  <span className="text-xl">✅</span>
                   <span className="text-sm text-muted-foreground">Respondeu</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🔴</span>
+                  <span className="text-xl">🚫</span>
                   <span className="text-sm text-muted-foreground">Não Respondeu</span>
                 </div>
               </div>
@@ -866,8 +866,8 @@ const Calendar = () => {
                                   : 'secondary'
                               }>
                                 {event.status === 'created' && '📝 Criado'}
-                                {event.status === 'resolved' && '🟢 Respondeu'}
-                                {event.status === 'no_response' && '🔴 Não Respondeu'}
+                                {event.status === 'resolved' && '✅ Respondeu'}
+                                {event.status === 'no_response' && '🚫 Não Respondeu'}
                               </Badge>
                             </div>
                             {event.description && (

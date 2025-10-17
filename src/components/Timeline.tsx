@@ -128,8 +128,8 @@ export const Timeline = ({
     loadTimelineTags();
   }, [timeline.id]);
 
-  // Verifica se há algum evento com status 'no_response' (ícone 🔴)
-  const hasNoResponseEvent = lines.some(line =>
+  // Verifica se há algum evento com status 'no_response' (ícone 🚫)
+  const hasNoResponseEvent = lines.some(line => 
     line.events?.some(event => event.status === 'no_response')
   );
 
@@ -261,9 +261,9 @@ export const Timeline = ({
   const renderStatusIcon = (status: string) => {
     switch (status) {
       case 'resolved':
-        return <span className="text-lg">🟢</span>;
+        return <span className="text-lg">✅</span>;
       case 'no_response':
-        return <span className="text-lg">🔴</span>;
+        return <span className="text-lg">🚫</span>;
       default:
         return <div className="w-1.5 h-1.5 bg-foreground/20 rounded-full" />;
     }
@@ -557,19 +557,16 @@ export const Timeline = ({
                     <div className="text-xs font-semibold text-foreground whitespace-nowrap">
                       {event.date}
                     </div>
-                     {showAllDescriptions && event.description && (
+                    {showAllDescriptions && event.description && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.8, x: -20 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, x: -20 }}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.3 }}
-                        className="max-w-xs"
                       >
-                        <div className="bg-card rounded-xl px-4 py-3 shadow-lg border border-border">
-                          <p className="text-card-foreground text-sm font-medium leading-relaxed">
-                            {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                          </p>
-                        </div>
+                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
+                        </p>
                       </motion.div>
                     )}
                   </div>
@@ -591,17 +588,14 @@ export const Timeline = ({
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.3 }}
-                        className="max-w-xs"
                       >
-                        <div className="bg-card rounded-xl px-4 py-3 shadow-lg border border-border">
-                          <p className="text-card-foreground text-sm font-medium leading-relaxed">
-                            {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                          </p>
-                        </div>
+                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
+                        </p>
                       </motion.div>
                     )}
                   </div>
@@ -682,17 +676,15 @@ export const Timeline = ({
                                   marginLeft: '20px',
                                 }}
                               >
-                                <div className="bg-card rounded-xl px-3 py-2 shadow-lg border border-border">
-                                  <p 
-                                    className="text-card-foreground text-sm font-medium"
-                                    title={event.description}
-                                  >
-                                    {event.description.length > 40 
-                                      ? `${event.description.substring(0, 40)}...` 
-                                      : event.description
-                                    }
-                                  </p>
-                                </div>
+                                <p 
+                                  className="text-foreground text-sm font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-background/90 px-2 py-1 rounded"
+                                  title={event.description}
+                                >
+                                  {event.description.length > 40 
+                                    ? `${event.description.substring(0, 40)}...` 
+                                    : event.description
+                                  }
+                                </p>
                               </motion.div>
                             )}
                           </AnimatePresence>
