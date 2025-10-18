@@ -244,6 +244,30 @@ const Clients = () => {
         }
       }
 
+      // Icons filter
+      if (filters.iconsFilter && filters.iconsFilter.length > 0) {
+        const clientIds = results.map(c => c.id);
+        
+        const { data: lines } = await supabaseClient
+          .from('timeline_lines')
+          .select('id, timeline_id')
+          .in('timeline_id', clientIds);
+
+        const lineIds = lines?.map(l => l.id) || [];
+        
+        const { data: events } = await supabaseClient
+          .from('timeline_events')
+          .select('line_id, icon')
+          .in('line_id', lineIds)
+          .in('icon', filters.iconsFilter);
+
+        const linesWithIcons = events?.map(e => e.line_id) || [];
+        const timelinesWithIcons = lines?.filter(l => linesWithIcons.includes(l.id))
+          .map(l => l.timeline_id) || [];
+
+        results = results.filter(c => timelinesWithIcons.includes(c.id));
+      }
+
       setFilteredClients(results);
     } catch (error: any) {
       toast({

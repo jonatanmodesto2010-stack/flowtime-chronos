@@ -13,6 +13,7 @@ export interface FilterValues {
   updateDateTo: string;
   boletoFilter: string;
   timelineFilter: string;
+  iconsFilter: string[];
 }
 
 const DEFAULT_FILTERS: FilterValues = {
@@ -25,6 +26,7 @@ const DEFAULT_FILTERS: FilterValues = {
   updateDateTo: '',
   boletoFilter: 'all',
   timelineFilter: 'all',
+  iconsFilter: [],
 };
 
 export const useOrganizationFilters = (pageName: string) => {

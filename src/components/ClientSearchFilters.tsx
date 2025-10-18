@@ -67,6 +67,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
       updateDateTo: '',
       boletoFilter: 'all',
       timelineFilter: 'all',
+      iconsFilter: [],
     });
   };
 
@@ -77,6 +78,13 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
     applyFilters({ tagsFilter: newTagsFilter });
   };
 
+  const toggleIcon = (icon: string) => {
+    const newIconsFilter = filters.iconsFilter.includes(icon)
+      ? filters.iconsFilter.filter(i => i !== icon)
+      : [...filters.iconsFilter, icon];
+    applyFilters({ iconsFilter: newIconsFilter });
+  };
+
   const activeFiltersCount = [
     filters.statusFilter !== 'all',
     filters.tagsFilter.length > 0,
@@ -84,7 +92,10 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
     filters.updateDateFrom || filters.updateDateTo,
     filters.boletoFilter !== 'all',
     filters.timelineFilter !== 'all',
+    filters.iconsFilter.length > 0,
   ].filter(Boolean).length;
+
+  const availableIcons = ['💬', '📅', '📄', '📞', '✅', '🤝', '⚠️', '🧰'];
 
   return (
     <div className="space-y-4 mb-6">
@@ -256,6 +267,26 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
                 </Select>
               </div>
 
+              {/* Icons Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Ícones</label>
+                <div className="flex flex-wrap gap-2">
+                  {availableIcons.map(icon => (
+                    <button
+                      key={icon}
+                      onClick={() => toggleIcon(icon)}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all hover:scale-110 ${
+                        filters.iconsFilter.includes(icon)
+                          ? 'bg-primary text-primary-foreground shadow-lg'
+                          : 'bg-muted hover:bg-muted/80'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Apply Button */}
               <Button onClick={() => setShowFilters(false)} className="w-full">
                 Fechar
@@ -319,6 +350,19 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
               <X
                 className="w-3 h-3 cursor-pointer"
                 onClick={() => applyFilters({ timelineFilter: 'all' })}
+              />
+            </Badge>
+          )}
+          {filters.iconsFilter.length > 0 && (
+            <Badge variant="secondary" className="gap-1 flex items-center">
+              <span className="flex items-center gap-1">
+                {filters.iconsFilter.map(icon => (
+                  <span key={icon}>{icon}</span>
+                ))}
+              </span>
+              <X
+                className="w-3 h-3 cursor-pointer ml-1"
+                onClick={() => applyFilters({ iconsFilter: [] })}
               />
             </Badge>
           )}

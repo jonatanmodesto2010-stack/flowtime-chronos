@@ -38,6 +38,7 @@ const Calendar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [clientSearch, setClientSearch] = useState<string>('');
+  const [iconsFilter, setIconsFilter] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'today' | 'month' | 'week'>('month');
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
@@ -249,9 +250,10 @@ const Calendar = () => {
       const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
       const matchesClient = clientSearch === '' || 
         event.client_name.toLowerCase().includes(clientSearch.toLowerCase());
-      return matchesStatus && matchesClient;
+      const matchesIcon = iconsFilter.length === 0 || iconsFilter.includes(event.icon);
+      return matchesStatus && matchesClient && matchesIcon;
     });
-  }, [events, statusFilter, clientSearch, refreshKey]);
+  }, [events, statusFilter, clientSearch, iconsFilter, refreshKey]);
 
   const getEventsForDay = (day: number, month?: number) => {
     const targetMonth = month !== undefined ? month : currentDate.getMonth() + 1;
@@ -445,31 +447,59 @@ const Calendar = () => {
 
             {/* Filters */}
             <div className="bg-card border border-border rounded-xl p-4 mb-6 shadow-lg">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-                    <Input
-                      placeholder="Buscar por cliente..."
-                      value={clientSearch}
-                      onChange={(e) => setClientSearch(e.target.value)}
-                      className="pl-10"
-                    />
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Input
+                        placeholder="Buscar por cliente..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="sm:w-48">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Filtrar por status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        <SelectItem value="all">Todos os Status</SelectItem>
+                        <SelectItem value="created">📝 Criados</SelectItem>
+                        <SelectItem value="resolved">✅ Respondeu</SelectItem>
+                        <SelectItem value="no_response">🚫 Não Respondeu</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                
-                <div className="sm:w-48">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Filtrar por status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      <SelectItem value="all">Todos os Status</SelectItem>
-                      <SelectItem value="created">📝 Criados</SelectItem>
-                      <SelectItem value="resolved">✅ Respondeu</SelectItem>
-                      <SelectItem value="no_response">🚫 Não Respondeu</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                {/* Icons Filter */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-muted-foreground">Filtrar por ícone</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['💬', '📅', '📄', '📞', '✅', '🤝', '⚠️', '🧰'].map(icon => (
+                      <button
+                        key={icon}
+                        onClick={() => {
+                          setIconsFilter(prev => 
+                            prev.includes(icon) 
+                              ? prev.filter(i => i !== icon) 
+                              : [...prev, icon]
+                          );
+                        }}
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all hover:scale-110 ${
+                          iconsFilter.includes(icon)
+                            ? 'bg-primary text-primary-foreground shadow-lg'
+                            : 'bg-muted hover:bg-muted/80'
+                        }`}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
