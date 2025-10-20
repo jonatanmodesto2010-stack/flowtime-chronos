@@ -1,0 +1,13 @@
+project_id = "ghheubvkddwggoodbytf"
+
+[functions.timelines-api]
+verify_jwt = true
+
+[functions.events-api]
+verify_jwt = true
+
+[functions.register-version]
+verify_jwt = false
+
+[functions.analyze-collection-strategy]
+verify_jwt = true

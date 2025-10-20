@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Sustainable Green Theme - Light Mode */
+    --background: 0 0% 98%;
+    --foreground: 150 50% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 50% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 50% 15%;
+
+    --primary: 146 50% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 142 52% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 120 61% 34%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 146 50% 36%;
+
+    --radius: 0.5rem;
+
+    /* Status Colors */
+    --status-created: 0 0% 42%;
+    --status-resolved: 134 61% 41%;
+    --status-no-response: 0 65% 51%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(146 50% 36%), hsl(142 52% 50%));
+    --gradient-hover: linear-gradient(135deg, hsl(146 50% 40%), hsl(142 52% 55%));
+  }
+
+  .dark {
+    /* Sustainable Green Theme - Dark Mode */
+    --background: 150 20% 8%;
+    --foreground: 150 20% 95%;
+
+    --card: 150 15% 12%;
+    --card-foreground: 150 20% 95%;
+
+    --popover: 150 15% 12%;
+    --popover-foreground: 150 20% 95%;
+
+    --primary: 146 50% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 142 52% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 150 15% 15%;
+    --muted-foreground: 150 10% 60%;
+
+    --accent: 120 61% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 150 15% 20%;
+    --input: 150 15% 20%;
+    --ring: 146 50% 45%;
+
+    /* Status Colors - Dark Mode */
+    --status-created: 0 0% 60%;
+    --status-resolved: 134 61% 50%;
+    --status-no-response: 0 65% 55%;
+
+    /* Gradients - Dark Mode */
+    --gradient-primary: linear-gradient(135deg, hsl(146 50% 45%), hsl(142 52% 55%));
+    --gradient-hover: linear-gradient(135deg, hsl(146 50% 50%), hsl(142 52% 60%));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Custom Scrollbar - Similar à imagem de referência */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 50% / 0.3) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(0 0% 50% / 0.3);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(0 0% 50% / 0.5);
+  }
+
+  /* Dark mode scrollbar */
+  .dark .custom-scrollbar {
+    scrollbar-color: hsl(0 0% 70% / 0.3) transparent;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(0 0% 70% / 0.3);
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(0 0% 70% / 0.5);
+  }
+}
