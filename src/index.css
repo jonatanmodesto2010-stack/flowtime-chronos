@@ -145,4 +145,24 @@ All colors MUST be HSL.
   .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: hsl(0 0% 70% / 0.5);
   }
+
+  /* Glass Effect for Visual Timeline */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .dark .glass-effect {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* Glow Effect */
+  .glow-effect {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+  }
+
+  .glow-effect:hover {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+  }
 }
