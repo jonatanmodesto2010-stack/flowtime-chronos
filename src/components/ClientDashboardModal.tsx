@@ -199,7 +199,7 @@ export const ClientDashboardModal = ({
         .from('client_timelines')
         .select('updated_at, user_id')
         .eq('id', client.id)
-        .single();
+        .maybeSingle();
 
       if (timelineError) {
         console.error('[ClientDashboardModal] Erro ao buscar timeline:', timelineError);
@@ -216,7 +216,7 @@ export const ClientDashboardModal = ({
             .from('profiles')
             .select('full_name')
             .eq('id', timeline.user_id)
-            .single();
+            .maybeSingle();
 
           if (!profileError && profile) {
             console.log('[ClientDashboardModal] profile encontrado:', profile);

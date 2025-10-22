@@ -81,7 +81,7 @@ export const ClientTimelineDialog = ({
           )
         `)
         .eq('id', client.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
