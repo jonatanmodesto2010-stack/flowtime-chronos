@@ -163,7 +163,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
               <SelectTrigger className="w-full bg-background">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[60]">
                 {iconOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
