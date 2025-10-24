@@ -99,7 +99,7 @@ export const TagSelector = ({ timelineId, organizationId, selectedTags, onTagsCh
           )}
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-64 bg-popover" align="start">
+      <PopoverContent className="w-64 bg-popover z-[60]" align="start">
         <div className="space-y-2">
           <h4 className="font-medium text-sm mb-3">Selecionar Tags</h4>
           {allTags.length === 0 ? (
