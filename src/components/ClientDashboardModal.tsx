@@ -458,8 +458,8 @@ export const ClientDashboardModal = ({
 
                 <div className="flex items-center justify-between p-4 bg-card rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${formData.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <Label htmlFor="is_active">Status Ativo</Label>
+                    <div className={`w-3 h-3 rounded-full ${formData.is_active ? 'bg-blue-500' : 'bg-blue-500'}`} />
+                    <Label htmlFor="is_active">FINALIZADO</Label>
                   </div>
                   <Switch
                     id="is_active"
