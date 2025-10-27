@@ -139,14 +139,6 @@ export const Timeline = ({
     
     const lineEvents = line.events || [];
     
-    // Se a linha já tem 20 eventos, criar uma nova linha
-    if (lineEvents.length >= 20) {
-      if (addNewLine) {
-        addNewLine();
-      }
-      return;
-    }
-    
     const newId = crypto.randomUUID();
     const lastEvent = lineEvents[lineEvents.length - 1];
     const newPosition = lastEvent?.position === 'top' ? 'bottom' : 'top';
