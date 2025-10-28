@@ -14,6 +14,7 @@ export interface FilterValues {
   boletoFilter: string;
   timelineFilter: string;
   iconsFilter: string[];
+  eventCountSort: 'none' | 'desc' | 'asc';
 }
 
 const DEFAULT_FILTERS: FilterValues = {
@@ -27,6 +28,7 @@ const DEFAULT_FILTERS: FilterValues = {
   boletoFilter: 'all',
   timelineFilter: 'all',
   iconsFilter: [],
+  eventCountSort: 'none',
 };
 
 export const useOrganizationFilters = (pageName: string) => {

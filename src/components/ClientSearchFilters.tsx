@@ -74,6 +74,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
       boletoFilter: 'all',
       timelineFilter: 'all',
       iconsFilter: [],
+      eventCountSort: 'none',
     });
   };
 
@@ -99,6 +100,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
     filters.boletoFilter !== 'all',
     filters.timelineFilter !== 'all',
     filters.iconsFilter.length > 0,
+    filters.eventCountSort !== 'none',
   ].filter(Boolean).length;
 
   const availableIcons = ['💬', '📅', '📄', '📞', '✅', '🤝', '⚠️', '🧰'];
@@ -293,6 +295,21 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
                 </div>
               </div>
 
+              {/* Event Count Sort */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Quantidade de Eventos</label>
+                <Select value={filters.eventCountSort} onValueChange={(value) => applyFilters({ eventCountSort: value as 'none' | 'desc' | 'asc' })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem ordenação</SelectItem>
+                    <SelectItem value="desc">🔽 Maior quantidade primeiro</SelectItem>
+                    <SelectItem value="asc">🔼 Menor quantidade primeiro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Apply Button */}
               <Button onClick={() => setShowFilters(false)} className="w-full">
                 Fechar
@@ -369,6 +386,15 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
               <X
                 className="w-3 h-3 cursor-pointer ml-1"
                 onClick={() => applyFilters({ iconsFilter: [] })}
+              />
+            </Badge>
+          )}
+          {filters.eventCountSort !== 'none' && (
+            <Badge variant="secondary" className="gap-1">
+              Eventos: {filters.eventCountSort === 'desc' ? '🔽 Maior primeiro' : '🔼 Menor primeiro'}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => applyFilters({ eventCountSort: 'none' })}
               />
             </Badge>
           )}

@@ -300,6 +300,47 @@ const Clients = () => {
         results = results.filter(c => idsWithAnalysis.includes(c.id));
       }
 
+      // Aplicar ordenação por quantidade de eventos
+      if (filters.eventCountSort !== 'none') {
+        // Buscar contagem de eventos para cada cliente
+        const clientIds = results.map(c => c.id);
+        
+        // Buscar linhas e eventos em paralelo
+        const { data: allLines } = await supabaseClient
+          .from('timeline_lines')
+          .select('id, timeline_id')
+          .in('timeline_id', clientIds);
+
+        const lineIds = allLines?.map(l => l.id) || [];
+        
+        const { data: allEvents } = await supabaseClient
+          .from('timeline_events')
+          .select('id, line_id')
+          .in('line_id', lineIds);
+
+        // Criar mapa de contagem de eventos por cliente
+        const eventCountMap = new Map<string, number>();
+        
+        results.forEach(client => {
+          const clientLines = allLines?.filter(l => l.timeline_id === client.id) || [];
+          const clientLineIds = clientLines.map(l => l.id);
+          const eventCount = allEvents?.filter(e => clientLineIds.includes(e.line_id)).length || 0;
+          eventCountMap.set(client.id, eventCount);
+        });
+
+        // Ordenar resultados
+        results.sort((a, b) => {
+          const countA = eventCountMap.get(a.id) || 0;
+          const countB = eventCountMap.get(b.id) || 0;
+          
+          if (filters.eventCountSort === 'desc') {
+            return countB - countA; // Maior primeiro
+          } else {
+            return countA - countB; // Menor primeiro
+          }
+        });
+      }
+
       setFilteredClients(results);
     } catch (error: any) {
       console.error("handleFilterChange: Erro ao filtrar clientes:", error.message);
