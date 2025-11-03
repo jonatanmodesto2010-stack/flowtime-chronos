@@ -69,6 +69,22 @@ export const ClientTimelineDialog = ({
     }
   }, [isOpen, client.id]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   const loadLastUpdatedBy = async () => {
     try {
       const { data, error } = await supabase
