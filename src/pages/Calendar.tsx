@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
+import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 
 interface Event {
   id: string;
@@ -26,6 +27,7 @@ interface Event {
   description: string | null;
   status: string;
   icon: string;
+  timeline_id: string;
 }
 
 const Calendar = () => {
@@ -41,6 +43,13 @@ const Calendar = () => {
   const [iconsFilter, setIconsFilter] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'today' | 'month' | 'week'>('month');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedClient, setSelectedClient] = useState<{
+    id: string;
+    client_name: string;
+    start_date: string;
+    is_active: boolean;
+  } | null>(null);
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -198,6 +207,7 @@ const Calendar = () => {
               description: event.description,
               status: event.status,
               icon: event.icon,
+              timeline_id: line?.timeline_id || '',
             };
           });
 
@@ -318,8 +328,28 @@ const Calendar = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7));
   };
 
-  const handleEventClick = (clientName: string) => {
-    navigate('/clients', { state: { searchQuery: clientName } });
+  const handleOpenTimeline = async (timelineId: string, clientName: string) => {
+    try {
+      // Buscar dados completos do cliente
+      const { data: clientData, error } = await supabaseClient
+        .from('client_timelines')
+        .select('*')
+        .eq('id', timelineId)
+        .single();
+
+      if (error) throw error;
+
+      if (clientData) {
+        setSelectedClient(clientData);
+        setIsTimelineModalOpen(true);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao abrir timeline',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDayClick = (day: number) => {
@@ -609,7 +639,7 @@ const Calendar = () => {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.05 }}
-                            onClick={() => handleEventClick(event.client_name)}
+                            onClick={() => handleOpenTimeline(event.timeline_id, event.client_name)}
                             className="p-5 border-l-4 rounded-lg cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-card border-border"
                             style={{
                               borderLeftColor: 
@@ -779,7 +809,7 @@ const Calendar = () => {
                                 key={event.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                onClick={() => handleEventClick(event.client_name)}
+                                onClick={() => handleOpenTimeline(event.timeline_id, event.client_name)}
                                 className="p-2 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
                               >
                                 <div className="flex items-center gap-2 mb-1">
@@ -866,7 +896,7 @@ const Calendar = () => {
                   {getEventsForDay(selectedDay).map(event => (
                       <div
                         key={event.id}
-                        onClick={() => handleEventClick(event.client_name)}
+                        onClick={() => handleOpenTimeline(event.timeline_id, event.client_name)}
                         className="p-4 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-3">
@@ -916,6 +946,18 @@ const Calendar = () => {
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Timeline Modal */}
+          {selectedClient && (
+            <ClientTimelineDialog
+              client={selectedClient}
+              isOpen={isTimelineModalOpen}
+              onClose={() => {
+                setIsTimelineModalOpen(false);
+                setSelectedClient(null);
+              }}
+            />
+          )}
         </main>
       </div>
     </div>
