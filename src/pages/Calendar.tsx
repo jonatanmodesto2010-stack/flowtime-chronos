@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
+import { useRef } from 'react';
 
 interface Event {
   id: string;
@@ -50,6 +51,7 @@ const Calendar = () => {
     is_active: boolean;
   } | null>(null);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const shouldListenToChanges = useRef(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -93,7 +95,9 @@ const Calendar = () => {
         (payload) => {
           console.log('📅 Evento atualizado - Recarregando calendário...', payload);
           console.log('Payload específico:', payload.new || payload.old);
-          loadEvents(user.id);
+          if (shouldListenToChanges.current) {
+            loadEvents(user.id);
+          }
         }
       )
       .subscribe();
@@ -111,7 +115,9 @@ const Calendar = () => {
         (payload) => {
           console.log('👤 Cliente atualizado - Recarregando calendário...', payload);
           console.log('Payload específico:', payload.new || payload.old);
-          loadEvents(user.id);
+          if (shouldListenToChanges.current) {
+            loadEvents(user.id);
+          }
         }
       )
       .subscribe();
@@ -129,7 +135,9 @@ const Calendar = () => {
         (payload) => {
           console.log('📊 Linha atualizada - Recarregando calendário...', payload);
           console.log('Payload específico:', payload.new || payload.old);
-          loadEvents(user.id);
+          if (shouldListenToChanges.current) {
+            loadEvents(user.id);
+          }
         }
       )
       .subscribe();
@@ -330,6 +338,9 @@ const Calendar = () => {
 
   const handleOpenTimeline = async (timelineId: string, clientName: string) => {
     try {
+      // Desabilitar listeners enquanto modal está aberto
+      shouldListenToChanges.current = false;
+      
       // Buscar dados completos do cliente
       const { data: clientData, error } = await supabaseClient
         .from('client_timelines')
@@ -955,6 +966,11 @@ const Calendar = () => {
               onClose={() => {
                 setIsTimelineModalOpen(false);
                 setSelectedClient(null);
+                // Reabilitar listeners e recarregar dados uma vez
+                shouldListenToChanges.current = true;
+                if (user) {
+                  loadEvents(user.id);
+                }
               }}
             />
           )}
