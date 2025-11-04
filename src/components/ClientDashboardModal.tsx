@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Check, Calendar, DollarSign, Tag as TagIcon, User, Clock, Plus, Trash2, TrendingUp } from 'lucide-react';
+import { X, Check, Calendar, DollarSign, Tag as TagIcon, User, Clock, Plus, Trash2, TrendingUp, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,6 +83,15 @@ export const ClientDashboardModal = ({
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [completedTimelines, setCompletedTimelines] = useState<Array<{
+    id: string;
+    completed_at: string;
+    completion_notes: string;
+    status: string;
+    start_date: string;
+  }>>([]);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
+  const [selectedTimeline, setSelectedTimeline] = useState<any>(null);
   const { toast } = useToast();
 
   const handleOpenCalendar = () => {
@@ -97,6 +107,7 @@ export const ClientDashboardModal = ({
       loadBoletos();
       loadTimelineEvents();
       loadLastUpdatedBy();
+      loadCompletedTimelines();
     }
   }, [isOpen, client.id, client.organization_id]);
 
@@ -233,6 +244,24 @@ export const ClientDashboardModal = ({
     } catch (error) {
       console.error('Erro ao carregar informações de atualização:', error);
       setLastUpdatedBy('Sistema');
+    }
+  };
+
+  const loadCompletedTimelines = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_timelines')
+        .select('id, completed_at, completion_notes, status, start_date')
+        .eq('client_name', client.client_name)
+        .eq('organization_id', client.organization_id)
+        .in('status', ['completed', 'archived'])
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+      setCompletedTimelines(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar timelines concluídas:', error);
+      setCompletedTimelines([]);
     }
   };
 
@@ -655,6 +684,71 @@ export const ClientDashboardModal = ({
 
             <Separator />
 
+            {/* Completed Timelines History Section */}
+            {completedTimelines.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-yellow-400 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  📜 Histórico de Timelines ({completedTimelines.length})
+                </h3>
+
+                <div className="space-y-3">
+                  {completedTimelines.map((timeline) => (
+                    <Collapsible key={timeline.id} className="border border-border rounded-lg">
+                      <div className="p-4 bg-card/50">
+                        <CollapsibleTrigger className="w-full">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Badge className="bg-green-500 text-white">
+                                {timeline.status === 'completed' ? 'Concluída' : 'Arquivada'}
+                              </Badge>
+                              <span className="text-sm font-medium">
+                                Concluída em {new Date(timeline.completed_at).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              Iniciada em {new Date(timeline.start_date).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        </CollapsibleTrigger>
+
+                        <CollapsibleContent className="mt-3 pt-3 border-t border-border">
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Notas de Conclusão:</Label>
+                              <p className="text-sm mt-1 text-foreground">
+                                {timeline.completion_notes || 'Sem notas'}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedTimeline({
+                                  id: timeline.id,
+                                  client_name: client.client_name,
+                                  client_id: client.client_id,
+                                  start_date: timeline.start_date,
+                                  organization_id: client.organization_id,
+                                  is_active: false,
+                                });
+                                setShowTimelineModal(true);
+                              }}
+                              className="w-full"
+                            >
+                              Ver Timeline Completa
+                            </Button>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
             {/* Timeline Events Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-blue-400 flex items-center gap-2">
@@ -901,6 +995,18 @@ export const ClientDashboardModal = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Timeline Modal for History */}
+      {showTimelineModal && selectedTimeline && (
+        <ClientTimelineDialog
+          client={selectedTimeline}
+          isOpen={showTimelineModal}
+          onClose={() => {
+            setShowTimelineModal(false);
+            setSelectedTimeline(null);
+          }}
+        />
+      )}
     </motion.div>
   );
 };

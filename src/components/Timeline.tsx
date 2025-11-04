@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, CheckCircle2, Minus } from 'lucide-react';
+import { User, CheckCircle2, Minus, Flag } from 'lucide-react';
 import { formatEventDate, toISODate } from '@/lib/date-utils';
 import { EventModal } from './EventModal';
 import { ClientInfoModal } from './ClientInfoModal';
+import { CompleteTimelineDialog } from './CompleteTimelineDialog';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { TagSelector } from './TagSelector';
@@ -47,7 +48,7 @@ interface TimelineProps {
   addNewLine?: () => void;
   deleteLine?: (lineId: string) => void;
   updateClientInfo: (info: ClientInfo) => void;
-  onComplete?: () => void;
+  onComplete?: (notes: string, createNew: boolean) => void;
   readOnly?: boolean;
 }
 
@@ -63,6 +64,7 @@ export const Timeline = ({
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
   const [showAllDescriptions, setShowAllDescriptions] = useState(true);
   const [isVertical, setIsVertical] = useState(true);
@@ -375,13 +377,14 @@ export const Timeline = ({
         {/* Lado direito: Botão Finalizar */}
         {!readOnly && onComplete && (
           <motion.button
-            onClick={onComplete}
-            className="p-2 bg-green-500/10 text-green-500 rounded-lg transition-all hover:bg-green-500/20"
+            onClick={() => setShowCompleteDialog(true)}
+            className="px-3 py-2 bg-green-500/10 text-green-500 rounded-lg transition-all hover:bg-green-500/20 flex items-center gap-2 font-semibold text-sm"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            title="Finalizar cobrança"
+            title="Finalizar timeline"
           >
-            <CheckCircle2 size={18} />
+            <Flag size={18} />
+            Finalizar Timeline
           </motion.button>
         )}
       </motion.div>
@@ -712,6 +715,21 @@ export const Timeline = ({
           />
         )}
       </AnimatePresence>
+
+      {/* Complete Timeline Dialog */}
+      {showCompleteDialog && (
+        <CompleteTimelineDialog
+          isOpen={showCompleteDialog}
+          onClose={() => setShowCompleteDialog(false)}
+          onConfirm={(notes, createNew) => {
+            if (onComplete) {
+              onComplete(notes, createNew);
+            }
+            setShowCompleteDialog(false);
+          }}
+          clientName={clientInfo.name}
+        />
+      )}
     </div>
   );
 };

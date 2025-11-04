@@ -115,6 +115,7 @@ const Clients = () => {
           )
         `)
         .eq('organization_id', organizationId)
+        .eq('is_active', true)
         .order('updated_at', { ascending: true, nullsFirst: false });
 
       if (error) throw error;

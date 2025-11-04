@@ -324,6 +324,53 @@ export const ClientTimelineDialog = ({
             });
           }
         }}
+        onComplete={async (notes, createNew) => {
+          try {
+            // Obter user atual
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            // Atualizar timeline atual para completed
+            await supabase
+              .from('client_timelines')
+              .update({
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                completion_notes: notes,
+                is_active: false,
+              })
+              .eq('id', client.id);
+
+            // Se criar nova timeline
+            if (createNew) {
+              await supabase
+                .from('client_timelines')
+                .insert({
+                  client_name: client.client_name,
+                  client_id: client.client_id,
+                  organization_id: client.organization_id,
+                  start_date: new Date().toISOString().split('T')[0],
+                  status: 'active',
+                  is_active: true,
+                  user_id: user?.id,
+                });
+            }
+
+            toast({
+              title: 'Timeline finalizada',
+              description: createNew 
+                ? 'Uma nova timeline foi criada para este cliente.'
+                : 'Timeline marcada como concluída.',
+            });
+
+            onClose(); // Fecha o modal e recarrega dados
+          } catch (error: any) {
+            toast({
+              title: 'Erro ao finalizar',
+              description: error.message,
+              variant: 'destructive',
+            });
+          }
+        }}
         readOnly={false}
       />
             </div>
