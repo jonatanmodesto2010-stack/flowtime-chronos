@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -441,12 +442,24 @@ export const ClientDashboardModal = ({
 
         {/* Content */}
         <ScrollArea className="flex-1 p-6">
-          <div className="space-y-6">
-            {/* Basic Info Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-green-400 flex items-center gap-2">
+          <Tabs defaultValue="basics" className="w-full">
+            {/* Lista de Abas */}
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="basics">
                 📊 Informações Básicas
-              </h3>
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                📜 Histórico ({completedTimelines.length})
+              </TabsTrigger>
+            </TabsList>
+
+            {/* ABA 1: Informações Básicas */}
+            <TabsContent value="basics" className="space-y-6">
+              {/* Basic Info Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-green-400 flex items-center gap-2">
+                  📊 Informações Básicas
+                </h3>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -684,71 +697,6 @@ export const ClientDashboardModal = ({
 
             <Separator />
 
-            {/* Completed Timelines History Section */}
-            {completedTimelines.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-yellow-400 flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  📜 Histórico de Timelines ({completedTimelines.length})
-                </h3>
-
-                <div className="space-y-3">
-                  {completedTimelines.map((timeline) => (
-                    <Collapsible key={timeline.id} className="border border-border rounded-lg">
-                      <div className="p-4 bg-card/50">
-                        <CollapsibleTrigger className="w-full">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Badge className="bg-green-500 text-white">
-                                {timeline.status === 'completed' ? 'Concluída' : 'Arquivada'}
-                              </Badge>
-                              <span className="text-sm font-medium">
-                                Concluída em {new Date(timeline.completed_at).toLocaleDateString('pt-BR')}
-                              </span>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              Iniciada em {new Date(timeline.start_date).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                        </CollapsibleTrigger>
-
-                        <CollapsibleContent className="mt-3 pt-3 border-t border-border">
-                          <div className="space-y-3">
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Notas de Conclusão:</Label>
-                              <p className="text-sm mt-1 text-foreground">
-                                {timeline.completion_notes || 'Sem notas'}
-                              </p>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedTimeline({
-                                  id: timeline.id,
-                                  client_name: client.client_name,
-                                  client_id: client.client_id,
-                                  start_date: timeline.start_date,
-                                  organization_id: client.organization_id,
-                                  is_active: false,
-                                });
-                                setShowTimelineModal(true);
-                              }}
-                              className="w-full"
-                            >
-                              Ver Timeline Completa
-                            </Button>
-                          </div>
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Separator />
-
             {/* Timeline Events Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-blue-400 flex items-center gap-2">
@@ -894,8 +842,83 @@ export const ClientDashboardModal = ({
                 </div>
               </div>
             )}
+            </TabsContent>
 
-          </div>
+            {/* ABA 2: Histórico */}
+            <TabsContent value="history" className="space-y-6">
+              {completedTimelines.length > 0 ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-yellow-400 flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    📜 Histórico de Timelines Finalizadas
+                  </h3>
+
+                  <div className="space-y-3">
+                    {completedTimelines.map((timeline) => (
+                      <Collapsible key={timeline.id} className="border border-border rounded-lg">
+                        <div className="p-4 bg-card/50">
+                          <CollapsibleTrigger className="w-full">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Badge className="bg-green-500 text-white">
+                                  {timeline.status === 'completed' ? 'Concluída' : 'Arquivada'}
+                                </Badge>
+                                <span className="text-sm font-medium">
+                                  Concluída em {new Date(timeline.completed_at).toLocaleDateString('pt-BR')}
+                                </span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                Iniciada em {new Date(timeline.start_date).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          </CollapsibleTrigger>
+
+                          <CollapsibleContent className="mt-3 pt-3 border-t border-border">
+                            <div className="space-y-3">
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Notas de Conclusão:</Label>
+                                <p className="text-sm mt-1 text-foreground">
+                                  {timeline.completion_notes || 'Sem notas'}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedTimeline({
+                                    id: timeline.id,
+                                    client_name: client.client_name,
+                                    client_id: client.client_id,
+                                    start_date: timeline.start_date,
+                                    organization_id: client.organization_id,
+                                    is_active: false,
+                                  });
+                                  setShowTimelineModal(true);
+                                }}
+                                className="w-full"
+                              >
+                                Ver Timeline Completa
+                              </Button>
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-muted-foreground text-lg font-medium">
+                    Nenhuma timeline finalizada encontrada.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Quando você finalizar uma timeline, ela aparecerá aqui.
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </ScrollArea>
 
         {/* Footer */}

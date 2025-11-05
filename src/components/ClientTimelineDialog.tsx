@@ -325,12 +325,20 @@ export const ClientTimelineDialog = ({
           }
         }}
         onComplete={async (notes, createNew) => {
+          console.log('[ClientTimelineDialog] Iniciando finalização:', { 
+            notes, 
+            createNew, 
+            clientId: client.id,
+            clientName: client.client_name 
+          });
+          
           try {
             // Obter user atual
             const { data: { user } } = await supabase.auth.getUser();
+            console.log('[ClientTimelineDialog] User obtido:', user?.id);
             
             // Atualizar timeline atual para completed
-            await supabase
+            const { error: updateError } = await supabase
               .from('client_timelines')
               .update({
                 status: 'completed',
@@ -340,9 +348,18 @@ export const ClientTimelineDialog = ({
               })
               .eq('id', client.id);
 
+            if (updateError) {
+              console.error('[ClientTimelineDialog] Erro ao atualizar timeline:', updateError);
+              throw updateError;
+            }
+            
+            console.log('[ClientTimelineDialog] Timeline atualizada com sucesso');
+
             // Se criar nova timeline
             if (createNew) {
-              await supabase
+              console.log('[ClientTimelineDialog] Criando nova timeline...');
+              
+              const { error: insertError } = await supabase
                 .from('client_timelines')
                 .insert({
                   client_name: client.client_name,
@@ -353,6 +370,13 @@ export const ClientTimelineDialog = ({
                   is_active: true,
                   user_id: user?.id,
                 });
+
+              if (insertError) {
+                console.error('[ClientTimelineDialog] Erro ao criar nova timeline:', insertError);
+                throw insertError;
+              }
+              
+              console.log('[ClientTimelineDialog] Nova timeline criada com sucesso');
             }
 
             toast({
@@ -362,11 +386,13 @@ export const ClientTimelineDialog = ({
                 : 'Timeline marcada como concluída.',
             });
 
+            console.log('[ClientTimelineDialog] Finalizando e fechando modal');
             onClose(); // Fecha o modal e recarrega dados
           } catch (error: any) {
+            console.error('[ClientTimelineDialog] Erro completo:', error);
             toast({
               title: 'Erro ao finalizar',
-              description: error.message,
+              description: error.message || 'Erro desconhecido ao finalizar timeline',
               variant: 'destructive',
             });
           }

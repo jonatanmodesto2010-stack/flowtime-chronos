@@ -8,6 +8,7 @@ import { CompleteTimelineDialog } from './CompleteTimelineDialog';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { TagSelector } from './TagSelector';
+import { useToast } from '@/hooks/use-toast';
 
 interface Event {
   id: string;
@@ -68,6 +69,7 @@ export const Timeline = ({
   const [timelineTags, setTimelineTags] = useState<Array<{id: string, name: string, color: string}>>([]);
   const [showAllDescriptions, setShowAllDescriptions] = useState(true);
   const [isVertical, setIsVertical] = useState(true);
+  const { toast } = useToast();
   
   // Constantes de layout da timeline vertical
   const VERTICAL_EVENT_SPACING = 80; // pixels entre eventos
@@ -375,18 +377,30 @@ export const Timeline = ({
         </div>
         
         {/* Lado direito: Botão Finalizar */}
-        {!readOnly && onComplete && (
-          <motion.button
-            onClick={() => setShowCompleteDialog(true)}
-            className="px-3 py-2 bg-green-500/10 text-green-500 rounded-lg transition-all hover:bg-green-500/20 flex items-center gap-2 font-semibold text-sm"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="Finalizar timeline"
-          >
-            <Flag size={18} />
-            Finalizar Timeline
-          </motion.button>
-        )}
+          {!readOnly && onComplete && (
+            <motion.button
+              onClick={() => {
+                // Validar se há pelo menos 1 evento
+                const totalEvents = lines.reduce((sum, line) => sum + (line.events?.length || 0), 0);
+                if (totalEvents === 0) {
+                  toast({
+                    title: 'Timeline vazia',
+                    description: 'Adicione pelo menos um evento antes de finalizar a timeline.',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+                setShowCompleteDialog(true);
+              }}
+              className="px-3 py-2 bg-green-500/10 text-green-500 rounded-lg transition-all hover:bg-green-500/20 flex items-center gap-2 font-semibold text-sm"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Finalizar timeline"
+            >
+              <Flag size={18} />
+              Finalizar Timeline
+            </motion.button>
+          )}
       </motion.div>
 
       <div className="space-y-8">
