@@ -407,6 +407,11 @@ export const Timeline = ({
                 console.log('[Timeline] ✅ Abrindo modal de confirmação');
                 setShowCompleteDialog(true);
                 console.log('[Timeline] ✅ showCompleteDialog definido como true');
+                
+                // Verificar estado após 100ms
+                setTimeout(() => {
+                  console.log('[Timeline] 🔍 Verificando estado após 100ms');
+                }, 100);
               }}
               className="px-3 py-2 bg-green-500/10 text-green-500 rounded-lg transition-all hover:bg-green-500/20 flex items-center gap-2 font-semibold text-sm"
               whileHover={{ scale: 1.05 }}

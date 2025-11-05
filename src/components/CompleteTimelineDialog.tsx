@@ -33,6 +33,20 @@ export const CompleteTimelineDialog = ({
   useEffect(() => {
     if (isOpen) {
       console.log('[CompleteTimelineDialog] 📂 Modal aberto para cliente:', clientName);
+      console.log('[CompleteTimelineDialog] 🔍 Dialog deve estar renderizado agora');
+      
+      // Verificar se o Dialog está no DOM
+      setTimeout(() => {
+        const dialogElement = document.querySelector('[role="dialog"]');
+        console.log('[CompleteTimelineDialog] 🔍 Dialog encontrado no DOM:', !!dialogElement);
+        if (dialogElement) {
+          const styles = window.getComputedStyle(dialogElement);
+          console.log('[CompleteTimelineDialog] 🎨 z-index:', styles.zIndex);
+          console.log('[CompleteTimelineDialog] 🎨 display:', styles.display);
+          console.log('[CompleteTimelineDialog] 🎨 opacity:', styles.opacity);
+          console.log('[CompleteTimelineDialog] 🎨 visibility:', styles.visibility);
+        }
+      }, 100);
     }
   }, [isOpen, clientName]);
 
@@ -60,8 +74,8 @@ export const CompleteTimelineDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={onClose} modal={true}>
+      <DialogContent className="sm:max-w-md z-[9999]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-green-500" />
