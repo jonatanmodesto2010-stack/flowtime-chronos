@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,12 @@ export const CompleteTimelineDialog = ({
   const [notes, setNotes] = useState('');
   const [createNew, setCreateNew] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      console.log('[CompleteTimelineDialog] 📂 Modal aberto para cliente:', clientName);
+    }
+  }, [isOpen, clientName]);
 
   const handleConfirm = async () => {
     if (!notes.trim() || notes.trim().length < 10) return;

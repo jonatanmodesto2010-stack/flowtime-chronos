@@ -380,9 +380,22 @@ export const Timeline = ({
           {!readOnly && onComplete && (
             <motion.button
               onClick={() => {
+                console.log('[Timeline] 🚀 Botão Finalizar clicado');
+                console.log('[Timeline] 📍 readOnly:', readOnly);
+                console.log('[Timeline] 📍 onComplete definido:', !!onComplete);
+                console.log('[Timeline] 📍 Linhas:', lines.length);
+                
                 // Validar se há pelo menos 1 evento
-                const totalEvents = lines.reduce((sum, line) => sum + (line.events?.length || 0), 0);
+                const totalEvents = lines.reduce((sum, line) => {
+                  const count = line.events?.length || 0;
+                  console.log(`[Timeline] 📊 Linha ${line.id}: ${count} eventos`);
+                  return sum + count;
+                }, 0);
+                
+                console.log('[Timeline] 📊 Total de eventos:', totalEvents);
+                
                 if (totalEvents === 0) {
+                  console.log('[Timeline] ❌ Bloqueado: timeline sem eventos');
                   toast({
                     title: 'Timeline vazia',
                     description: 'Adicione pelo menos um evento antes de finalizar a timeline.',
@@ -390,7 +403,10 @@ export const Timeline = ({
                   });
                   return;
                 }
+                
+                console.log('[Timeline] ✅ Abrindo modal de confirmação');
                 setShowCompleteDialog(true);
+                console.log('[Timeline] ✅ showCompleteDialog definido como true');
               }}
               className="px-3 py-2 bg-green-500/10 text-green-500 rounded-lg transition-all hover:bg-green-500/20 flex items-center gap-2 font-semibold text-sm"
               whileHover={{ scale: 1.05 }}
