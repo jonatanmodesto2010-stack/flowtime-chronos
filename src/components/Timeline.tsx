@@ -49,7 +49,7 @@ interface TimelineProps {
   addNewLine?: () => void;
   deleteLine?: (lineId: string) => void;
   updateClientInfo: (info: ClientInfo) => void;
-  onComplete?: (notes: string, createNew: boolean) => void;
+  onComplete?: (notes: string, createNew: boolean) => Promise<void>;
   readOnly?: boolean;
 }
 
@@ -735,9 +735,9 @@ export const Timeline = ({
         <CompleteTimelineDialog
           isOpen={showCompleteDialog}
           onClose={() => setShowCompleteDialog(false)}
-          onConfirm={(notes, createNew) => {
+          onConfirm={async (notes, createNew) => {
             if (onComplete) {
-              onComplete(notes, createNew);
+              await onComplete(notes, createNew);
             }
             setShowCompleteDialog(false);
           }}
