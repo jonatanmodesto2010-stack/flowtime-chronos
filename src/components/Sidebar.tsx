@@ -100,35 +100,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               </motion.button>
             ))}
           </div>
-
-          {/* Quick Filters Section */}
-          {!isCollapsed && (
-            <motion.div 
-              className="mt-8 pt-8 border-t border-border"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-3 px-4">
-                Filtros Rápidos
-              </h3>
-              <div className="space-y-1">
-                {['⚫ Criados', '✅ Resolvidos', '❌ Sem Resposta'].map((filter, index) => (
-                  <motion.button
-                    key={filter}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + index * 0.1 }}
-                    whileHover={{ scale: 1.02, x: 4 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
-                  >
-                    {filter}
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          )}
         </nav>
 
         {/* Footer Info */}
