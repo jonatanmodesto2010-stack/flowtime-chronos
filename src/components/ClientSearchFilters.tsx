@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganizationFilters, FilterValues } from '@/hooks/useOrganizationFilters';
+import { useOrganizationIcons } from '@/hooks/useOrganizationIcons';
 
 interface Tag {
   id: string;
@@ -24,6 +25,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
   const { filters, updateFilters, isLoading } = useOrganizationFilters(pageName);
   const [tags, setTags] = useState<Tag[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const { icons } = useOrganizationIcons();
 
   useEffect(() => {
     if (organizationId) {
@@ -103,7 +105,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
     filters.eventCountSort !== 'none',
   ].filter(Boolean).length;
 
-  const availableIcons = ['💬', '📅', '📄', '📞', '✅', '🤝', '⚠️', '🧰'];
+  const availableIcons = icons.map(i => i.icon);
 
   return (
     <div className="space-y-4 mb-6">

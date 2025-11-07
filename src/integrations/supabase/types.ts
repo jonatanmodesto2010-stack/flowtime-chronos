@@ -260,6 +260,41 @@ export type Database = {
           },
         ]
       }
+      organization_icons: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          icon: string
+          id: string
+          label: string | null
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          icon: string
+          id?: string
+          label?: string | null
+          organization_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          icon?: string
+          id?: string
+          label?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_icons_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null

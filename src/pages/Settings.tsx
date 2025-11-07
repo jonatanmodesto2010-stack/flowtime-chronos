@@ -9,6 +9,7 @@ import { UserProfile } from '@/components/settings/UserProfile';
 import { TagsManagement } from '@/components/settings/TagsManagement';
 import { HistorySettings } from '@/components/settings/HistorySettings';
 import { ColorThemeSettings } from '@/components/settings/ColorThemeSettings';
+import { IconsManagement } from '@/components/settings/IconsManagement';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -69,6 +70,7 @@ const Settings = () => {
                   <TabsTrigger value="general">Geral</TabsTrigger>
                   <TabsTrigger value="colors">Paleta de Cores</TabsTrigger>
                   <TabsTrigger value="tags">Tags</TabsTrigger>
+                  <TabsTrigger value="icons">Ícones</TabsTrigger>
                 </>
               )}
             <TabsTrigger value="history">Histórico</TabsTrigger>
@@ -94,6 +96,9 @@ const Settings = () => {
                 </TabsContent>
                 <TabsContent value="tags">
                   <TagsManagement />
+                </TabsContent>
+                <TabsContent value="icons">
+                  <IconsManagement />
                 </TabsContent>
               </>
             )}
