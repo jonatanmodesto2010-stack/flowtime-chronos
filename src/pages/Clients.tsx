@@ -24,6 +24,7 @@ interface Client {
   boleto_value?: string | null;
   due_date?: string | null;
   is_active: boolean;
+  status: string;
   created_at: string;
   updated_at?: string;
   organization_id?: string;
@@ -73,6 +74,10 @@ const Clients = () => {
     const displayName = userName || 'Usuário desconhecido';
     
     return `${displayName} - ${formattedDate}`;
+  };
+
+  const isCompleted = (status: string) => {
+    return status === 'completed' || status === 'archived';
   };
 
   useEffect(() => {
@@ -601,13 +606,19 @@ const Clients = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="w-full rounded-lg p-4 flex items-center gap-4 bg-card hover:bg-card/80 transition-colors"
+                    className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${
+                      isCompleted(client.status)
+                        ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale'
+                        : 'bg-card hover:bg-card/80'
+                    }`}
                   >
                     <div 
                       className="flex-1 w-full cursor-pointer" 
                       onClick={() => handleOpenModal(client)}
                     >
-                      <h3 className="text-card-foreground font-bold text-xl uppercase tracking-wide">
+                      <h3 className={`font-bold text-xl uppercase tracking-wide ${
+                        isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'
+                      }`}>
                         {client.client_name}
                       </h3>
                       
@@ -625,17 +636,23 @@ const Clients = () => {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2"> {/* Container para os botões */}
-                      {!client.is_active && (
+                    <div className="flex items-center gap-2">
+                      {/* Badge dinâmico baseado no status */}
+                      {isCompleted(client.status) ? (
+                        <div className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded flex-shrink-0 font-semibold">
+                          FINALIZADO
+                        </div>
+                      ) : !client.is_active && (
                         <div className="px-2 py-1 bg-red-500/20 text-red-500 text-xs rounded flex-shrink-0">
                           Inativo
                         </div>
                       )}
+                      
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={(e) => {
-                          e.stopPropagation(); // Evita que o clique no botão abra o modal de detalhes
+                          e.stopPropagation();
                           handleOpenTimelineDialog(client);
                         }}
                         className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300"
