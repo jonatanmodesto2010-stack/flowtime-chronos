@@ -522,10 +522,7 @@ export type Database = {
           user_role_id: string
         }[]
       }
-      get_user_organization: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_user_organization: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -533,10 +530,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_super_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       user_in_organization: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
