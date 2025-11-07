@@ -78,7 +78,14 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
   };
 
   const onSubmit = async (data: AddUserFormData) => {
+    console.log('[AddUserDialog] 🚀 Iniciando criação de usuário');
+    console.log('[AddUserDialog] 📧 Email:', data.email);
+    console.log('[AddUserDialog] 👤 Nome:', data.fullName);
+    console.log('[AddUserDialog] 🎭 Role:', data.role);
+    console.log('[AddUserDialog] 🏢 Organization ID:', organizationId);
+    
     if (!organizationId) {
+      console.log('[AddUserDialog] ❌ Organization ID não encontrado');
       toast({
         title: 'Erro',
         description: 'Organização não encontrada.',
@@ -89,12 +96,8 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
 
     setIsLoading(true);
     try {
-      // Verificar se usuário já existe
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id || '');
-
+      console.log('[AddUserDialog] 📝 Chamando supabase.auth.signUp...');
+      
       // Criar usuário com metadados indicando que foi criado por admin
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
@@ -110,7 +113,10 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
         },
       });
 
+      console.log('[AddUserDialog] 📊 Resposta do signUp:', { authData, authError });
+
       if (authError) {
+        console.log('[AddUserDialog] ❌ Erro no signUp:', authError);
         // Tratar erro de email já cadastrado
         if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
           throw new Error('Este email já está cadastrado. Use outro email.');
@@ -118,15 +124,26 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
         throw authError;
       }
       
-      if (!authData.user) throw new Error('Falha ao criar usuário');
+      if (!authData.user) {
+        console.log('[AddUserDialog] ❌ authData.user é null/undefined');
+        throw new Error('Falha ao criar usuário');
+      }
+
+      console.log('[AddUserDialog] ✅ Usuário criado no auth:', authData.user.id);
+      console.log('[AddUserDialog] 🔍 Identidades:', authData.user.identities);
 
       // Se o usuário já existia (repeated signup), não continuar
       if (authData.user.identities && authData.user.identities.length === 0) {
+        console.log('[AddUserDialog] ❌ Usuário já existe (identities vazio)');
         throw new Error('Este email já está cadastrado. Use outro email.');
       }
 
+      console.log('[AddUserDialog] ⏳ Aguardando profile ser criado pelo trigger...');
+
       // Aguardar profile e role serem criados pelo trigger
       await waitForProfile(authData.user.id);
+
+      console.log('[AddUserDialog] ✅ Profile criado com sucesso!');
 
       toast({
         title: 'Usuário criado',
@@ -137,13 +154,16 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Error creating user:', error);
+      console.error('[AddUserDialog] ❌ ERRO FINAL:', error);
+      console.error('[AddUserDialog] ❌ Mensagem:', error.message);
+      console.error('[AddUserDialog] ❌ Stack:', error.stack);
       toast({
         title: 'Erro',
         description: error.message || 'Não foi possível criar o usuário.',
         variant: 'destructive',
       });
     } finally {
+      console.log('[AddUserDialog] 🏁 Finalizando (isLoading = false)');
       setIsLoading(false);
     }
   };
@@ -178,11 +198,20 @@ export const AddUserDialog = ({ isOpen, onClose, onSuccess, organizationId }: Ad
               id="password"
               type="password"
               {...register('password')}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
             />
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-medium">A senha deve conter:</p>
+              <ul className="list-disc list-inside pl-2 space-y-0.5">
+                <li>Mínimo 8 caracteres</li>
+                <li>Pelo menos uma letra maiúscula (A-Z)</li>
+                <li>Pelo menos uma letra minúscula (a-z)</li>
+                <li>Pelo menos um número (0-9)</li>
+              </ul>
+            </div>
           </div>
 
           <div className="space-y-2">
