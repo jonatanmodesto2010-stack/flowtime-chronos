@@ -93,6 +93,14 @@ export const ClientDashboardModal = ({
   }>>([]);
   const [showTimelineModal, setShowTimelineModal] = useState(false);
   const [selectedTimeline, setSelectedTimeline] = useState<any>(null);
+  const [creatingNewTimeline, setCreatingNewTimeline] = useState(false);
+  const [newTimelineData, setNewTimelineData] = useState({
+    client_name: client.client_name,
+    start_date: new Date().toISOString().split('T')[0],
+    boleto_value: '',
+    due_date: '',
+    status: 'active'
+  });
   const { toast } = useToast();
 
   const handleOpenCalendar = () => {
@@ -263,6 +271,61 @@ export const ClientDashboardModal = ({
     } catch (error) {
       console.error('Erro ao carregar timelines concluídas:', error);
       setCompletedTimelines([]);
+    }
+  };
+
+  const handleCreateNewTimeline = async () => {
+    if (!client.organization_id) return;
+    
+    try {
+      setCreatingNewTimeline(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data: newTimeline, error } = await supabase
+        .from('client_timelines')
+        .insert({
+          client_name: client.client_name,
+          organization_id: client.organization_id,
+          start_date: newTimelineData.start_date,
+          boleto_value: newTimelineData.boleto_value ? parseFloat(newTimelineData.boleto_value) : null,
+          due_date: newTimelineData.due_date || null,
+          status: 'active',
+          is_active: true,
+          user_id: user?.id
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Timeline criada com sucesso!',
+        description: 'Uma nova timeline foi criada para este cliente.',
+      });
+      
+      // Recarregar dados
+      await loadCompletedTimelines();
+      await loadTimelineEvents();
+      
+      // Resetar formulário
+      setNewTimelineData({
+        client_name: client.client_name,
+        start_date: new Date().toISOString().split('T')[0],
+        boleto_value: '',
+        due_date: '',
+        status: 'active'
+      });
+      
+    } catch (error: any) {
+      console.error('Erro ao criar timeline:', error);
+      toast({
+        title: 'Erro ao criar timeline',
+        description: error.message || 'Ocorreu um erro ao criar a nova timeline.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCreatingNewTimeline(false);
     }
   };
 
@@ -444,9 +507,12 @@ export const ClientDashboardModal = ({
         <ScrollArea className="flex-1 p-6">
           <Tabs defaultValue="basics" className="w-full">
             {/* Lista de Abas */}
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="basics">
                 📊 Informações Básicas
+              </TabsTrigger>
+              <TabsTrigger value="timeline">
+                📋 TimeLine
               </TabsTrigger>
               <TabsTrigger value="history">
                 📜 Histórico ({completedTimelines.length})
@@ -844,7 +910,173 @@ export const ClientDashboardModal = ({
             )}
             </TabsContent>
 
-            {/* ABA 2: Histórico */}
+            {/* ABA 2: TimeLine */}
+            <TabsContent value="timeline" className="space-y-6">
+              {/* Timeline Ativa */}
+              {client.is_active ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-blue-400 flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      📋 Timeline Ativa
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.location.href = `/visual-timeline?id=${client.id}`}
+                      className="border-blue-500/30 hover:bg-blue-500/10"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Visualizar Timeline Completa
+                    </Button>
+                  </div>
+
+                  {/* Informações da Timeline Ativa */}
+                  <div className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-lg">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Data de Início</p>
+                        <p className="text-lg font-semibold">{normalizeDisplayDate(client.start_date)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Status</p>
+                        <Badge className="bg-blue-500 text-white">
+                          ✅ ATIVA
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Total de Eventos</p>
+                        <p className="text-lg font-semibold">{timelineEvents.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Boletos Pendentes</p>
+                        <p className="text-lg font-semibold text-orange-500">
+                          {boletos.filter(b => b.status === 'pendente' || b.status === 'atrasado').length}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Separator className="my-4" />
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Ações Rápidas</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.location.href = `/visual-timeline?id=${client.id}`}
+                          className="flex-1"
+                        >
+                          📊 Gerenciar Eventos
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCalendar(true)}
+                          className="flex-1"
+                        >
+                          📅 Ver no Calendário
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Aviso sobre finalização */}
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <p className="text-sm text-yellow-500 flex items-center gap-2">
+                      <span>⚠️</span>
+                      <span>Para criar uma nova timeline, finalize a timeline atual nas "Informações Básicas"</span>
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Timeline Finalizada - Criar Nova */
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-green-400 flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    🆕 Criar Nova Timeline
+                  </h3>
+
+                  <div className="p-6 bg-card/50 border border-border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-6">
+                      A timeline anterior foi finalizada. Crie uma nova timeline para continuar o acompanhamento deste cliente.
+                    </p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="new_timeline_start">Data de Início *</Label>
+                        <Input
+                          id="new_timeline_start"
+                          type="date"
+                          value={newTimelineData.start_date}
+                          onChange={(e) => setNewTimelineData({...newTimelineData, start_date: e.target.value})}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="new_timeline_value">Valor do Boleto (R$)</Label>
+                          <Input
+                            id="new_timeline_value"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={newTimelineData.boleto_value}
+                            onChange={(e) => setNewTimelineData({...newTimelineData, boleto_value: e.target.value})}
+                            placeholder="0.00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new_timeline_due">Vencimento</Label>
+                          <Input
+                            id="new_timeline_due"
+                            type="date"
+                            value={newTimelineData.due_date}
+                            onChange={(e) => setNewTimelineData({...newTimelineData, due_date: e.target.value})}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <Button
+                        onClick={handleCreateNewTimeline}
+                        disabled={creatingNewTimeline || !newTimelineData.start_date}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white"
+                      >
+                        {creatingNewTimeline ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Criando...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Criar Nova Timeline
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Preview de timelines anteriores */}
+                  {completedTimelines.length > 0 && (
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium mb-2">📜 Timelines Anteriores</p>
+                      <p className="text-xs text-muted-foreground">
+                        Este cliente possui {completedTimelines.length} timeline(s) finalizada(s). 
+                        Acesse a aba "Histórico" para visualizar.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ABA 3: Histórico */}
             <TabsContent value="history" className="space-y-6">
               {completedTimelines.length > 0 ? (
                 <div className="space-y-4">
