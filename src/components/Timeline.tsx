@@ -72,8 +72,8 @@ export const Timeline = ({
   const { toast } = useToast();
   
   // Constantes de layout da timeline vertical
-  const VERTICAL_EVENT_SPACING = 80; // pixels entre eventos
-  const VERTICAL_START_OFFSET = 60;   // offset inicial do topo
+  const VERTICAL_EVENT_SPACING = 120; // pixels entre eventos
+  const VERTICAL_START_OFFSET = 80;   // offset inicial do topo
   
   const toggleAllDescriptions = () => {
     setShowAllDescriptions(prev => !prev);
@@ -428,14 +428,14 @@ export const Timeline = ({
         {lines.map((line, lineIndex) => (
           <div 
             key={line.id} 
-            className="relative"
+            className="relative bg-gradient-to-br from-purple-900/20 via-purple-800/10 to-purple-900/20 rounded-2xl p-8"
           >
               
               <div className={isVertical ? "overflow-y-auto overflow-x-visible custom-scrollbar scroll-smooth min-h-[calc(100vh-250px)]" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
                 <div 
                   className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
                     isVertical 
-                      ? 'flex flex-col items-center py-8 px-12' 
+                      ? 'flex flex-col items-center py-12 px-16' 
                       : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
@@ -453,21 +453,21 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-      className={`absolute bg-foreground/30 z-0 transition-all ${
+      className={`absolute bg-purple-500/30 z-0 transition-all shadow-lg shadow-purple-500/20 rounded-full ${
         isVertical
-          ? 'left-1/2 w-1 h-[calc(100%-28px)] top-7 -translate-x-1/2'
-          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+          ? 'left-1/2 w-2 h-[calc(100%-28px)] top-7 -translate-x-1/2'
+          : 'top-1/2 h-2 -translate-y-1/2 left-[1.5%] right-[1.5%]'
       } ${
-        !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
+        !readOnly ? 'cursor-pointer hover:bg-purple-500/50' : 'cursor-default'
       }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
     <div 
-      className={`absolute bg-foreground/30 z-0 ${
+      className={`absolute bg-purple-500/30 z-0 shadow-lg shadow-purple-500/20 rounded-full ${
         isVertical
-          ? 'left-1/2 w-1 h-[calc(100%-24px)] top-6 -translate-x-1/2'
-          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+          ? 'left-1/2 w-2 h-[calc(100%-24px)] top-6 -translate-x-1/2'
+          : 'top-1/2 h-2 -translate-y-1/2 left-[1.5%] right-[1.5%]'
       }`}
     />
                   )}
@@ -490,10 +490,10 @@ export const Timeline = ({
                         key={`segment-${event.id}-${nextEvent?.id}`}
                         onClick={() => handleAddEvent(line.id)}
                         disabled={readOnly}
-        className={`absolute ${segmentColor} z-10 transition-all ${
+        className={`absolute ${segmentColor} z-10 transition-all shadow-lg rounded-full ${
           isVertical
-            ? 'left-1/2 w-1 -translate-x-1/2'
-            : 'top-1/2 h-1 -translate-y-1/2'
+            ? 'left-1/2 w-2 -translate-x-1/2'
+            : 'top-1/2 h-2 -translate-y-1/2'
         } ${
           !readOnly ? 'cursor-pointer' : 'cursor-default'
         } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
@@ -513,123 +513,107 @@ export const Timeline = ({
                   {(line.events || []).map((event, index) => {
                     const totalEvents = (line.events || []).length;
                     const position = VERTICAL_START_OFFSET + (index * VERTICAL_EVENT_SPACING);
+                    const isLeftSide = index % 2 === 0;
+                    
+                    // Cores baseadas no status
+                    const getStatusStyles = () => {
+                      switch(event.status) {
+                        case 'resolved':
+                          return {
+                            iconBg: 'bg-gradient-to-br from-green-400 to-green-600',
+                            cardBorder: 'border-green-500/50',
+                            cardBg: 'bg-green-500/5',
+                          };
+                        case 'no_response':
+                          return {
+                            iconBg: 'bg-gradient-to-br from-red-400 to-red-600',
+                            cardBorder: 'border-red-500/50',
+                            cardBg: 'bg-red-500/5',
+                          };
+                        default: // created
+                          return {
+                            iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600',
+                            cardBorder: 'border-orange-500/50',
+                            cardBg: 'bg-orange-500/5',
+                          };
+                      }
+                    };
+                    
+                    const statusStyles = getStatusStyles();
                     
                     return (
                       <motion.div
                         key={event.id}
                         layout
-                        className={`absolute z-10 text-center flex-shrink-0 ${
-                          isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'
+                        className={`absolute flex items-center gap-6 w-[calc(50%-60px)] ${
+                          isVertical 
+                            ? isLeftSide 
+                              ? 'left-0 flex-row-reverse' 
+                              : 'right-0 flex-row'
+                            : 'top-1/2 -translate-y-1/2'
                         }`}
                         style={isVertical 
                           ? { top: `${position}px` }
                           : { left: `${position}%`, transform: 'translateX(-50%)' }
                         }
-                        initial={{ opacity: 0, x: -80, scale: 0.3 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: -80, scale: 0.3 }}
+                        initial={{ opacity: 0, x: isLeftSide ? -50 : 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: isLeftSide ? -50 : 50 }}
                         transition={{ 
-                          duration: 1.2,
-                          delay: index * 0.15,
-                          type: "spring",
-                          stiffness: 120,
-                          damping: 18,
+                          duration: 0.4,
+                          delay: index * 0.1,
                           layout: {
-                            duration: 0.8,
-                            type: "spring",
-                            stiffness: 150,
-                            damping: 20
+                            duration: 0.3,
+                            type: "spring"
                           }
                         }}
                       >
             {isVertical ? (
               <>
-                {/* Botão de status - funcional (na linha) */}
-                <button
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
+                {/* Ícone circular grande na linha central */}
+                <motion.button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStatusToggle(e, line.id, event.id);
                   }}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    handleEventClick(event, line.id);
-                  }}
-                  title={`${event.icon} ${event.description} - Clique para mudar status, duplo clique para editar`}
+                  disabled={readOnly}
+                  className={`absolute ${
+                    isLeftSide ? 'right-[-48px]' : 'left-[-48px]'
+                  } w-16 h-16 ${statusStyles.iconBg} rounded-full flex items-center justify-center shadow-xl z-20 cursor-pointer border-4 border-background transition-all hover:scale-110`}
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.95 }}
+                  title={`${event.icon} - Clique para mudar status`}
                 >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={event.status}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {renderStatusIcon(event.status)}
-                    </motion.div>
-                  </AnimatePresence>
-                </button>
-
-                {/* Elementos ao redor do status */}
-                {event.status === 'no_response' ? (
-                  // Elementos à ESQUERDA do status: Descrição → Data → Ícone
-                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+30px)]">
-                    <div
-                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
-                    >
-                      {event.icon}
-                    </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
-                    </div>
-                    {showAllDescriptions && event.description && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                        </p>
-                      </motion.div>
+                  <span className="text-2xl">{renderStatusIcon(event.status)}</span>
+                </motion.button>
+                
+                {/* Card do evento */}
+                <motion.div
+                  onClick={() => !readOnly && handleEventClick(event, line.id)}
+                  className={`flex-1 p-5 rounded-2xl border-2 ${statusStyles.cardBorder} ${statusStyles.cardBg} backdrop-blur-sm cursor-pointer transition-all hover:shadow-2xl hover:scale-[1.02] ${
+                    !readOnly ? 'hover:border-opacity-100' : ''
+                  }`}
+                  whileHover={{ y: -4 }}
+                >
+                  {/* Data e hora no topo */}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3 pb-2 border-b border-border/30">
+                    <span className="flex items-center gap-1">
+                      📅 {event.date}
+                    </span>
+                    {event.time && (
+                      <span className="flex items-center gap-1">
+                        🕐 {event.time}
+                      </span>
                     )}
                   </div>
-                ) : (
-                  // Elementos à DIREITA do status: Ícone → Data → Descrição
-                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+30px)]">
-                    <div
-                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
-                    >
-                      {event.icon}
-                    </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
-                    </div>
-                    {showAllDescriptions && event.description && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                        </p>
-                      </motion.div>
-                    )}
-                  </div>
-                )}
+                  
+                  {/* Descrição */}
+                  {(showAllDescriptions || event.description) && (
+                    <p className="text-sm text-foreground/90 leading-relaxed">
+                      {event.description || 'Sem descrição'}
+                    </p>
+                  )}
+                </motion.div>
               </>
             ) : (
                       <>
