@@ -4,24 +4,30 @@ import { Calendar, Clock, MessageSquare, FileText, CheckCircle2, AlertCircle, Ph
 
 const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
   const getIcon = () => {
-    switch (event.icon) {
-      case 'calendar':
-        return Calendar;
-      case 'note':
-        return FileText;
-      case 'check':
-        return CheckCircle2;
-      case 'message':
-        return MessageSquare;
-      case 'alert':
-        return AlertCircle;
-      case 'phone':
-        return Phone;
-      case 'wrench':
-        return Wrench;
-      default:
-        return FileText;
+    // Se for emoji, renderizar diretamente
+    if (event.icon && event.icon.length <= 2 && /\p{Emoji}/u.test(event.icon)) {
+      return () => <span className="text-xl">{event.icon}</span>;
     }
+    
+    // Mapeamento para ícones Lucide (strings e emojis)
+    const iconMap = {
+      'calendar': Calendar,
+      '📅': Calendar,
+      'note': FileText,
+      '📝': FileText,
+      'check': CheckCircle2,
+      '✅': CheckCircle2,
+      'message': MessageSquare,
+      '💬': MessageSquare,
+      'alert': AlertCircle,
+      '⚠️': AlertCircle,
+      'phone': Phone,
+      '📞': Phone,
+      'wrench': Wrench,
+      '🔧': Wrench,
+    };
+    
+    return iconMap[event.icon] || FileText;
   };
 
   const getStatusColor = () => {
@@ -63,11 +69,15 @@ const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
       <div className="flex items-center gap-3 text-xs text-gray-400 mb-2">
         <div className="flex items-center gap-1">
           <Calendar className="h-3 w-3" />
-          <span>{new Date(event.date).toLocaleDateString('pt-BR')}</span>
+          <span>
+            {event.date && !isNaN(new Date(event.date).getTime())
+              ? new Date(event.date).toLocaleDateString('pt-BR')
+              : 'Data inválida'}
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          <span>{event.time}</span>
+          <span>{event.time || '--:--'}</span>
         </div>
       </div>
       <p className="text-gray-300 text-sm leading-snug break-words">

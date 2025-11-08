@@ -27,6 +27,21 @@ const VisualTimeline = () => {
     }
   }, [timelineId]);
 
+  // Função helper para processar datas do formato DD/MM para ISO
+  const parseEventDate = (dateStr) => {
+    if (!dateStr) return null;
+    
+    // Se já estiver no formato ISO (YYYY-MM-DD), usar diretamente
+    if (dateStr.includes('-')) return dateStr;
+    
+    // Se estiver no formato DD/MM, adicionar ano atual
+    const [day, month] = dateStr.split('/');
+    if (!day || !month) return null;
+    
+    const currentYear = new Date().getFullYear();
+    return `${currentYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
+
   const loadTimelineData = async () => {
     try {
       setLoading(true);
@@ -67,8 +82,8 @@ const VisualTimeline = () => {
           type: getEventType(event.icon),
           title: event.description?.substring(0, 30) + (event.description?.length > 30 ? '...' : ''),
           description: event.description || 'Sem descrição',
-          date: event.event_date,
-          time: event.event_time || '',
+          date: parseEventDate(event.event_date),
+          time: event.event_time || null,
           user: 'Sistema',
           status: event.status === 'completed' ? 'completed' : event.status === 'warning' ? 'warning' : 'info',
           icon: event.icon,
@@ -95,12 +110,12 @@ const VisualTimeline = () => {
 
   const getEventType = (icon) => {
     const iconMap = {
-      '📅': 'meeting',
+      '📅': 'calendar',
       '📝': 'note',
-      '✅': 'task',
+      '✅': 'check',
       '⚠️': 'alert',
-      '📞': 'call',
-      '🔧': 'maintenance',
+      '📞': 'phone',
+      '🔧': 'wrench',
       '💬': 'message',
     };
     return iconMap[icon] || 'note';
@@ -109,9 +124,13 @@ const VisualTimeline = () => {
   const getEventColor = (status) => {
     switch (status) {
       case 'completed':
+      case 'resolved':
         return 'green';
       case 'warning':
+      case 'no_response':
         return 'red';
+      case 'pending':
+      case 'created':
       default:
         return 'yellow';
     }
