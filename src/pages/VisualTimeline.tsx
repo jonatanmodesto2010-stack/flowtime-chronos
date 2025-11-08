@@ -1,33 +1,121 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, Clock, User, MessageSquare, FileText, CheckCircle2, AlertCircle, Info, Phone, Wrench, ArrowLeft } from 'lucide-react';
+import { Plus, Calendar, Clock, User, MessageSquare, FileText, CheckCircle2, AlertCircle, Info, Phone, Wrench, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TimelineItem from '@/components/TimelineItem';
 import AddEventDialog from '@/components/AddEventDialog';
 import EditEventDialog from '@/components/EditEventDialog';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const VisualTimeline = () => {
-  const [events, setEvents] = useState([
-    { id: 1, type: 'meeting', title: 'Reunião de Kickoff', description: 'Definição de escopo e objetivos.', date: '2024-01-15', time: '14:00', user: 'Maria Silva', status: 'completed', icon: 'calendar', color: 'green' },
-    { id: 2, type: 'note', title: 'Anotações da Reunião', description: 'Cliente solicitou novas funcionalidades.', date: '2024-01-15', time: '16:30', user: 'João Santos', status: 'info', icon: 'message', color: 'yellow' },
-    { id: 3, type: 'task', title: 'Desenvolvimento da UI', description: 'Criação dos mockups e protótipos.', date: '2024-01-18', time: '10:00', user: 'Ana Costa', status: 'completed', icon: 'check', color: 'green' },
-    { id: 4, type: 'message', title: 'Feedback do Cliente', description: 'Designs aprovados com pequenas alterações.', date: '2024-01-20', time: '11:45', user: 'Carlos Mendes', status: 'info', icon: 'message', color: 'yellow' },
-    { id: 5, type: 'alert', title: 'Prazo Importante', description: 'Entrega da v1 na próxima semana.', date: '2024-01-21', time: '09:00', user: 'Sistema', status: 'warning', icon: 'alert', color: 'red' },
-    { id: 6, type: 'task', title: 'Implementação do Backend', description: 'Configuração inicial do banco de dados.', date: '2024-01-22', time: '14:00', user: 'Pedro Lima', status: 'info', icon: 'check', color: 'green' },
-    { id: 7, type: 'meeting', title: 'Reunião de Alinhamento', description: 'Sincronização da equipe de desenvolvimento.', date: '2024-01-25', time: '10:30', user: 'Maria Silva', status: 'info', icon: 'calendar', color: 'yellow' },
-    { id: 8, type: 'alert', title: 'Atualização de Segurança', description: 'Patch de segurança aplicado ao servidor.', date: '2024-01-26', time: '18:00', user: 'Sistema', status: 'warning', icon: 'alert', color: 'red' },
-    { id: 9, type: 'note', title: 'Ideias para v2', description: 'Brainstorm de novas funcionalidades futuras.', date: '2024-01-28', time: '15:00', user: 'Ana Costa', status: 'info', icon: 'message', color: 'green' },
-    { id: 10, type: 'task', title: 'Testes de Integração', description: 'Verificação da comunicação entre frontend e backend.', date: '2024-01-29', time: '11:00', user: 'João Santos', status: 'info', icon: 'check', color: 'yellow' },
-    { id: 11, type: 'completed', title: 'Entrega da v1', description: 'Primeira versão do projeto entregue ao cliente.', date: '2024-01-30', time: '17:00', user: 'Carlos Mendes', status: 'completed', icon: 'check', color: 'green' },
-    { id: 12, type: 'call', title: 'Ligação para Cliente', description: 'Acompanhamento pós-venda e feedback.', date: '2024-02-01', time: '10:00', user: 'Mariana Souza', status: 'info', icon: 'phone', color: 'yellow' },
-    { id: 13, type: 'maintenance', title: 'Manutenção no Servidor', description: 'Aplicação de atualizações de rotina.', date: '2024-02-02', time: '22:00', user: 'Sistema', status: 'info', icon: 'wrench', color: 'red' },
-  ]);
+  const [searchParams] = useSearchParams();
+  const timelineId = searchParams.get('id');
 
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [clientInfo, setClientInfo] = useState(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    if (timelineId) {
+      loadTimelineData();
+    }
+  }, [timelineId]);
+
+  const loadTimelineData = async () => {
+    try {
+      setLoading(true);
+
+      // Carregar informações do cliente
+      const { data: clientData, error: clientError } = await supabase
+        .from('client_timelines')
+        .select('*')
+        .eq('id', timelineId)
+        .single();
+
+      if (clientError) throw clientError;
+      setClientInfo(clientData);
+
+      // Carregar linhas da timeline
+      const { data: linesData, error: linesError } = await supabase
+        .from('timeline_lines')
+        .select('id')
+        .eq('timeline_id', timelineId)
+        .order('position', { ascending: true });
+
+      if (linesError) throw linesError;
+
+      // Carregar eventos de todas as linhas
+      const allEvents = [];
+      for (const line of linesData) {
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('timeline_events')
+          .select('*')
+          .eq('line_id', line.id)
+          .order('event_order', { ascending: true });
+
+        if (eventsError) throw eventsError;
+
+        // Mapear eventos para o formato esperado pela UI
+        const mappedEvents = eventsData.map(event => ({
+          id: event.id,
+          type: getEventType(event.icon),
+          title: event.description?.substring(0, 30) + (event.description?.length > 30 ? '...' : ''),
+          description: event.description || 'Sem descrição',
+          date: event.event_date,
+          time: event.event_time || '',
+          user: 'Sistema',
+          status: event.status === 'completed' ? 'completed' : event.status === 'warning' ? 'warning' : 'info',
+          icon: event.icon,
+          color: getEventColor(event.status),
+          originalEvent: event
+        }));
+
+        allEvents.push(...mappedEvents);
+      }
+
+      setEvents(allEvents);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast({
+        title: "❌ Erro ao carregar eventos",
+        description: "Não foi possível carregar os eventos da timeline.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getEventType = (icon) => {
+    const iconMap = {
+      '📅': 'meeting',
+      '📝': 'note',
+      '✅': 'task',
+      '⚠️': 'alert',
+      '📞': 'call',
+      '🔧': 'maintenance',
+      '💬': 'message',
+    };
+    return iconMap[icon] || 'note';
+  };
+
+  const getEventColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'green';
+      case 'warning':
+        return 'red';
+      default:
+        return 'yellow';
+    }
+  };
 
   const handleAddEvent = (newEvent) => {
     const event = {
@@ -103,6 +191,29 @@ const VisualTimeline = () => {
     { value: 'maintenance', label: 'Manutenção', icon: Wrench },
   ];
 
+  if (!timelineId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 py-12 px-4 flex items-center justify-center">
+        <div className="glass-effect rounded-xl p-12 text-center">
+          <AlertCircle className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
+          <h3 className="text-2xl font-bold text-gray-300 mb-2">
+            ID do Cliente Não Encontrado
+          </h3>
+          <p className="text-gray-400 mb-6">
+            Por favor, acesse esta página através do dashboard do cliente.
+          </p>
+          <Button
+            onClick={() => window.history.back()}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 py-12 px-4">
       <div className="max-w-5xl mx-auto w-full">
@@ -126,10 +237,10 @@ const VisualTimeline = () => {
                 
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-1">
-                    Timeline do Cliente
+                    {clientInfo?.client_name || 'Timeline do Cliente'}
                   </h1>
                   <p className="text-gray-300 text-base">
-                    Acompanhe todas as atividades e eventos em ordem cronológica
+                    {clientInfo ? `ID: ${clientInfo.client_id || 'N/A'}` : 'Acompanhe todas as atividades e eventos em ordem cronológica'}
                   </p>
                 </div>
               </div>
@@ -168,37 +279,53 @@ const VisualTimeline = () => {
           </div>
         </motion.div>
 
-        <div className="relative flex flex-col items-center">
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 w-0.5 h-[1000px] bg-gradient-to-b from-purple-500 via-pink-500 to-blue-500 rounded-full opacity-30"></div>
-          
-          <AnimatePresence mode="popLayout">
-            {filteredEvents.map((event, index) => (
-              <TimelineItem 
-                key={event.id} 
-                event={event} 
-                index={index}
-                onEdit={() => handleOpenEditDialog(event)}
-                onColorChange={() => handleColorChange(event.id)}
-              />
-            ))}
-          </AnimatePresence>
-
-          {filteredEvents.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="glass-effect rounded-xl p-12 text-center"
-            >
-              <Info className="h-16 w-16 mx-auto mb-4 text-purple-400" />
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="glass-effect rounded-xl p-12 text-center">
+              <Loader2 className="h-16 w-16 mx-auto mb-4 text-purple-400 animate-spin" />
               <h3 className="text-2xl font-bold text-gray-300 mb-2">
-                Nenhum evento encontrado
+                Carregando eventos...
               </h3>
               <p className="text-gray-400">
-                Tente ajustar os filtros ou adicione um novo evento
+                Aguarde enquanto buscamos os dados da timeline
               </p>
-            </motion.div>
-          )}
-        </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative flex flex-col items-center">
+            <div className="absolute left-1/2 -translate-x-1/2 top-0 w-0.5 h-[1000px] bg-gradient-to-b from-purple-500 via-pink-500 to-blue-500 rounded-full opacity-30"></div>
+            
+            <AnimatePresence mode="popLayout">
+              {filteredEvents.map((event, index) => (
+                <TimelineItem 
+                  key={event.id} 
+                  event={event} 
+                  index={index}
+                  onEdit={() => handleOpenEditDialog(event)}
+                  onColorChange={() => handleColorChange(event.id)}
+                />
+              ))}
+            </AnimatePresence>
+
+            {filteredEvents.length === 0 && !loading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="glass-effect rounded-xl p-12 text-center"
+              >
+                <Info className="h-16 w-16 mx-auto mb-4 text-purple-400" />
+                <h3 className="text-2xl font-bold text-gray-300 mb-2">
+                  Nenhum evento encontrado
+                </h3>
+                <p className="text-gray-400">
+                  {filter === 'all' 
+                    ? 'Adicione eventos para começar a construir sua timeline' 
+                    : 'Tente ajustar os filtros ou adicione um novo evento'}
+                </p>
+              </motion.div>
+            )}
+          </div>
+        )}
 
         <AddEventDialog 
           isOpen={isAddDialogOpen}
