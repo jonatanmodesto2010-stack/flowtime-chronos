@@ -626,6 +626,15 @@ const Calendar = () => {
                     const todayEvents = filteredEvents
                       .filter(event => event.event_date === todayStr)
                       .sort((a, b) => {
+                        // 1º critério: Status da timeline (ativas primeiro)
+                        const aCompleted = isTimelineCompleted(a.timeline_status);
+                        const bCompleted = isTimelineCompleted(b.timeline_status);
+                        
+                        if (aCompleted !== bCompleted) {
+                          return aCompleted ? 1 : -1; // Finalizadas vão para o final
+                        }
+                        
+                        // 2º critério: Horário do evento (dentro do mesmo grupo de status)
                         if (!a.event_time) return 1;
                         if (!b.event_time) return -1;
                         return a.event_time.localeCompare(b.event_time);
