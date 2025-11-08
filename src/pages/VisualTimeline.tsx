@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, Clock, User, MessageSquare, FileText, CheckCircle2, AlertCircle, Info, Phone, Wrench } from 'lucide-react';
+import { Plus, Calendar, Clock, User, MessageSquare, FileText, CheckCircle2, AlertCircle, Info, Phone, Wrench, Palette, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import TimelineItem from '@/components/TimelineItem';
 import AddEventDialog from '@/components/AddEventDialog';
 import EditEventDialog from '@/components/EditEventDialog';
 import { toast } from '@/components/ui/use-toast';
+import { useTimelinePreferences } from '@/contexts/TimelinePreferencesContext';
 
 const VisualTimeline = () => {
+  const { layout, setLayout } = useTimelinePreferences();
   const [events, setEvents] = useState([
     { id: 1, type: 'meeting', title: 'Reunião de Kickoff', description: 'Definição de escopo e objetivos.', date: '2024-01-15', time: '14:00', user: 'Maria Silva', status: 'completed', icon: 'calendar', color: 'green' },
     { id: 2, type: 'note', title: 'Anotações da Reunião', description: 'Cliente solicitou novas funcionalidades.', date: '2024-01-15', time: '16:30', user: 'João Santos', status: 'info', icon: 'message', color: 'yellow' },
@@ -122,13 +127,81 @@ const VisualTimeline = () => {
                   Acompanhe todas as atividades e eventos em ordem cronológica
                 </p>
               </div>
-              <Button
-                onClick={() => setIsAddDialogOpen(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-5 py-5 rounded-lg shadow-lg hover:shadow-purple-500/50 transition-all duration-300 glow-effect"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar Evento
-              </Button>
+              
+              <div className="flex items-center gap-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 transition-all duration-200"
+                    >
+                      <Palette className="h-5 w-5 text-purple-300" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 bg-gray-900/95 backdrop-blur-sm border-purple-500/30" align="end">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-purple-300 mb-1 flex items-center gap-2">
+                          <Palette className="h-4 w-4" />
+                          Estilo da Timeline
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          Escolha como visualizar os eventos
+                        </p>
+                      </div>
+                      
+                      <RadioGroup value={layout} onValueChange={setLayout}>
+                        <div className="space-y-3">
+                          <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
+                            <RadioGroupItem value="modern" id="modern" />
+                            <Label htmlFor="modern" className="flex-1 cursor-pointer">
+                              <div className="flex items-center gap-2 mb-1">
+                                <LayoutGrid className="h-4 w-4 text-purple-400" />
+                                <span className="font-medium text-gray-200">Moderno (Roxo)</span>
+                              </div>
+                              <p className="text-xs text-gray-400 mb-2">
+                                Layout clean com eventos alternados e cores vibrantes
+                              </p>
+                              <div className="flex gap-2">
+                                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-400 to-purple-600" />
+                                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-green-400 to-green-600" />
+                                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600" />
+                              </div>
+                            </Label>
+                          </div>
+                          
+                          <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
+                            <RadioGroupItem value="classic" id="classic" />
+                            <Label htmlFor="classic" className="flex-1 cursor-pointer">
+                              <div className="flex items-center gap-2 mb-1">
+                                <FileText className="h-4 w-4 text-green-400" />
+                                <span className="font-medium text-gray-200">Clássico (Verde)</span>
+                              </div>
+                              <p className="text-xs text-gray-400 mb-2">
+                                Layout tradicional organizado por status
+                              </p>
+                              <div className="flex gap-2">
+                                <div className="h-6 w-6 rounded-full bg-green-700/80" />
+                                <div className="h-6 w-6 rounded-full bg-green-700/60" />
+                                <div className="h-6 w-6 rounded-full bg-green-700/40" />
+                              </div>
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                <Button
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-5 py-5 rounded-lg shadow-lg hover:shadow-purple-500/50 transition-all duration-300 glow-effect"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Evento
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -158,7 +231,11 @@ const VisualTimeline = () => {
         </motion.div>
 
         <div className="relative flex flex-col items-center">
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 w-0.5 h-[1000px] bg-gradient-to-b from-purple-500 via-pink-500 to-blue-500 rounded-full opacity-30"></div>
+          <div className={`absolute left-1/2 -translate-x-1/2 top-0 h-[1000px] rounded-full opacity-30 ${
+            layout === 'modern'
+              ? 'w-0.5 bg-gradient-to-b from-purple-500 via-pink-500 to-blue-500'
+              : 'w-px bg-gradient-to-b from-green-500 via-green-600 to-green-500'
+          }`}></div>
           
           <AnimatePresence mode="popLayout">
             {filteredEvents.map((event, index) => (
