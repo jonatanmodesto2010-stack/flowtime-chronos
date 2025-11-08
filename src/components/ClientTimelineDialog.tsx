@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Loader2, Clock } from 'lucide-react';
+import { X, Loader2, Clock, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Timeline } from './Timeline';
 import { supabase } from '@/integrations/supabase/client';
@@ -217,14 +217,26 @@ export const ClientTimelineDialog = ({
               </div>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full shrink-0 hover:bg-red-500/20 hover:text-red-500 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                console.log('Botão clicado - aguardando definição de funcionalidade');
+              }}
+              className="rounded-full hover:bg-green-500/20 hover:text-green-400 transition-colors"
+            >
+              <Square className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="rounded-full hover:bg-red-500/20 hover:text-red-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
