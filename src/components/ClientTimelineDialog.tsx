@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Loader2, Clock, Square } from 'lucide-react';
+import { X, Loader2, Clock, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Timeline } from './Timeline';
 import { supabase } from '@/integrations/supabase/client';
@@ -222,11 +222,11 @@ export const ClientTimelineDialog = ({
               variant="ghost"
               size="icon"
               onClick={() => {
-                console.log('Botão clicado - aguardando definição de funcionalidade');
+                window.location.href = `/visual-timeline?id=${client.id}`;
               }}
               className="rounded-full hover:bg-green-500/20 hover:text-green-400 transition-colors"
             >
-              <Square className="w-5 h-5" />
+              <LayoutGrid className="w-5 h-5" />
             </Button>
             <Button
               variant="ghost"
