@@ -30,6 +30,7 @@ interface Event {
   status: string;
   icon: string;
   timeline_id: string;
+  timeline_status: string;
 }
 
 const Calendar = () => {
@@ -173,7 +174,7 @@ const Calendar = () => {
       
       const { data: timelines, error: timelinesError } = await supabaseClient
         .from('client_timelines')
-        .select('id, client_name')
+        .select('id, client_name, status')
         .eq('organization_id', userRoles.organization_id);
 
       if (timelinesError) throw timelinesError;
@@ -216,6 +217,7 @@ const Calendar = () => {
               status: event.status,
               icon: event.icon,
               timeline_id: line?.timeline_id || '',
+              timeline_status: timeline?.status || 'active',
             };
           });
 
@@ -305,8 +307,8 @@ const Calendar = () => {
     return stats;
   }, [filteredEvents]);
 
-  const hasNoResponseStatus = (clientName: string) => {
-    return events.some(event => event.client_name === clientName && event.status === 'no_response');
+  const isTimelineCompleted = (timelineStatus: string) => {
+    return timelineStatus === 'completed' || timelineStatus === 'archived';
   };
 
   const goToToday = () => {
@@ -647,12 +649,18 @@ const Calendar = () => {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.05 }}
                             onClick={() => handleOpenTimeline(event.timeline_id, event.client_name)}
-                            className="p-5 border-l-4 rounded-lg cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-card border-border"
+                            className={cn(
+                              "p-5 border-l-4 rounded-lg cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]",
+                              isTimelineCompleted(event.timeline_status)
+                                ? "bg-muted/50 opacity-70 grayscale"
+                                : "bg-card"
+                            )}
                             style={{
-                              borderLeftColor: 
-                                event.status === 'created' ? 'hsl(var(--primary))' :
-                                event.status === 'resolved' ? '#10b981' :
-                                '#ef4444'
+                              borderLeftColor: isTimelineCompleted(event.timeline_status)
+                                ? '#9ca3af'
+                                : event.status === 'created' ? 'hsl(var(--primary))' :
+                                  event.status === 'resolved' ? '#10b981' :
+                                  '#ef4444'
                             }}
                           >
                             <div className="flex items-center gap-4">
@@ -665,9 +673,19 @@ const Calendar = () => {
                                       {event.event_time}
                                     </span>
                                   )}
-                                  <span className="text-lg font-semibold text-foreground">
+                                  <span className={cn(
+                                    "text-lg font-semibold",
+                                    isTimelineCompleted(event.timeline_status)
+                                      ? "text-muted-foreground"
+                                      : "text-foreground"
+                                  )}>
                                     {event.client_name}
                                   </span>
+                                  {isTimelineCompleted(event.timeline_status) && (
+                                    <Badge className="bg-gray-500/20 text-gray-500">
+                                      FINALIZADO
+                                    </Badge>
+                                  )}
                                 </div>
                                 {event.description && (
                                   <p className="text-sm text-muted-foreground mb-2">
@@ -675,15 +693,17 @@ const Calendar = () => {
                                   </p>
                                 )}
                               </div>
-                              <Badge variant={
-                                event.status === 'resolved' ? 'default' :
-                                event.status === 'no_response' ? 'destructive' :
-                                'secondary'
-                              }>
-                                {event.status === 'created' && '📝 Criado'}
-                                {event.status === 'resolved' && '✅ Respondeu'}
-                                {event.status === 'no_response' && '🚫 Não Respondeu'}
-                              </Badge>
+                              {!isTimelineCompleted(event.timeline_status) && (
+                                <Badge variant={
+                                  event.status === 'resolved' ? 'default' :
+                                  event.status === 'no_response' ? 'destructive' :
+                                  'secondary'
+                                }>
+                                  {event.status === 'created' && '📝 Criado'}
+                                  {event.status === 'resolved' && '✅ Respondeu'}
+                                  {event.status === 'no_response' && '🚫 Não Respondeu'}
+                                </Badge>
+                              )}
                             </div>
                           </motion.div>
                         ))}
@@ -743,18 +763,22 @@ const Calendar = () => {
                               {dayEvents.slice(0, 2).map(event => (
                                 <div
                                   key={event.id}
-                                  className="text-xs p-1 bg-primary/20 rounded truncate"
-                                  title={`${event.event_time ? event.event_time + ' - ' : ''}${event.client_name}: ${event.description || ''}`}
+                                  className={cn(
+                                    "text-xs p-1 rounded truncate",
+                                    isTimelineCompleted(event.timeline_status)
+                                      ? "bg-gray-500/20 text-gray-500"
+                                      : "bg-primary/20"
+                                  )}
+                                  title={`${event.event_time ? event.event_time + ' - ' : ''}${event.client_name}${isTimelineCompleted(event.timeline_status) ? ' (FINALIZADO)' : ''}: ${event.description || ''}`}
                                 >
                                   <span className="mr-1">{event.icon}</span>
                                   {event.event_time && <span className="font-semibold">{event.event_time} </span>}
-                                  <span className={`font-medium ${
-                                    hasNoResponseStatus(event.client_name) 
-                                      ? 'text-red-600 dark:text-red-400' 
-                                      : ''
-                                  }`}>
+                                  <span className="font-medium">
                                     {event.client_name}
                                   </span>
+                                  {isTimelineCompleted(event.timeline_status) && (
+                                    <span className="ml-1 text-[10px]">●</span>
+                                  )}
                                 </div>
                               ))}
                               {dayEvents.length > 2 && (
@@ -817,7 +841,12 @@ const Calendar = () => {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 onClick={() => handleOpenTimeline(event.timeline_id, event.client_name)}
-                                className="p-2 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
+                                className={cn(
+                                  "p-2 border rounded-lg transition-colors cursor-pointer",
+                                  isTimelineCompleted(event.timeline_status)
+                                    ? "bg-muted/50 border-gray-500/30 opacity-70 grayscale"
+                                    : "bg-card border-border hover:bg-muted"
+                                )}
                               >
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-lg">{event.icon}</span>
@@ -827,13 +856,19 @@ const Calendar = () => {
                                         {event.event_time}
                                       </div>
                                     )}
-                                    <span className={`text-xs font-semibold truncate block ${
-                                      hasNoResponseStatus(event.client_name)
-                                        ? 'text-red-600 dark:text-red-400'
-                                        : 'text-foreground'
-                                    }`}>
+                                    <span className={cn(
+                                      "text-xs font-semibold truncate block",
+                                      isTimelineCompleted(event.timeline_status)
+                                        ? "text-muted-foreground"
+                                        : "text-foreground"
+                                    )}>
                                       {event.client_name}
                                     </span>
+                                    {isTimelineCompleted(event.timeline_status) && (
+                                      <Badge className="bg-gray-500/20 text-gray-500 text-[10px] h-4 mt-1">
+                                        FINALIZADO
+                                      </Badge>
+                                    )}
                                   </div>
                                 </div>
                                 {event.description && (
@@ -841,20 +876,22 @@ const Calendar = () => {
                                     {event.description}
                                   </p>
                                 )}
-                                <Badge 
-                                  variant={
-                                    event.status === 'resolved' 
-                                      ? 'default' 
-                                      : event.status === 'no_response'
-                                      ? 'destructive'
-                                      : 'secondary'
-                                  }
-                                  className="text-[10px] h-4"
-                                >
-                                  {event.status === 'created' && '📝'}
-                                  {event.status === 'resolved' && '✅'}
-                                  {event.status === 'no_response' && '🚫'}
-                                </Badge>
+                                {!isTimelineCompleted(event.timeline_status) && (
+                                  <Badge 
+                                    variant={
+                                      event.status === 'resolved' 
+                                        ? 'default' 
+                                        : event.status === 'no_response'
+                                        ? 'destructive'
+                                        : 'secondary'
+                                    }
+                                    className="text-[10px] h-4"
+                                  >
+                                    {event.status === 'created' && '📝'}
+                                    {event.status === 'resolved' && '✅'}
+                                    {event.status === 'no_response' && '🚫'}
+                                  </Badge>
+                                )}
                               </motion.div>
                             ))}
                           </div>
@@ -904,7 +941,12 @@ const Calendar = () => {
                       <div
                         key={event.id}
                         onClick={() => handleOpenTimeline(event.timeline_id, event.client_name)}
-                        className="p-4 border border-border rounded-lg bg-card hover:bg-muted transition-colors cursor-pointer"
+                        className={cn(
+                          "p-4 border rounded-lg transition-colors cursor-pointer",
+                          isTimelineCompleted(event.timeline_status)
+                            ? "bg-muted/50 border-gray-500/30 opacity-70 grayscale"
+                            : "bg-card border-border hover:bg-muted"
+                        )}
                       >
                         <div className="flex items-start gap-3">
                           <span className="text-2xl">{event.icon}</span>
@@ -917,25 +959,35 @@ const Calendar = () => {
                                     {event.event_time}
                                   </div>
                                 )}
-                                <h4 className={`font-semibold ${
-                                  hasNoResponseStatus(event.client_name)
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-foreground'
-                                }`}>
-                                  {event.client_name}
-                                </h4>
+                                <div className="flex items-center gap-2">
+                                  <h4 className={cn(
+                                    "font-semibold",
+                                    isTimelineCompleted(event.timeline_status)
+                                      ? "text-muted-foreground"
+                                      : "text-foreground"
+                                  )}>
+                                    {event.client_name}
+                                  </h4>
+                                  {isTimelineCompleted(event.timeline_status) && (
+                                    <Badge className="bg-gray-500/20 text-gray-500">
+                                      FINALIZADO
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
-                              <Badge variant={
-                                event.status === 'resolved' 
-                                  ? 'default' 
-                                  : event.status === 'no_response'
-                                  ? 'destructive'
-                                  : 'secondary'
-                              }>
-                                {event.status === 'created' && '📝 Criado'}
-                                {event.status === 'resolved' && '✅ Respondeu'}
-                                {event.status === 'no_response' && '🚫 Não Respondeu'}
-                              </Badge>
+                              {!isTimelineCompleted(event.timeline_status) && (
+                                <Badge variant={
+                                  event.status === 'resolved' 
+                                    ? 'default' 
+                                    : event.status === 'no_response'
+                                    ? 'destructive'
+                                    : 'secondary'
+                                }>
+                                  {event.status === 'created' && '📝 Criado'}
+                                  {event.status === 'resolved' && '✅ Respondeu'}
+                                  {event.status === 'no_response' && '🚫 Não Respondeu'}
+                                </Badge>
+                              )}
                             </div>
                             {event.description && (
                               <p className="text-sm text-muted-foreground mb-2">
