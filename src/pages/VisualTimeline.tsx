@@ -19,7 +19,7 @@ const VisualTimeline = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [filter, setFilter] = useState('all');
+  
 
   useEffect(() => {
     if (timelineId) {
@@ -196,19 +196,6 @@ const VisualTimeline = () => {
     }));
   };
 
-  const filteredEvents = filter === 'all' 
-    ? events 
-    : events.filter(event => event.type === filter);
-
-  const filterButtons = [
-    { value: 'all', label: 'Todos', icon: FileText },
-    { value: 'meeting', label: 'Reuniões', icon: Calendar },
-    { value: 'task', label: 'Tarefas', icon: CheckCircle2 },
-    { value: 'note', label: 'Notas', icon: MessageSquare },
-    { value: 'alert', label: 'Alertas', icon: AlertCircle },
-    { value: 'call', label: 'Ligações', icon: Phone },
-    { value: 'maintenance', label: 'Manutenção', icon: Wrench },
-  ];
 
   if (!timelineId) {
     return (
@@ -263,37 +250,23 @@ const VisualTimeline = () => {
                   </p>
                 </div>
               </div>
-              <Button
-                onClick={() => setIsAddDialogOpen(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-5 py-5 rounded-lg shadow-lg hover:shadow-purple-500/50 transition-all duration-300 glow-effect"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar Evento
-              </Button>
-            </div>
-          </div>
-
-          <div className="glass-effect rounded-xl p-3 mb-4">
-            <div className="flex flex-wrap gap-2">
-              {filterButtons.map((btn) => {
-                const Icon = btn.icon;
-                return (
-                  <motion.button
-                    key={btn.value}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setFilter(btn.value)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-300 ${
-                      filter === btn.value
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
-                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {btn.label}
-                  </motion.button>
-                );
-              })}
+              
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  className="border-purple-500/30 hover:bg-purple-500/20 hover:text-purple-400 text-gray-300"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Tags
+                </Button>
+                <Button
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-5 py-5 rounded-lg shadow-lg hover:shadow-purple-500/50 transition-all duration-300 glow-effect"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Evento
+                </Button>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -315,7 +288,7 @@ const VisualTimeline = () => {
             <div className="absolute left-1/2 -translate-x-1/2 top-0 w-0.5 h-[1000px] bg-gradient-to-b from-purple-500 via-pink-500 to-blue-500 rounded-full opacity-30"></div>
             
             <AnimatePresence mode="popLayout">
-              {filteredEvents.map((event, index) => (
+              {events.map((event, index) => (
                 <TimelineItem 
                   key={event.id} 
                   event={event} 
@@ -326,7 +299,7 @@ const VisualTimeline = () => {
               ))}
             </AnimatePresence>
 
-            {filteredEvents.length === 0 && !loading && (
+            {events.length === 0 && !loading && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -337,9 +310,7 @@ const VisualTimeline = () => {
                   Nenhum evento encontrado
                 </h3>
                 <p className="text-gray-400">
-                  {filter === 'all' 
-                    ? 'Adicione eventos para começar a construir sua timeline' 
-                    : 'Tente ajustar os filtros ou adicione um novo evento'}
+                  Adicione eventos para começar a construir sua timeline
                 </p>
               </motion.div>
             )}
