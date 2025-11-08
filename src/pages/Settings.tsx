@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserManagement } from '@/components/settings/UserManagement';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
@@ -14,7 +15,6 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
 const Settings = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { canManageUsers, canManageSettings, isLoading } = useUserRole();
   const navigate = useNavigate();
@@ -48,13 +48,11 @@ const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col">
-        <Header 
-          onToggleSidebar={() => setIsSidebarOpen(true)}
-        />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <Header />
         
         <main className="container mx-auto px-4 py-8 flex-1">
           <h1 className="text-3xl font-bold mb-8">Configurações</h1>
@@ -110,6 +108,7 @@ const Settings = () => {
         </main>
       </div>
     </div>
+  </SidebarProvider>
   );
 };
 

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +15,6 @@ import { Loader2 } from 'lucide-react';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -187,13 +187,11 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
-      <Header 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-      />
-      
-      <div className="flex w-full">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col bg-gradient-to-br from-background via-muted/20 to-background">
+          <Header />
         
         <main className="flex-1 p-8 pt-24">
           <div className="max-w-3xl mx-auto space-y-6">
@@ -314,5 +312,6 @@ export default function Profile() {
         </main>
       </div>
     </div>
+  </SidebarProvider>
   );
 }

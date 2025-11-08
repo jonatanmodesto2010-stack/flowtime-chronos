@@ -5,7 +5,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search, BarChart3, Grid3x3, CalendarDays, Clock } from 'lucide-react';
 import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +33,6 @@ interface Event {
 }
 
 const Calendar = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -395,33 +395,29 @@ const Calendar = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col w-full bg-background">
-        <Header 
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        />
-        
-        <div className="flex flex-1 w-full">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-6xl mx-auto">
-              <div className="h-9 w-64 bg-muted animate-pulse rounded mb-6" />
-              <div className="h-96 bg-muted animate-pulse rounded-xl" />
-            </div>
-          </main>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-background">
+          <AppSidebar />
+          <div className="flex-1 flex flex-col">
+            <Header />
+            <main className="flex-1 p-6 overflow-auto">
+              <div className="max-w-6xl mx-auto">
+                <div className="h-9 w-64 bg-muted animate-pulse rounded mb-6" />
+                <div className="h-96 bg-muted animate-pulse rounded-xl" />
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
-      <Header 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-      />
-      
-      <div className="flex flex-1 w-full">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <Header />
         
         <main className="flex-1 p-6 overflow-auto">
           <motion.div 
@@ -977,6 +973,7 @@ const Calendar = () => {
         </main>
       </div>
     </div>
+  </SidebarProvider>
   );
 };
 

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, History, Loader2, TrendingUp } from 'lucide-react'; // Importado TrendingUp
+import { Plus, History, Loader2, TrendingUp } from 'lucide-react';
 import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { ClientDashboardModal } from '@/components/ClientDashboardModal';
 import { ClientSearchFilters } from '@/components/ClientSearchFilters';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,7 +15,7 @@ import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
-import { ClientTimelineDialog } from '@/components/ClientTimelineDialog'; // Importado ClientTimelineDialog
+import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 
 interface Client {
   id: string;
@@ -34,7 +35,6 @@ interface Client {
 }
 
 const Clients = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [user, setUser] = useState<User | null>(null);
@@ -505,38 +505,34 @@ const Clients = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col w-full bg-background">
-        <Header 
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        />
-        
-        <div className="flex flex-1 w-full">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-4xl mx-auto">
-              <div className="h-9 w-48 bg-muted animate-pulse rounded mb-6" />
-              <div className="flex flex-col gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
-                ))}
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-background">
+          <AppSidebar />
+          <div className="flex-1 flex flex-col">
+            <Header />
+            <main className="flex-1 p-6 overflow-auto">
+              <div className="max-w-4xl mx-auto">
+                <div className="h-9 w-48 bg-muted animate-pulse rounded mb-6" />
+                <div className="flex flex-col gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                  ))}
+                </div>
               </div>
-            </div>
-          </main>
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     );
   }
 
   console.log("Render: isFiltering =", isFiltering, " loading =", loading);
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
-      <Header 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-      />
-      
-      <div className="flex flex-1 w-full">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <Header />
         
         <main className="flex-1 p-6 overflow-auto">
           <motion.div 
@@ -762,6 +758,7 @@ const Clients = () => {
         />
       )}
     </div>
+  </SidebarProvider>
   );
 };
 

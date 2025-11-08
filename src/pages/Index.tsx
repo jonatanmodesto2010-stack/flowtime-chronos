@@ -5,7 +5,8 @@ import { Plus, Search } from 'lucide-react';
 import { Timeline } from '@/components/Timeline';
 import { TimelineSkeleton } from '@/components/TimelineSkeleton';
 import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
@@ -45,7 +46,6 @@ interface TimelineData {
 }
 
 const Index = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -457,43 +457,38 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col w-full bg-background">
-        <Header 
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        />
-        
-        <div className="flex flex-1 w-full">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          
-        <main className="flex-1 p-6 overflow-auto">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            className="space-y-6"
-          >
-            <div className="mb-6">
-              <div className="h-9 w-80 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-5 w-96 bg-muted animate-pulse rounded" />
-            </div>
-            
-            <TimelineSkeleton />
-            <TimelineSkeleton />
-          </motion.div>
-        </main>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-background">
+          <AppSidebar />
+          <div className="flex-1 flex flex-col">
+            <Header />
+            <main className="flex-1 p-6 overflow-auto">
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                className="space-y-6"
+              >
+                <div className="mb-6">
+                  <div className="h-9 w-80 bg-muted animate-pulse rounded mb-2" />
+                  <div className="h-5 w-96 bg-muted animate-pulse rounded" />
+                </div>
+                
+                <TimelineSkeleton />
+                <TimelineSkeleton />
+              </motion.div>
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
-      <Header 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-      />
-      
-      <div className="flex flex-1 w-full">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <Header />
         <main className="flex-1 p-6 overflow-auto">
           <motion.div 
             initial={{ opacity: 0, y: -20 }} 
@@ -672,6 +667,7 @@ const Index = () => {
         </main>
       </div>
     </div>
+  </SidebarProvider>
   );
 };
 

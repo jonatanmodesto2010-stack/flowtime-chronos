@@ -1,4 +1,4 @@
-import { Sun, Moon, Menu, LogOut, User } from 'lucide-react';
+import { Sun, Moon, LogOut, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { OrganizationSelector } from './OrganizationSelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useState, useEffect } from 'react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +17,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 interface HeaderProps {
-  onToggleSidebar?: () => void;
+  showSidebarTrigger?: boolean;
 }
 
-export const Header = ({ onToggleSidebar }: HeaderProps) => {
+export const Header = ({ showSidebarTrigger = true }: HeaderProps) => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -69,17 +70,7 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
       transition={{ duration: 0.3 }}
     >
       <div className="flex items-center gap-4">
-        {onToggleSidebar && (
-          <motion.button
-            onClick={onToggleSidebar}
-            className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Toggle sidebar"
-          >
-            <Menu size={24} />
-          </motion.button>
-        )}
+        {showSidebarTrigger && <SidebarTrigger />}
         <motion.h1 
           className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent"
           initial={{ opacity: 0, x: -20 }}
