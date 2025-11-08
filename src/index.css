@@ -47,13 +47,6 @@ All colors MUST be HSL.
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(146 50% 36%), hsl(142 52% 50%));
     --gradient-hover: linear-gradient(135deg, hsl(146 50% 40%), hsl(142 52% 55%));
-    
-    /* Timeline moderna - tons roxos */
-    --timeline-bg-from: 262 83% 12%;
-    --timeline-bg-via: 262 70% 15%;
-    --timeline-bg-to: 262 83% 12%;
-    --timeline-line: 262 80% 60%;
-    --timeline-glow: 262 80% 60%;
   }
 
   .dark {
@@ -94,13 +87,6 @@ All colors MUST be HSL.
     /* Gradients - Dark Mode */
     --gradient-primary: linear-gradient(135deg, hsl(146 50% 45%), hsl(142 52% 55%));
     --gradient-hover: linear-gradient(135deg, hsl(146 50% 50%), hsl(142 52% 60%));
-    
-    /* Timeline moderna - tons roxos mais vibrantes no dark */
-    --timeline-bg-from: 262 90% 15%;
-    --timeline-bg-via: 262 80% 18%;
-    --timeline-bg-to: 262 90% 15%;
-    --timeline-line: 262 85% 65%;
-    --timeline-glow: 262 85% 65%;
   }
 }
 
