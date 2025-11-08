@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { TimelinePreferencesProvider } from "./contexts/TimelinePreferencesContext";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import Index from "./pages/Index";
 import Clients from "./pages/Clients";
@@ -40,13 +39,11 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TimelinePreferencesProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppContent />
-        </TooltipProvider>
-      </TimelinePreferencesProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AppContent />
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

@@ -45,7 +45,6 @@ interface TimelineData {
 
 interface TimelineProps {
   timeline: TimelineData;
-  layout?: 'classic' | 'modern';
   updateLine: (lineId: string, events: Event[]) => void;
   addNewLine?: () => void;
   deleteLine?: (lineId: string) => void;
@@ -55,8 +54,7 @@ interface TimelineProps {
 }
 
 export const Timeline = ({ 
-  timeline,
-  layout = 'modern',
+  timeline, 
   updateLine, 
   addNewLine, 
   deleteLine, 
@@ -74,8 +72,8 @@ export const Timeline = ({
   const { toast } = useToast();
   
   // Constantes de layout da timeline vertical
-  const VERTICAL_EVENT_SPACING = 120; // pixels entre eventos
-  const VERTICAL_START_OFFSET = 80;   // offset inicial do topo
+  const VERTICAL_EVENT_SPACING = 80; // pixels entre eventos
+  const VERTICAL_START_OFFSET = 60;   // offset inicial do topo
   
   const toggleAllDescriptions = () => {
     setShowAllDescriptions(prev => !prev);
@@ -430,18 +428,14 @@ export const Timeline = ({
         {lines.map((line, lineIndex) => (
           <div 
             key={line.id} 
-            className={`relative rounded-2xl p-8 ${
-              layout === 'modern'
-                ? 'bg-gradient-to-br from-purple-900/20 via-purple-800/10 to-purple-900/20'
-                : 'bg-gradient-to-br from-green-900/20 via-green-800/10 to-green-900/20'
-            }`}
+            className="relative"
           >
               
               <div className={isVertical ? "overflow-y-auto overflow-x-visible custom-scrollbar scroll-smooth min-h-[calc(100vh-250px)]" : "overflow-x-auto overflow-y-visible scrollbar-hide"}>
                 <div 
                   className={`timeline-container relative w-full mx-auto transition-all duration-300 ${
                     isVertical 
-                      ? 'flex flex-col items-center py-12 px-16' 
+                      ? 'flex flex-col items-center py-8 px-12' 
                       : 'flex items-center py-12 px-8'
                   }`}
                   style={{ 
@@ -459,29 +453,21 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-      className={`absolute z-0 transition-all shadow-lg rounded-full ${
-        layout === 'modern'
-          ? 'bg-purple-500/30 shadow-purple-500/20'
-          : 'bg-green-500/30 shadow-green-500/20'
-      } ${
+      className={`absolute bg-foreground/30 z-0 transition-all ${
         isVertical
-          ? 'left-1/2 w-2 h-[calc(100%-28px)] top-7 -translate-x-1/2'
-          : 'top-1/2 h-2 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+          ? 'left-1/2 w-1 h-[calc(100%-28px)] top-7 -translate-x-1/2'
+          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
       } ${
-        !readOnly ? `cursor-pointer hover:${layout === 'modern' ? 'bg-purple' : 'bg-green'}-500/50` : 'cursor-default'
+        !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
       }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
     <div 
-      className={`absolute z-0 shadow-lg rounded-full ${
-        layout === 'modern'
-          ? 'bg-purple-500/30 shadow-purple-500/20'
-          : 'bg-green-500/30 shadow-green-500/20'
-      } ${
+      className={`absolute bg-foreground/30 z-0 ${
         isVertical
-          ? 'left-1/2 w-2 h-[calc(100%-24px)] top-6 -translate-x-1/2'
-          : 'top-1/2 h-2 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+          ? 'left-1/2 w-1 h-[calc(100%-24px)] top-6 -translate-x-1/2'
+          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
       }`}
     />
                   )}
@@ -504,10 +490,10 @@ export const Timeline = ({
                         key={`segment-${event.id}-${nextEvent?.id}`}
                         onClick={() => handleAddEvent(line.id)}
                         disabled={readOnly}
-        className={`absolute ${segmentColor} z-10 transition-all shadow-lg rounded-full ${
+        className={`absolute ${segmentColor} z-10 transition-all ${
           isVertical
-            ? 'left-1/2 w-2 -translate-x-1/2'
-            : 'top-1/2 h-2 -translate-y-1/2'
+            ? 'left-1/2 w-1 -translate-x-1/2'
+            : 'top-1/2 h-1 -translate-y-1/2'
         } ${
           !readOnly ? 'cursor-pointer' : 'cursor-default'
         } ${isSameDate ? 'hover:bg-yellow-600' : 'hover:bg-foreground/50'}`}
@@ -528,138 +514,122 @@ export const Timeline = ({
                     const totalEvents = (line.events || []).length;
                     const position = VERTICAL_START_OFFSET + (index * VERTICAL_EVENT_SPACING);
                     
-                    // Para layout moderno: alterna baseado no índice
-                    // Para layout clássico: posiciona baseado no status
-                    const isLeftSide = layout === 'modern' 
-                      ? index % 2 === 0 
-                      : event.status === 'created' || event.status === 'no_response';
-                    
-                    // Cores baseadas no status
-                    const getStatusStyles = () => {
-                      switch(event.status) {
-                        case 'resolved':
-                          return {
-                            iconBg: 'bg-gradient-to-br from-green-400 to-green-600',
-                            cardBorder: 'border-green-500/50',
-                            cardBg: 'bg-green-500/5',
-                          };
-                        case 'no_response':
-                          return {
-                            iconBg: 'bg-gradient-to-br from-red-400 to-red-600',
-                            cardBorder: 'border-red-500/50',
-                            cardBg: 'bg-red-500/5',
-                          };
-                        default: // created
-                          return {
-                            iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600',
-                            cardBorder: 'border-orange-500/50',
-                            cardBg: 'bg-orange-500/5',
-                          };
-                      }
-                    };
-                    
-                    const statusStyles = getStatusStyles();
-                    
-                    // Estilo clássico: ícones menores e cards mais simples
-                    const iconSize = layout === 'classic' ? 'w-12 h-12' : 'w-16 h-16';
-                    const iconTextSize = layout === 'classic' ? 'text-xl' : 'text-2xl';
-                    const iconOffset = layout === 'classic' ? '-28px' : '-48px';
-                    const cardPadding = layout === 'classic' ? 'p-4' : 'p-5';
-                    const cardRoundness = layout === 'classic' ? 'rounded-lg' : 'rounded-2xl';
-                    const cardBorder = layout === 'classic' 
-                      ? 'border border-green-500/30' 
-                      : `border-2 ${statusStyles.cardBorder}`;
-                    const cardBg = layout === 'classic'
-                      ? 'bg-green-500/5'
-                      : statusStyles.cardBg;
-                    const iconBg = layout === 'classic'
-                      ? 'bg-green-700/80'
-                      : statusStyles.iconBg;
-                    const gapSize = layout === 'classic' ? 'gap-4' : 'gap-6';
-                    const widthCalc = layout === 'classic' ? 'w-[calc(50%-40px)]' : 'w-[calc(50%-60px)]';
-                    
                     return (
                       <motion.div
                         key={event.id}
                         layout
-                        className={`absolute flex items-center ${gapSize} ${widthCalc} ${
-                          isVertical 
-                            ? isLeftSide 
-                              ? 'left-0 flex-row-reverse' 
-                              : 'right-0 flex-row'
-                            : 'top-1/2 -translate-y-1/2'
+                        className={`absolute z-10 text-center flex-shrink-0 ${
+                          isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'
                         }`}
                         style={isVertical 
                           ? { top: `${position}px` }
                           : { left: `${position}%`, transform: 'translateX(-50%)' }
                         }
-                        initial={{ opacity: 0, x: isLeftSide ? -50 : 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: isLeftSide ? -50 : 50 }}
+                        initial={{ opacity: 0, x: -80, scale: 0.3 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -80, scale: 0.3 }}
                         transition={{ 
-                          duration: 0.4,
-                          delay: layout === 'modern' ? index * 0.1 : 0,
+                          duration: 1.2,
+                          delay: index * 0.15,
+                          type: "spring",
+                          stiffness: 120,
+                          damping: 18,
                           layout: {
-                            duration: 0.3,
-                            type: "spring"
+                            duration: 0.8,
+                            type: "spring",
+                            stiffness: 150,
+                            damping: 20
                           }
                         }}
                       >
             {isVertical ? (
               <>
-                {/* Ícone circular grande na linha central */}
-                <motion.button
+                {/* Botão de status - funcional (na linha) */}
+                <button
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStatusToggle(e, line.id, event.id);
                   }}
-                  disabled={readOnly}
-                  className={`absolute ${
-                    isLeftSide ? 'right-[-48px]' : 'left-[-48px]'
-                  } ${iconSize} ${iconBg} rounded-full flex items-center justify-center shadow-xl z-20 cursor-pointer border-4 border-background transition-all ${
-                    layout === 'modern' ? 'hover:scale-110' : 'hover:scale-105'
-                  }`}
-                  style={{
-                    [isLeftSide ? 'right' : 'left']: iconOffset
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    handleEventClick(event, line.id);
                   }}
-                  whileHover={{ scale: layout === 'modern' ? 1.15 : 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  title={`${event.icon} - Clique para mudar status`}
+                  title={`${event.icon} ${event.description} - Clique para mudar status, duplo clique para editar`}
                 >
-                  <span className={iconTextSize}>{renderStatusIcon(event.status)}</span>
-                </motion.button>
-                
-                {/* Card do evento */}
-                <motion.div
-                  onClick={() => !readOnly && handleEventClick(event, line.id)}
-                  className={`flex-1 ${cardPadding} ${cardRoundness} ${cardBorder} ${cardBg} backdrop-blur-sm cursor-pointer transition-all ${
-                    layout === 'modern' ? 'hover:shadow-2xl hover:scale-[1.02]' : 'hover:bg-green-500/10'
-                  } ${
-                    !readOnly ? 'hover:border-opacity-100' : ''
-                  }`}
-                  whileHover={{ y: layout === 'modern' ? -4 : -2 }}
-                >
-                  {/* Data e hora no topo */}
-                  <div className={`flex items-center ${layout === 'classic' ? 'gap-2' : 'gap-3'} text-xs text-muted-foreground ${
-                    layout === 'modern' ? 'mb-3 pb-2 border-b border-border/30' : 'mb-2'
-                  }`}>
-                    <span className="flex items-center gap-1">
-                      {layout === 'modern' && '📅'} {event.date}
-                    </span>
-                    {event.time && (
-                      <span className="flex items-center gap-1">
-                        {layout === 'modern' && '🕐'} {event.time}
-                      </span>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={event.status}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {renderStatusIcon(event.status)}
+                    </motion.div>
+                  </AnimatePresence>
+                </button>
+
+                {/* Elementos ao redor do status */}
+                {event.status === 'no_response' ? (
+                  // Elementos à ESQUERDA do status: Descrição → Data → Ícone
+                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+30px)]">
+                    <div
+                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event, line.id);
+                      }}
+                      title={event.description}
+                    >
+                      {event.icon}
+                    </div>
+                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
+                      {event.date}
+                    </div>
+                    {showAllDescriptions && event.description && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
+                        </p>
+                      </motion.div>
                     )}
                   </div>
-                  
-                  {/* Descrição */}
-                  {(showAllDescriptions || event.description) && (
-                    <p className="text-sm text-foreground/90 leading-relaxed">
-                      {event.description || 'Sem descrição'}
-                    </p>
-                  )}
-                </motion.div>
+                ) : (
+                  // Elementos à DIREITA do status: Ícone → Data → Descrição
+                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+30px)]">
+                    <div
+                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event, line.id);
+                      }}
+                      title={event.description}
+                    >
+                      {event.icon}
+                    </div>
+                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
+                      {event.date}
+                    </div>
+                    {showAllDescriptions && event.description && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
+                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
+                        </p>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
                       <>
