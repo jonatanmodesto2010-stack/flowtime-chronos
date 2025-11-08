@@ -45,6 +45,7 @@ interface TimelineData {
 
 interface TimelineProps {
   timeline: TimelineData;
+  layout?: 'classic' | 'modern';
   updateLine: (lineId: string, events: Event[]) => void;
   addNewLine?: () => void;
   deleteLine?: (lineId: string) => void;
@@ -54,7 +55,8 @@ interface TimelineProps {
 }
 
 export const Timeline = ({ 
-  timeline, 
+  timeline,
+  layout = 'modern',
   updateLine, 
   addNewLine, 
   deleteLine, 
@@ -71,9 +73,9 @@ export const Timeline = ({
   const [isVertical, setIsVertical] = useState(true);
   const { toast } = useToast();
   
-  // Constantes de layout da timeline vertical
-  const VERTICAL_EVENT_SPACING = 80; // pixels entre eventos
-  const VERTICAL_START_OFFSET = 60;   // offset inicial do topo
+  // Constantes de layout da timeline vertical (ajustadas por layout)
+  const VERTICAL_EVENT_SPACING = layout === 'modern' ? 120 : 80; // pixels entre eventos
+  const VERTICAL_START_OFFSET = layout === 'modern' ? 80 : 60;   // offset inicial do topo
   
   const toggleAllDescriptions = () => {
     setShowAllDescriptions(prev => !prev);
@@ -453,21 +455,29 @@ export const Timeline = ({
                     <button
                       onClick={() => handleAddEvent(line.id)}
                       disabled={readOnly}
-      className={`absolute bg-foreground/30 z-0 transition-all ${
-        isVertical
-          ? 'left-1/2 w-1 h-[calc(100%-28px)] top-7 -translate-x-1/2'
-          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+      className={`absolute z-0 transition-all shadow-lg ${
+        layout === 'modern'
+          ? 'bg-purple-500/30 shadow-purple-500/20'
+          : 'bg-green-500/30 shadow-green-500/20'
       } ${
-        !readOnly ? 'cursor-pointer hover:bg-foreground/50' : 'cursor-default'
+        isVertical
+          ? 'left-1/2 w-2 h-[calc(100%-28px)] top-7 -translate-x-1/2 rounded-full'
+          : 'top-1/2 h-2 -translate-y-1/2 left-[1.5%] right-[1.5%] rounded-full'
+      } ${
+        !readOnly ? `cursor-pointer hover:${layout === 'modern' ? 'bg-purple' : 'bg-green'}-500/50` : 'cursor-default'
       }`}
                       title={!readOnly ? "Clique para adicionar evento" : ""}
                     />
                   ) : (
     <div 
-      className={`absolute bg-foreground/30 z-0 ${
+      className={`absolute z-0 transition-all shadow-lg ${
+        layout === 'modern'
+          ? 'bg-purple-500/30 shadow-purple-500/20'
+          : 'bg-green-500/30 shadow-green-500/20'
+      } ${
         isVertical
-          ? 'left-1/2 w-1 h-[calc(100%-24px)] top-6 -translate-x-1/2'
-          : 'top-1/2 h-1 -translate-y-1/2 left-[1.5%] right-[1.5%]'
+          ? 'left-1/2 w-2 h-[calc(100%-24px)] top-6 -translate-x-1/2 rounded-full'
+          : 'top-1/2 h-2 -translate-y-1/2 left-[1.5%] right-[1.5%] rounded-full'
       }`}
     />
                   )}
@@ -514,48 +524,91 @@ export const Timeline = ({
                     const totalEvents = (line.events || []).length;
                     const position = VERTICAL_START_OFFSET + (index * VERTICAL_EVENT_SPACING);
                     
+                    // Determinar lado baseado no layout
+                    const isLeftSide = layout === 'modern'
+                      ? index % 2 === 0 // Alternado para moderno
+                      : event.status === 'created' || event.status === 'no_response'; // Por status para clássico
+                    
+                    // Estilos condicionais baseados no layout
+                    const iconSize = layout === 'modern' ? 'w-16 h-16' : 'w-12 h-12';
+                    const iconTextSize = layout === 'modern' ? 'text-2xl' : 'text-xl';
+                    const iconOffset = layout === 'modern' ? '-48px' : '-28px';
+                    const cardPadding = layout === 'modern' ? 'p-5' : 'p-4';
+                    const cardRoundness = layout === 'modern' ? 'rounded-2xl' : 'rounded-lg';
+                    const gapSize = layout === 'modern' ? 'gap-6' : 'gap-4';
+                    const widthCalc = layout === 'modern' ? 'w-[calc(50%-60px)]' : 'w-[calc(50%-40px)]';
+                    
+                    // Determinar cores dos ícones e cards baseado no status e layout
+                    const getStatusStyles = () => {
+                      if (layout === 'classic') {
+                        return {
+                          iconBg: 'bg-green-700/80',
+                          cardBorder: 'border border-green-500/30',
+                          cardBg: 'bg-green-500/5',
+                        };
+                      }
+                      
+                      // Layout moderno com cores por status
+                      switch(event.status) {
+                        case 'resolved':
+                          return {
+                            iconBg: 'bg-gradient-to-br from-green-400 to-green-600',
+                            cardBorder: 'border-2 border-green-500/50',
+                            cardBg: 'bg-green-500/5',
+                          };
+                        case 'no_response':
+                          return {
+                            iconBg: 'bg-gradient-to-br from-red-400 to-red-600',
+                            cardBorder: 'border-2 border-red-500/50',
+                            cardBg: 'bg-red-500/5',
+                          };
+                        default:
+                          return {
+                            iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600',
+                            cardBorder: 'border-2 border-orange-500/50',
+                            cardBg: 'bg-orange-500/5',
+                          };
+                      }
+                    };
+                    
+                    const statusStyles = getStatusStyles();
+                    
                     return (
                       <motion.div
                         key={event.id}
-                        layout
-                        className={`absolute z-10 text-center flex-shrink-0 ${
-                          isVertical ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'
+                        className={`absolute flex items-center ${gapSize} ${widthCalc} ${
+                          isVertical 
+                            ? isLeftSide 
+                              ? 'left-0 flex-row-reverse' 
+                              : 'right-0 flex-row'
+                            : ''
                         }`}
-                        style={isVertical 
-                          ? { top: `${position}px` }
-                          : { left: `${position}%`, transform: 'translateX(-50%)' }
-                        }
-                        initial={{ opacity: 0, x: -80, scale: 0.3 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: -80, scale: 0.3 }}
+                        style={isVertical ? {
+                          top: `${position}px`
+                        } : {}}
+                        initial={{ opacity: 0, x: isLeftSide ? -50 : 50 }}
+                        animate={{ opacity: 1, x: 0 }}
                         transition={{ 
-                          duration: 1.2,
-                          delay: index * 0.15,
-                          type: "spring",
-                          stiffness: 120,
-                          damping: 18,
-                          layout: {
-                            duration: 0.8,
-                            type: "spring",
-                            stiffness: 150,
-                            damping: 20
-                          }
+                          duration: layout === 'modern' ? 0.4 : 0.3, 
+                          delay: index * (layout === 'modern' ? 0.1 : 0.08)
                         }}
                       >
             {isVertical ? (
               <>
                 {/* Botão de status - funcional (na linha) */}
-                <button
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-transparent flex items-center justify-center z-20 hover:scale-125 transition-transform"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleStatusToggle(e, line.id, event.id);
-                  }}
+                <motion.button
+                  onClick={(e) => handleStatusToggle(e, line.id, event.id)}
+                  disabled={readOnly}
+                  className={`absolute ${
+                    isLeftSide ? `right-[${iconOffset}]` : `left-[${iconOffset}]`
+                  } ${iconSize} ${statusStyles.iconBg} rounded-full flex items-center justify-center shadow-xl z-20 cursor-pointer border-4 border-background transition-all hover:scale-110`}
+                  whileHover={{ scale: layout === 'modern' ? 1.15 : 1.1 }}
+                  whileTap={{ scale: 0.95 }}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     handleEventClick(event, line.id);
                   }}
-                  title={`${event.icon} ${event.description} - Clique para mudar status, duplo clique para editar`}
+                  title={`${event.icon} - Clique para mudar status, duplo clique para editar`}
                 >
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -565,71 +618,33 @@ export const Timeline = ({
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {renderStatusIcon(event.status)}
+                      <span className={iconTextSize}>{renderStatusIcon(event.status)}</span>
                     </motion.div>
                   </AnimatePresence>
-                </button>
+                </motion.button>
 
-                {/* Elementos ao redor do status */}
-                {event.status === 'no_response' ? (
-                  // Elementos à ESQUERDA do status: Descrição → Data → Ícone
-                  <div className="absolute flex flex-row-reverse items-center gap-3 top-1/2 -translate-y-1/2 right-[calc(50%+30px)]">
-                    <div
-                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
-                    >
-                      {event.icon}
-                    </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
-                    </div>
-                    {showAllDescriptions && event.description && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                        </p>
-                      </motion.div>
-                    )}
+                {/* Card do evento */}
+                <motion.div
+                  onClick={() => !readOnly && handleEventClick(event, line.id)}
+                  className={`flex-1 ${cardPadding} ${cardRoundness} ${statusStyles.cardBorder} ${statusStyles.cardBg} ${
+                    layout === 'modern' ? 'backdrop-blur-sm' : ''
+                  } cursor-pointer transition-all ${
+                    layout === 'modern' ? 'hover:shadow-2xl hover:scale-[1.02]' : 'hover:bg-green-500/10'
+                  }`}
+                  whileHover={layout === 'modern' ? { y: -4 } : {}}
+                >
+                  <div className={`flex items-center ${layout === 'modern' ? 'gap-3' : 'gap-2'} text-xs text-muted-foreground ${
+                    layout === 'modern' ? 'mb-3 pb-2 border-b border-border/30' : 'mb-2'
+                  }`}>
+                    <span className="flex items-center gap-1">📅 {event.date}</span>
+                    {event.time && <span className="flex items-center gap-1">🕐 {event.time}</span>}
                   </div>
-                ) : (
-                  // Elementos à DIREITA do status: Ícone → Data → Descrição
-                  <div className="absolute flex flex-row items-center gap-3 top-1/2 -translate-y-1/2 left-[calc(50%+30px)]">
-                    <div
-                      className="text-2xl cursor-pointer hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event, line.id);
-                      }}
-                      title={event.description}
-                    >
-                      {event.icon}
-                    </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
-                    </div>
-                    {showAllDescriptions && event.description && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <p className="text-foreground text-sm font-medium bg-background/90 px-2 py-1 rounded whitespace-nowrap">
-                          {event.description.length > 90 ? `${event.description.substring(0, 90)}...` : event.description}
-                        </p>
-                      </motion.div>
-                    )}
-                  </div>
-                )}
+                  {(showAllDescriptions || event.description) && (
+                    <p className={`text-sm ${layout === 'modern' ? 'text-foreground/90 leading-relaxed' : 'text-foreground'}`}>
+                      {event.description || 'Sem descrição'}
+                    </p>
+                  )}
+                </motion.div>
               </>
             ) : (
                       <>
