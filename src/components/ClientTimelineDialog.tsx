@@ -221,74 +221,71 @@ export const ClientTimelineDialog = ({
               </div>
             )}
           </div>
-          
-          {/* Botão de Seleção de Layout */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className="p-2 rounded-lg hover:bg-accent transition-colors group shrink-0"
-                title="Escolher Layout da Timeline"
-              >
-                <Palette className="w-5 h-5 text-foreground group-hover:scale-110 transition-transform" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80" align="end">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    <LayoutGrid className="w-4 h-4" />
-                    Estilo da Timeline
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Escolha como visualizar os eventos da timeline
-                  </p>
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="p-2 rounded-lg hover:bg-white/10 transition-colors group"
+                  title="Escolher Layout da Timeline"
+                >
+                  <Palette className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="end">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <LayoutGrid className="w-4 h-4" />
+                      Estilo da Timeline
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Escolha como visualizar os eventos da timeline
+                    </p>
+                  </div>
+
+                  <RadioGroup value={layout} onValueChange={(value) => setLayout(value as 'classic' | 'modern')}>
+                    <div className="flex items-start gap-3 p-3 rounded-lg border-2 border-border hover:border-purple-500/50 cursor-pointer transition-all">
+                      <RadioGroupItem value="modern" id="modern" />
+                      <label htmlFor="modern" className="flex-1 cursor-pointer">
+                        <div className="font-medium text-sm mb-1">🎨 Moderno (Roxo)</div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Layout clean com eventos alternados e cores vibrantes
+                        </p>
+                        <div className="flex gap-2 items-center">
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-purple-600" />
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-br from-green-400 to-green-600" />
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-orange-600" />
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 rounded-lg border-2 border-border hover:border-green-500/50 cursor-pointer transition-all">
+                      <RadioGroupItem value="classic" id="classic" />
+                      <label htmlFor="classic" className="flex-1 cursor-pointer">
+                        <div className="font-medium text-sm mb-1">📊 Clássico (Verde)</div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Layout tradicional com eventos organizados por status
+                        </p>
+                        <div className="flex gap-2 items-center">
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-br from-green-600 to-green-800" />
+                          <div className="w-3 h-3 rounded-full bg-gray-400" />
+                          <div className="w-3 h-3 rounded-full bg-gray-600" />
+                        </div>
+                      </label>
+                    </div>
+                  </RadioGroup>
                 </div>
-
-                <RadioGroup value={layout} onValueChange={(value) => setLayout(value as 'classic' | 'modern')}>
-                  {/* Layout Moderno */}
-                  <div className="flex items-start gap-3 p-3 rounded-lg border-2 border-border hover:border-purple-500/50 cursor-pointer transition-all">
-                    <RadioGroupItem value="modern" id="modern" />
-                    <label htmlFor="modern" className="flex-1 cursor-pointer">
-                      <div className="font-medium text-sm mb-1">🎨 Moderno (Roxo)</div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Layout clean com eventos alternados e cores vibrantes
-                      </p>
-                      <div className="flex gap-2 items-center">
-                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-purple-600" />
-                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-green-400 to-green-600" />
-                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-orange-600" />
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Layout Clássico */}
-                  <div className="flex items-start gap-3 p-3 rounded-lg border-2 border-border hover:border-green-500/50 cursor-pointer transition-all">
-                    <RadioGroupItem value="classic" id="classic" />
-                    <label htmlFor="classic" className="flex-1 cursor-pointer">
-                      <div className="font-medium text-sm mb-1">📊 Clássico (Verde)</div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Layout tradicional com eventos organizados por status
-                      </p>
-                      <div className="flex gap-2 items-center">
-                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-green-600 to-green-800" />
-                        <div className="w-3 h-3 rounded-full bg-gray-400" />
-                        <div className="w-3 h-3 rounded-full bg-gray-600" />
-                      </div>
-                    </label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full shrink-0 hover:bg-red-500/20 hover:text-red-500 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="rounded-full shrink-0 hover:bg-red-500/20 hover:text-red-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}

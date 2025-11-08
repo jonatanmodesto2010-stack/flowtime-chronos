@@ -11,9 +11,8 @@ const TimelinePreferencesContext = createContext<TimelinePreferences | undefined
 
 export const TimelinePreferencesProvider = ({ children }: { children: ReactNode }) => {
   const [layout, setLayoutState] = useState<TimelineLayout>(() => {
-    // Carregar preferência do localStorage
     const saved = localStorage.getItem('timeline-layout');
-    return (saved as TimelineLayout) || 'modern'; // Padrão: moderno
+    return (saved as TimelineLayout) || 'modern';
   });
 
   const setLayout = (newLayout: TimelineLayout) => {
