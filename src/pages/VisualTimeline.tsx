@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, Clock, User, MessageSquare, FileText, CheckCircle2, AlertCircle, Info, Phone, Wrench } from 'lucide-react';
+import { Plus, Calendar, Clock, User, MessageSquare, FileText, CheckCircle2, AlertCircle, Info, Phone, Wrench, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TimelineItem from '@/components/TimelineItem';
 import AddEventDialog from '@/components/AddEventDialog';
@@ -114,13 +114,24 @@ const VisualTimeline = () => {
         >
           <div className="glass-effect rounded-2xl p-6 mb-4 border-2 border-purple-500/30">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-1">
-                  Timeline do Cliente
-                </h1>
-                <p className="text-gray-300 text-base">
-                  Acompanhe todas as atividades e eventos em ordem cronológica
-                </p>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => window.history.back()}
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-purple-500/20 hover:text-purple-400 transition-colors shrink-0"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-1">
+                    Timeline do Cliente
+                  </h1>
+                  <p className="text-gray-300 text-base">
+                    Acompanhe todas as atividades e eventos em ordem cronológica
+                  </p>
+                </div>
               </div>
               <Button
                 onClick={() => setIsAddDialogOpen(true)}
