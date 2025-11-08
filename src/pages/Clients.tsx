@@ -125,8 +125,26 @@ const Clients = () => {
 
       if (error) throw error;
       console.log("loadClients: Clientes carregados:", data?.length);
-      setClients(data || []);
-      setFilteredClients(data || []);
+      
+      // Ordenar: timelines ativas primeiro, depois finalizadas, cada grupo por updated_at
+      const sortedData = (data || []).sort((a, b) => {
+        // Verificar se é finalizada
+        const aCompleted = a.status === 'completed' || a.status === 'archived';
+        const bCompleted = b.status === 'completed' || b.status === 'archived';
+        
+        // Se um é finalizado e outro não, o não-finalizado vem primeiro
+        if (aCompleted !== bCompleted) {
+          return aCompleted ? 1 : -1;
+        }
+        
+        // Se ambos têm o mesmo status, ordenar por updated_at (mais antigo primeiro)
+        const dateA = new Date(a.updated_at || a.created_at).getTime();
+        const dateB = new Date(b.updated_at || b.created_at).getTime();
+        return dateA - dateB;
+      });
+      
+      setClients(sortedData);
+      setFilteredClients(sortedData);
     } catch (error: any) {
       console.error("loadClients: Erro ao carregar clientes:", error.message);
       toast({
@@ -191,8 +209,7 @@ const Clients = () => {
       query = query.lte('updated_at', filters.updateDateTo);
     }
 
-    // Sempre ordenar por data de atualização (mais antigo primeiro)
-    query = query.order('updated_at', { ascending: true, nullsFirst: false });
+    // Remover ordenação SQL - faremos no cliente após os filtros
 
     try {
       const { data, error } = await query;
@@ -344,6 +361,23 @@ const Clients = () => {
           } else {
             return countA - countB; // Menor primeiro
           }
+        });
+      } else {
+        // Se NÃO há ordenação por quantidade de eventos, aplicar ordenação padrão
+        results.sort((a, b) => {
+          // Verificar se é finalizada
+          const aCompleted = a.status === 'completed' || a.status === 'archived';
+          const bCompleted = b.status === 'completed' || b.status === 'archived';
+          
+          // Se um é finalizado e outro não, o não-finalizado vem primeiro
+          if (aCompleted !== bCompleted) {
+            return aCompleted ? 1 : -1;
+          }
+          
+          // Se ambos têm o mesmo status, ordenar por updated_at (mais antigo primeiro)
+          const dateA = new Date(a.updated_at || a.created_at).getTime();
+          const dateB = new Date(b.updated_at || b.created_at).getTime();
+          return dateA - dateB;
         });
       }
 
