@@ -245,6 +245,7 @@ const VisualTimeline = () => {
                 index={index}
                 onEdit={() => handleOpenEditDialog(event)}
                 onColorChange={() => handleColorChange(event.id)}
+                layout={layout}
               />
             ))}
           </AnimatePresence>

@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MessageSquare, FileText, CheckCircle2, AlertCircle, Phone, Wrench } from 'lucide-react';
 
-const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
+const TimelineItem = ({ event, index, onEdit, onColorChange, layout = 'modern' }) => {
   const getIcon = () => {
     switch (event.icon) {
       case 'calendar':
@@ -25,6 +25,19 @@ const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
   };
 
   const getStatusColor = () => {
+    if (layout === 'classic') {
+      switch (event.color) {
+        case 'green':
+          return 'from-green-500 to-emerald-500';
+        case 'yellow':
+          return 'from-yellow-500 to-orange-500';
+        case 'red':
+          return 'from-red-500 to-rose-500';
+        default:
+          return 'from-green-500 to-emerald-500';
+      }
+    }
+    // Modern layout (purple theme)
     switch (event.color) {
       case 'green':
         return 'from-green-500 to-emerald-500';
@@ -38,6 +51,19 @@ const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
   };
 
   const getCardColors = () => {
+    if (layout === 'classic') {
+      switch (event.color) {
+        case 'green':
+          return 'bg-green-500/10 border-green-500/30 hover:border-green-500/60';
+        case 'yellow':
+          return 'bg-yellow-500/10 border-yellow-500/30 hover:border-yellow-500/60';
+        case 'red':
+          return 'bg-red-500/10 border-red-500/30 hover:border-red-500/60';
+        default:
+          return 'bg-green-500/10 border-green-500/30 hover:border-emerald-500/60';
+      }
+    }
+    // Modern layout (purple theme)
     switch (event.color) {
       case 'green':
         return 'bg-green-500/10 border-green-500/30 hover:border-green-500/60';
