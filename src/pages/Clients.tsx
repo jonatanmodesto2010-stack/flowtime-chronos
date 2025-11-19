@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
+import { groupTimelinesByClient } from '@/lib/client-utils';
 
 interface Client {
   id: string;
@@ -120,14 +121,17 @@ const Clients = () => {
           )
         `)
         .eq('organization_id', organizationId)
-        .eq('is_active', true)
-        .order('updated_at', { ascending: true, nullsFirst: false });
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
       console.log("loadClients: Clientes carregados:", data?.length);
       
+      // ✅ Agrupar por client_id, mantendo apenas a timeline mais recente de cada cliente
+      const uniqueClients = groupTimelinesByClient(data || []) as Client[];
+      console.log("loadClients: Após agrupamento:", uniqueClients.length);
+      
       // Ordenar: timelines ativas primeiro, depois finalizadas, cada grupo por updated_at
-      const sortedData = (data || []).sort((a, b) => {
+      const sortedData = uniqueClients.sort((a, b) => {
         // Verificar se é finalizada
         const aCompleted = a.status === 'completed' || a.status === 'archived';
         const bCompleted = b.status === 'completed' || b.status === 'archived';
@@ -137,10 +141,10 @@ const Clients = () => {
           return aCompleted ? 1 : -1;
         }
         
-        // Se ambos têm o mesmo status, ordenar por updated_at (mais antigo primeiro)
+        // Se ambos têm o mesmo status, ordenar por updated_at (mais recente primeiro)
         const dateA = new Date(a.updated_at || a.created_at).getTime();
         const dateB = new Date(b.updated_at || b.created_at).getTime();
-        return dateA - dateB;
+        return dateB - dateA;
       });
       
       setClients(sortedData);
@@ -374,14 +378,16 @@ const Clients = () => {
             return aCompleted ? 1 : -1;
           }
           
-          // Se ambos têm o mesmo status, ordenar por updated_at (mais antigo primeiro)
+          // Se ambos têm o mesmo status, ordenar por updated_at (mais recente primeiro)
           const dateA = new Date(a.updated_at || a.created_at).getTime();
           const dateB = new Date(b.updated_at || b.created_at).getTime();
-          return dateA - dateB;
+          return dateB - dateA;
         });
       }
 
-      setFilteredClients(results);
+      // ✅ Aplicar agrupamento por client_id nos resultados filtrados
+      const uniqueResults = groupTimelinesByClient(results) as Client[];
+      setFilteredClients(uniqueResults);
     } catch (error: any) {
       console.error("handleFilterChange: Erro ao filtrar clientes:", error.message);
       toast({
