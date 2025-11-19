@@ -261,7 +261,7 @@ export const ClientDashboardModal = ({
       const { data, error } = await supabase
         .from('client_timelines')
         .select('id, completed_at, completion_notes, status, start_date')
-        .eq('client_name', client.client_name)
+        .eq('client_id', client.client_id) // ✅ Buscar por client_id
         .eq('organization_id', client.organization_id)
         .in('status', ['completed', 'archived'])
         .order('completed_at', { ascending: false });
@@ -286,6 +286,7 @@ export const ClientDashboardModal = ({
         .from('client_timelines')
         .insert({
           client_name: client.client_name,
+          client_id: client.client_id, // ✅ Reutilizar o client_id existente
           organization_id: client.organization_id,
           start_date: newTimelineData.start_date,
           boleto_value: newTimelineData.boleto_value ? parseFloat(newTimelineData.boleto_value) : null,
