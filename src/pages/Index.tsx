@@ -396,13 +396,16 @@ const Index = () => {
     );
 
     try {
+      const boletoValue = info.boletoValue?.trim();
       const { error } = await supabaseClient
         .from('client_timelines')
         .update({
           client_id: info.clientId || null,
           client_name: info.name,
           start_date: info.startDate,
-          boleto_value: info.boletoValue === '' ? 0 : parseFloat(info.boletoValue),
+          boleto_value: boletoValue && !isNaN(parseFloat(boletoValue)) 
+            ? parseFloat(boletoValue) 
+            : null,
           due_date: info.dueDate,
         })
         .eq('id', timelineId);
