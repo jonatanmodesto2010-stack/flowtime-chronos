@@ -289,8 +289,10 @@ export const ClientDashboardModal = ({
           client_id: client.client_id, // ✅ Reutilizar o client_id existente
           organization_id: client.organization_id,
           start_date: newTimelineData.start_date,
-          boleto_value: newTimelineData.boleto_value ? parseFloat(newTimelineData.boleto_value) : null,
-          due_date: newTimelineData.due_date || null,
+          boleto_value: newTimelineData.boleto_value?.trim() && !isNaN(parseFloat(newTimelineData.boleto_value)) 
+            ? parseFloat(newTimelineData.boleto_value) 
+            : null,
+          due_date: newTimelineData.due_date?.trim() || null,
           status: 'active',
           is_active: true,
           user_id: user?.id
@@ -373,10 +375,14 @@ export const ClientDashboardModal = ({
       // Inserir novos boletos
       if (boletos.length > 0) {
         const boletosToInsert = boletos
-          .filter(b => b.boleto_value && b.due_date) // Apenas boletos válidos
+          .filter(b => {
+            // Validar que boleto_value não está vazio e é um número válido
+            const value = b.boleto_value?.toString().trim();
+            return value && value !== '' && !isNaN(parseFloat(value)) && b.due_date;
+          })
           .map(b => ({
             timeline_id: client.id,
-            boleto_value: parseFloat(b.boleto_value),
+            boleto_value: parseFloat(b.boleto_value.toString()),
             due_date: b.due_date,
             status: b.status,
             description: b.description || null

@@ -312,12 +312,15 @@ export const ClientTimelineDialog = ({
         }}
         updateClientInfo={async (updatedInfo) => {
           try {
+            const boletoValue = updatedInfo.boletoValue?.trim();
             await supabase
               .from('client_timelines')
               .update({
                 client_name: updatedInfo.name,
                 start_date: updatedInfo.startDate,
-                boleto_value: updatedInfo.boletoValue ? parseFloat(updatedInfo.boletoValue) : null,
+                boleto_value: boletoValue && !isNaN(parseFloat(boletoValue)) 
+                  ? parseFloat(boletoValue) 
+                  : null,
                 due_date: updatedInfo.dueDate || null,
               })
               .eq('id', client.id);
