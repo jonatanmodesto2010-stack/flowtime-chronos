@@ -113,7 +113,7 @@ export default {
   		},
   		fontFamily: {
   			sans: [
-  				'Poppins',
+  				'Space Grotesk',
   				'ui-sans-serif',
   				'system-ui',
   				'-apple-system',
@@ -126,7 +126,7 @@ export default {
   				'sans-serif'
   			],
   			mono: [
-  				'JetBrains Mono',
+  				'Space Mono',
   				'ui-monospace',
   				'SFMono-Regular',
   				'Menlo',
@@ -135,15 +135,6 @@ export default {
   				'Liberation Mono',
   				'Courier New',
   				'monospace'
-  			],
-  			serif: [
-  				'Merriweather',
-  				'ui-serif',
-  				'Georgia',
-  				'Cambria',
-  				'Times New Roman',
-  				'Times',
-  				'serif'
   			]
   		},
   		boxShadow: {
