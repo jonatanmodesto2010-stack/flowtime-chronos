@@ -507,7 +507,7 @@ const Clients = () => {
         <div className="flex-1 flex-col flex items-start justify-start">
           <Header />
         
-        <main className="flex-1 p-6 overflow-auto mx-[20px]">
+        <main className="flex-1 p-6 overflow-auto rounded mx-[100px]">
           <motion.div initial={{
             opacity: 0,
             y: -20
