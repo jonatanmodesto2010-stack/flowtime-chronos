@@ -83,7 +83,7 @@ export const Header = ({
         </motion.h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="gap-3 items-center justify-start flex flex-row mx-[160px]">
         <OrganizationSelector />
         
         <motion.button onClick={toggleTheme} className="p-2 bg-primary text-primary-foreground rounded-lg transition-colors" whileHover={{
