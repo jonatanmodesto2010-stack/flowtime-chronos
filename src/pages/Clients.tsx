@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, History, Loader2, TrendingUp } from 'lucide-react';
+import { Plus, History, Loader2, Clock } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -504,7 +504,7 @@ const Clients = () => {
   return <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex-col flex items-start justify-start">
           <Header />
         
         <main className="flex-1 p-6 overflow-auto mx-[20px]">
@@ -514,7 +514,7 @@ const Clients = () => {
           }} animate={{
             opacity: 1,
             y: 0
-          }} className="max-w-4xl mx-auto">
+          }} className="max-w-4xl mx-auto text-gray-400">
             <h2 className="text-2xl font-bold text-foreground mb-6">
               Clientes
             </h2>
@@ -603,7 +603,7 @@ const Clients = () => {
                     e.stopPropagation();
                     handleOpenTimelineDialog(client);
                   }} className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300" title="Ver Timeline">
-                        <TrendingUp className="w-4 h-4" />
+                        <Clock className="w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>)}
