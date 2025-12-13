@@ -27,6 +27,17 @@ const iconOptions = [
   { value: '👨‍🔧', label: '👨‍🔧 Técnico' },
 ];
 
+const defaultMessages = [
+  { value: 'Pagamento efetuado', label: 'Pagamento efetuado' },
+  { value: 'Boleto enviado', label: 'Boleto enviado' },
+  { value: 'Cliente não atendeu', label: 'Cliente não atendeu' },
+  { value: 'Aguardando retorno', label: 'Aguardando retorno' },
+  { value: 'Acordo realizado', label: 'Acordo realizado' },
+  { value: 'Contato realizado', label: 'Contato realizado' },
+  { value: 'Ligação agendada', label: 'Ligação agendada' },
+  { value: 'Sem resposta', label: 'Sem resposta' },
+];
+
 interface Event {
   id: string;
   icon: string;
@@ -218,6 +229,25 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
             </Select>
           </div>
           
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Mensagens Padrões</label>
+            <Select 
+              value="" 
+              onValueChange={(value) => setFormData({ ...formData, description: value })}
+            >
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Selecione uma mensagem padrão" />
+              </SelectTrigger>
+              <SelectContent className="z-[60]">
+                {defaultMessages.map((msg) => (
+                  <SelectItem key={msg.value} value={msg.value}>
+                    {msg.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-muted-foreground mb-2 block">
               Descrição
