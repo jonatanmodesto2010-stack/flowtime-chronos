@@ -28,12 +28,12 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>​ </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="my-[26px]">
               {menuItems.map(item => <SidebarMenuItem key={item.path}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SidebarMenuButton onClick={() => navigate(item.path)} isActive={isActive(item.path)} className="w-full">
-                        <item.icon className="h-4 w-4" />
+                        <item.icon className="w-[20px] h-[20px]" />
                         <span className="text-xl">{item.label}</span>
                       </SidebarMenuButton>
                     </TooltipTrigger>
