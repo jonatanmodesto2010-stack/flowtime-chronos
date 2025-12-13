@@ -97,37 +97,41 @@ export const RetiradaWidget = ({ onClientSelect }: RetiradaWidgetProps) => {
   };
 
   return (
-    <Card className="bg-card border-border flex-1">
-      <CardHeader className="pb-2 px-3 pt-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Package size={14} className="text-orange-500" />
+    <Card className="bg-card border-border flex-1 flex flex-col min-h-0">
+      <CardHeader className="pb-3 px-4 pt-4 flex-shrink-0">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Package size={18} className="text-orange-500" />
           Retiradas
-          <Badge variant="secondary" className="text-xs px-1.5 py-0">
+          <Badge variant="secondary" className="ml-auto">
             {clients.length}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-3 pb-3">
+      <CardContent className="px-4 pb-4 flex-1 min-h-0">
         {loading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : clients.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">
+          <p className="text-sm text-muted-foreground text-center py-8">
             Nenhum cliente de retirada
           </p>
         ) : (
-          <ScrollArea className="h-48">
-            <div className="space-y-1.5">
+          <ScrollArea className="h-full">
+            <div className="space-y-2 pr-2">
               {clients.map(client => (
                 <div
                   key={client.id}
-                  className="p-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                  className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
                   onClick={() => onClientSelect?.(client as any)}
                 >
-                  <p className="text-sm font-medium truncate">{client.client_name}</p>
+                  <p className="text-sm font-semibold truncate uppercase">
+                    {client.client_name}
+                  </p>
                   {client.client_id && (
-                    <p className="text-xs text-muted-foreground">#{client.client_id}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      # {client.client_id}
+                    </p>
                   )}
                 </div>
               ))}
