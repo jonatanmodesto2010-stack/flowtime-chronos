@@ -131,7 +131,7 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 343 87% 15%;
     --sidebar-border: 240 5% 33%;
     --sidebar-ring: 328 85% 70%;
-    --radius: 0rem;
+    --radius: 1.5rem;
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
