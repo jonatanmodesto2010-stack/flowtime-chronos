@@ -73,6 +73,10 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
 
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!formData.time) {
+      alert('Por favor, selecione uma plataforma (OPA ou PL)');
+      return;
+    }
     onSave({ ...formData, isNew: false });
   };
 
