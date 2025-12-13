@@ -205,13 +205,6 @@ const Clients = () => {
       query = query.lte('start_date', filters.dateTo);
     }
 
-    // Update date range filter (data de atualização)
-    if (filters.updateDateFrom) {
-      query = query.gte('updated_at', filters.updateDateFrom);
-    }
-    if (filters.updateDateTo) {
-      query = query.lte('updated_at', filters.updateDateTo);
-    }
 
     // Remover ordenação SQL - faremos no cliente após os filtros
 
@@ -366,8 +359,15 @@ const Clients = () => {
             return countA - countB; // Menor primeiro
           }
         });
+      } else if (filters.updateDateSort !== 'none') {
+        // Ordenação por data de atualização
+        results.sort((a, b) => {
+          const dateA = new Date(a.updated_at || a.created_at).getTime();
+          const dateB = new Date(b.updated_at || b.created_at).getTime();
+          return filters.updateDateSort === 'desc' ? dateB - dateA : dateA - dateB;
+        });
       } else {
-        // Se NÃO há ordenação por quantidade de eventos, aplicar ordenação padrão
+        // Se NÃO há ordenação específica, aplicar ordenação padrão
         results.sort((a, b) => {
           // Verificar se é finalizada
           const aCompleted = a.status === 'completed' || a.status === 'archived';

@@ -9,8 +9,7 @@ export interface FilterValues {
   tagsFilter: string[];
   dateFrom: string;
   dateTo: string;
-  updateDateFrom: string;
-  updateDateTo: string;
+  updateDateSort: 'none' | 'desc' | 'asc';
   boletoFilter: string;
   timelineFilter: string;
   iconsFilter: string[];
@@ -23,8 +22,7 @@ const DEFAULT_FILTERS: FilterValues = {
   tagsFilter: [],
   dateFrom: '',
   dateTo: '',
-  updateDateFrom: '',
-  updateDateTo: '',
+  updateDateSort: 'none',
   boletoFilter: 'all',
   timelineFilter: 'all',
   iconsFilter: [],
