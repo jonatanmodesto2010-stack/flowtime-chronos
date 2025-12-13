@@ -24,7 +24,7 @@ export function AppSidebar() {
   } = useSidebar();
   const isActive = (path: string) => location.pathname === path;
   return <Sidebar collapsible="icon">
-      <SidebarContent>
+      <SidebarContent className="mx-0">
         <SidebarGroup>
           <SidebarGroupLabel>​ </SidebarGroupLabel>
           <SidebarGroupContent className="my-[28px]">
