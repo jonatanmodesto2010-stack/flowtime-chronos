@@ -202,13 +202,16 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Hora</label>
-            <input
-              type="time"
-              value={formData.time || ''}
-              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="w-full p-3 bg-background rounded-md border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Plataforma</label>
+            <Select value={formData.time || ''} onValueChange={(value) => setFormData({ ...formData, time: value })}>
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Selecione a plataforma" />
+              </SelectTrigger>
+              <SelectContent className="z-[60]">
+                <SelectItem value="OPA">OPA</SelectItem>
+                <SelectItem value="PL">PL</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div>

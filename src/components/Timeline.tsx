@@ -585,7 +585,7 @@ export const Timeline = ({
                       {event.icon}
                     </div>
                     <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
+                      {event.date}{event.time && ` ${event.time}`}
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
@@ -614,7 +614,7 @@ export const Timeline = ({
                       {event.icon}
                     </div>
                     <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
+                      {event.date}{event.time && ` ${event.time}`}
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
@@ -666,7 +666,7 @@ export const Timeline = ({
                             {event.position === 'bottom' ? (
                               <>
                                 <div className="text-xs font-semibold text-foreground mb-2 whitespace-nowrap">
-                                  {event.date}
+                                  {event.date}{event.time && ` ${event.time}`}
                                 </div>
                                 <div className="leading-none flex items-center justify-center">
                                   <span className="text-2xl">{event.icon}</span>
@@ -678,7 +678,7 @@ export const Timeline = ({
                                   <span className="text-2xl">{event.icon}</span>
                                 </div>
                                 <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                                  {event.date}
+                                  {event.date}{event.time && ` ${event.time}`}
                                 </div>
                               </>
                             )}

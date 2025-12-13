@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, MessageSquare, FileText, CheckCircle2, AlertCircle, Phone, Wrench } from 'lucide-react';
+import { Calendar, MessageSquare, FileText, CheckCircle2, AlertCircle, Phone, Wrench } from 'lucide-react';
 
 const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
   const getIcon = () => {
@@ -73,11 +73,8 @@ const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
             {event.date && !isNaN(new Date(event.date).getTime())
               ? new Date(event.date).toLocaleDateString('pt-BR')
               : 'Data inválida'}
+            {event.time && ` ${event.time}`}
           </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          <span>{event.time || '--:--'}</span>
         </div>
       </div>
       <p className="text-gray-300 text-sm leading-snug break-words">

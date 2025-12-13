@@ -555,7 +555,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                       {event.icon}
                     </div>
                     <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
+                      {event.date}{event.time && ` ${event.time}`}
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
@@ -584,7 +584,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                       {event.icon}
                     </div>
                     <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}
+                      {event.date}{event.time && ` ${event.time}`}
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
@@ -625,7 +625,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                                   {event.position === 'bottom' ? (
                                     <>
                                       <div className="text-sm font-semibold text-foreground mb-2">
-                                        {event.date}
+                                        {event.date}{event.time && ` ${event.time}`}
                                       </div>
                                       <div className={`${event.iconSize || 'text-2xl'}`}>
                                         {event.icon}
@@ -637,7 +637,7 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                                         {event.icon}
                                       </div>
                                       <div className="text-sm font-semibold text-foreground">
-                                        {event.date}
+                                        {event.date}{event.time && ` ${event.time}`}
                                       </div>
                                     </>
                                   )}
