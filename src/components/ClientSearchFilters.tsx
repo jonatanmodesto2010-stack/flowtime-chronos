@@ -71,8 +71,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
       tagsFilter: [],
       dateFrom: '',
       dateTo: '',
-      updateDateFrom: '',
-      updateDateTo: '',
+      updateDateSort: 'none',
       boletoFilter: 'all',
       timelineFilter: 'all',
       iconsFilter: [],
@@ -98,7 +97,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
     filters.statusFilter !== 'all',
     filters.tagsFilter.length > 0,
     filters.dateFrom || filters.dateTo,
-    filters.updateDateFrom || filters.updateDateTo,
+    filters.updateDateSort !== 'none',
     filters.boletoFilter !== 'all',
     filters.timelineFilter !== 'all',
     filters.iconsFilter.length > 0,
@@ -222,27 +221,20 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
 
               {/* Data de Atualização */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Data de Atualização</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Input
-                      type="date"
-                      value={filters.updateDateFrom}
-                      onChange={(e) => applyFilters({ updateDateFrom: e.target.value })}
-                      placeholder="De"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      type="date"
-                      value={filters.updateDateTo}
-                      onChange={(e) => applyFilters({ updateDateTo: e.target.value })}
-                      placeholder="Até"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
+                <label className="text-sm font-medium mb-2 block">Ordenar por Atualização</label>
+                <Select 
+                  value={filters.updateDateSort} 
+                  onValueChange={(value) => applyFilters({ updateDateSort: value as 'none' | 'desc' | 'asc' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem ordenação</SelectItem>
+                    <SelectItem value="desc">🔽 Mais recente primeiro</SelectItem>
+                    <SelectItem value="asc">🔼 Mais antiga primeiro</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Boletos */}
@@ -351,12 +343,12 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
               />
             </Badge>
           )}
-          {(filters.updateDateFrom || filters.updateDateTo) && (
+          {filters.updateDateSort !== 'none' && (
             <Badge variant="secondary" className="gap-1">
-              Atualização: {filters.updateDateFrom || '...'} até {filters.updateDateTo || '...'}
+              Atualização: {filters.updateDateSort === 'desc' ? '🔽 Recente' : '🔼 Antiga'}
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => applyFilters({ updateDateFrom: '', updateDateTo: '' })}
+                onClick={() => applyFilters({ updateDateSort: 'none' })}
               />
             </Badge>
           )}
