@@ -66,16 +66,24 @@ const TimelineItem = ({ event, index, onEdit, onColorChange }) => {
       transition={{ duration: 0.2 }}
       className={`backdrop-blur-sm rounded-xl p-4 border transition-all duration-300 hover:shadow-xl cursor-pointer w-[calc(50%-2.5rem)] ${getCardColors()}`}
     >
-      <div className="flex items-center gap-3 text-xs text-gray-400 mb-2">
+      <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
         <div className="flex items-center gap-1">
           <Calendar className="h-3 w-3" />
           <span>
             {event.date && !isNaN(new Date(event.date).getTime())
               ? new Date(event.date).toLocaleDateString('pt-BR')
               : 'Data inválida'}
-            {event.time && ` ${event.time}`}
           </span>
         </div>
+        {event.time && (
+          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+            event.time === 'OPA' ? 'bg-orange-500/80 text-white' : 
+            event.time === 'PL' ? 'bg-purple-500/80 text-white' : 
+            'bg-gray-500/80 text-white'
+          }`}>
+            {event.time}
+          </span>
+        )}
       </div>
       <p className="text-gray-300 text-sm leading-snug break-words">
         {event.description}

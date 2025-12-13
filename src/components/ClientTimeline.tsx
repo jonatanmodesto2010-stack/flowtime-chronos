@@ -554,8 +554,17 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                     >
                       {event.icon}
                     </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}{event.time && ` ${event.time}`}
+                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground whitespace-nowrap">
+                      <span>{event.date}</span>
+                      {event.time && (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          event.time === 'OPA' ? 'bg-orange-500/80 text-white' : 
+                          event.time === 'PL' ? 'bg-purple-500/80 text-white' : 
+                          'bg-gray-500/80 text-white'
+                        }`}>
+                          {event.time}
+                        </span>
+                      )}
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
@@ -583,8 +592,17 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                     >
                       {event.icon}
                     </div>
-                    <div className="text-xs font-semibold text-foreground whitespace-nowrap">
-                      {event.date}{event.time && ` ${event.time}`}
+                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground whitespace-nowrap">
+                      <span>{event.date}</span>
+                      {event.time && (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          event.time === 'OPA' ? 'bg-orange-500/80 text-white' : 
+                          event.time === 'PL' ? 'bg-purple-500/80 text-white' : 
+                          'bg-gray-500/80 text-white'
+                        }`}>
+                          {event.time}
+                        </span>
+                      )}
                     </div>
                     {showAllDescriptions && event.description && (
                       <motion.div
@@ -624,8 +642,17 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                                 >
                                   {event.position === 'bottom' ? (
                                     <>
-                                      <div className="text-sm font-semibold text-foreground mb-2">
-                                        {event.date}{event.time && ` ${event.time}`}
+                                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-2">
+                                        <span>{event.date}</span>
+                                        {event.time && (
+                                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                            event.time === 'OPA' ? 'bg-orange-500/80 text-white' : 
+                                            event.time === 'PL' ? 'bg-purple-500/80 text-white' : 
+                                            'bg-gray-500/80 text-white'
+                                          }`}>
+                                            {event.time}
+                                          </span>
+                                        )}
                                       </div>
                                       <div className={`${event.iconSize || 'text-2xl'}`}>
                                         {event.icon}
@@ -636,8 +663,17 @@ export const ClientTimeline = ({ clientId, clientName, onClose }: ClientTimeline
                                       <div className={`${event.iconSize || 'text-2xl'} mb-2`}>
                                         {event.icon}
                                       </div>
-                                      <div className="text-sm font-semibold text-foreground">
-                                        {event.date}{event.time && ` ${event.time}`}
+                                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                        <span>{event.date}</span>
+                                        {event.time && (
+                                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                            event.time === 'OPA' ? 'bg-orange-500/80 text-white' : 
+                                            event.time === 'PL' ? 'bg-purple-500/80 text-white' : 
+                                            'bg-gray-500/80 text-white'
+                                          }`}>
+                                            {event.time}
+                                          </span>
+                                        )}
                                       </div>
                                     </>
                                   )}
