@@ -614,7 +614,7 @@ const Clients = () => {
             </motion.div>
 
             {/* Coluna Direita - Calendário e Retiradas */}
-            <div className="hidden xl:flex w-72 flex-col gap-4 flex-shrink-0">
+            <div className="hidden xl:flex flex-1 max-w-md flex-col gap-4">
               <CalendarWidget />
               <RetiradaWidget onClientSelect={(client) => handleOpenModal(client as Client)} />
             </div>

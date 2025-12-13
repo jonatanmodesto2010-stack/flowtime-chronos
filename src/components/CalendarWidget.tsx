@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,8 +31,6 @@ export const CalendarWidget = () => {
     
     try {
       setLoading(true);
-      const monthStart = format(startOfMonth(currentDate), 'yyyy-MM-dd');
-      const monthEnd = format(endOfMonth(currentDate), 'yyyy-MM-dd');
 
       // Buscar timelines da organização
       const { data: timelines } = await supabaseClient
@@ -60,13 +58,11 @@ export const CalendarWidget = () => {
 
       const lineIds = lines.map(l => l.id);
 
-      // Buscar eventos do mês
+      // Buscar todos os eventos
       const { data: eventsData } = await supabaseClient
         .from('timeline_events')
         .select('id, event_date, line_id')
-        .in('line_id', lineIds)
-        .gte('event_date', monthStart)
-        .lte('event_date', monthEnd);
+        .in('line_id', lineIds);
 
       // Mapear eventos com timeline_id
       const mappedEvents = (eventsData || []).map(event => {
@@ -86,70 +82,88 @@ export const CalendarWidget = () => {
     }
   };
 
-  const previousMonth = () => setCurrentDate(subMonths(currentDate, 1));
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const previousMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
 
   const getDaysInMonth = () => {
-    const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
-    const end = endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
-    return eachDayOfInterval({ start, end });
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    return { daysInMonth, startingDayOfWeek };
   };
 
-  const getEventsForDay = (day: Date) => {
-    const dayStr = format(day, 'yyyy-MM-dd');
-    return events.filter(e => e.event_date === dayStr);
+  const getEventsForDay = (day: number) => {
+    const dateStr = `${String(day).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+    return events.filter(e => e.event_date === dateStr);
   };
 
-  const days = getDaysInMonth();
+  const { daysInMonth, startingDayOfWeek } = getDaysInMonth();
   const today = new Date();
+  const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
 
   return (
     <Card className="bg-card border-border">
-      <CardHeader className="pb-2 px-3 pt-3">
+      <CardHeader className="pb-3 px-4 pt-4">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={previousMonth}>
-            <ChevronLeft size={14} />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={previousMonth}>
+            <ChevronLeft size={18} />
           </Button>
-          <CardTitle className="text-sm font-medium capitalize">
-            {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+          <CardTitle className="text-base font-semibold">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </CardTitle>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={nextMonth}>
-            <ChevronRight size={14} />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
+            <ChevronRight size={18} />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="px-3 pb-3">
+      <CardContent className="px-4 pb-4">
         {/* Dias da semana */}
-        <div className="grid grid-cols-7 gap-1 text-xs text-muted-foreground mb-1">
-          {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
-            <div key={i} className="text-center font-medium py-1">{d}</div>
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {dayNames.map((d, i) => (
+            <div key={i} className="text-center font-semibold text-muted-foreground text-xs py-2">
+              {d}
+            </div>
           ))}
         </div>
         
         {/* Grid de dias */}
         <div className="grid grid-cols-7 gap-1">
-          {days.map((day, index) => {
+          {/* Células vazias para dias antes do início do mês */}
+          {Array.from({ length: startingDayOfWeek }).map((_, index) => (
+            <div key={`empty-${index}`} className="aspect-square" />
+          ))}
+          
+          {/* Dias do mês */}
+          {Array.from({ length: daysInMonth }).map((_, index) => {
+            const day = index + 1;
             const dayEvents = getEventsForDay(day);
-            const isCurrentMonth = isSameMonth(day, currentDate);
-            const isToday = isSameDay(day, today);
+            const isToday = 
+              day === today.getDate() &&
+              currentDate.getMonth() === today.getMonth() &&
+              currentDate.getFullYear() === today.getFullYear();
             const hasEvents = dayEvents.length > 0;
 
             return (
               <div
-                key={index}
+                key={day}
                 className={cn(
-                  "relative h-7 w-7 flex items-center justify-center text-xs rounded-md transition-colors",
-                  !isCurrentMonth && "text-muted-foreground/40",
-                  isCurrentMonth && "text-foreground",
+                  "aspect-square flex flex-col items-center justify-center text-sm rounded-lg transition-colors cursor-pointer hover:bg-accent",
                   isToday && "bg-primary text-primary-foreground font-bold",
-                  hasEvents && !isToday && "bg-accent/50 font-medium",
-                  "hover:bg-accent cursor-pointer"
+                  hasEvents && !isToday && "font-medium"
                 )}
               >
-                {format(day, 'd')}
+                <span>{day}</span>
                 {hasEvents && (
                   <span className={cn(
-                    "absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full",
+                    "w-1.5 h-1.5 rounded-full mt-0.5",
                     isToday ? "bg-primary-foreground" : "bg-primary"
                   )} />
                 )}
