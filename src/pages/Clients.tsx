@@ -17,6 +17,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 import { groupTimelinesByClient } from '@/lib/client-utils';
+import { CalendarWidget } from '@/components/CalendarWidget';
+import { RetiradaWidget } from '@/components/RetiradaWidget';
 interface Client {
   id: string;
   client_name: string;
@@ -507,107 +509,116 @@ const Clients = () => {
           <Header />
         
         <main className="flex-1 p-6 overflow-auto">
-          <motion.div initial={{
-            opacity: 0,
-            y: -20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} className="max-w-4xl mx-0">
-            <h2 className="text-2xl font-bold text-foreground mb-6">
-              Clientes
-            </h2>
+          <div className="flex gap-6">
+            {/* Coluna Esquerda - Lista de Clientes */}
+            <motion.div initial={{
+              opacity: 0,
+              y: -20
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} className="flex-1 max-w-4xl">
+              <h2 className="text-2xl font-bold text-foreground mb-6">
+                Clientes
+              </h2>
 
-          <ClientSearchFilters onFilterChange={handleFilterChange} organizationId={organizationId} pageName="clients" />
+              <ClientSearchFilters onFilterChange={handleFilterChange} organizationId={organizationId} pageName="clients" />
 
-            {/* Loading Indicator */}
-            {isFiltering && <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 px-1">
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span>Buscando clientes...</span>
-              </div>}
+              {/* Loading Indicator */}
+              {isFiltering && <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 px-1">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <span>Buscando clientes...</span>
+                </div>}
 
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
-                Mostrando {filteredClients.length} de {clients.length} clientes
-              </p>
-              
-              <div className="flex items-center gap-3">
-                <motion.button onClick={() => navigate('/history')} initial={{
-                  opacity: 0,
-                  scale: 0.9
-                }} animate={{
-                  opacity: 1,
-                  scale: 1
-                }} whileHover={{
-                  scale: 1.05
-                }} whileTap={{
-                  scale: 0.95
-                }} className="px-6 py-2 bg-primary/10 text-primary rounded-lg font-semibold hover:bg-primary/20 transition-all flex items-center gap-2 whitespace-nowrap">
-                  <History size={18} />
-                  Histórico
-                </motion.button>
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {filteredClients.length} de {clients.length} clientes
+                </p>
+                
+                <div className="flex items-center gap-3">
+                  <motion.button onClick={() => navigate('/history')} initial={{
+                    opacity: 0,
+                    scale: 0.9
+                  }} animate={{
+                    opacity: 1,
+                    scale: 1
+                  }} whileHover={{
+                    scale: 1.05
+                  }} whileTap={{
+                    scale: 0.95
+                  }} className="px-6 py-2 bg-primary/10 text-primary rounded-lg font-semibold hover:bg-primary/20 transition-all flex items-center gap-2 whitespace-nowrap">
+                    <History size={18} />
+                    Histórico
+                  </motion.button>
 
-                <motion.button onClick={() => setNewClientModalOpen(true)} initial={{
-                  opacity: 0,
-                  scale: 0.9
-                }} animate={{
-                  opacity: 1,
-                  scale: 1
-                }} whileHover={{
-                  scale: 1.05
-                }} whileTap={{
-                  scale: 0.95
-                }} className="px-6 py-2 bg-gradient-primary text-primary-foreground rounded-lg font-semibold hover:bg-gradient-hover transition-all flex items-center gap-2 whitespace-nowrap">
-                  <Plus size={18} />
-                  Novo Cliente
-                </motion.button>
+                  <motion.button onClick={() => setNewClientModalOpen(true)} initial={{
+                    opacity: 0,
+                    scale: 0.9
+                  }} animate={{
+                    opacity: 1,
+                    scale: 1
+                  }} whileHover={{
+                    scale: 1.05
+                  }} whileTap={{
+                    scale: 0.95
+                  }} className="px-6 py-2 bg-gradient-primary text-primary-foreground rounded-lg font-semibold hover:bg-gradient-hover transition-all flex items-center gap-2 whitespace-nowrap">
+                    <Plus size={18} />
+                    Novo Cliente
+                  </motion.button>
+                </div>
               </div>
+
+              {filteredClients.length === 0 ? <div className="text-center py-20 text-muted-foreground">
+                  <p>Nenhum cliente encontrado</p>
+                </div> : <div className="flex flex-col gap-3 w-full">
+                  {filteredClients.map((client, index) => <motion.div key={client.id} initial={{
+                  opacity: 0,
+                  x: -20
+                }} animate={{
+                  opacity: 1,
+                  x: 0
+                }} transition={{
+                  delay: index * 0.05
+                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : 'bg-card hover:bg-card/80'}`}>
+                      <div className="flex-1 w-full cursor-pointer" onClick={() => handleOpenModal(client)}>
+                        <h3 className={`font-bold text-xl uppercase tracking-wide ${isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'}`}>
+                          {client.client_name}
+                        </h3>
+                        
+                        {/* Última Atualização */}
+                        {client.updated_at && <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-xs">🕐</span>
+                            <p className="text-xs text-muted-foreground">
+                              Última atualização: {formatLastUpdate(client.updated_at, client.profiles?.full_name)}
+                            </p>
+                          </div>}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Badge dinâmico baseado no status */}
+                        {isCompleted(client.status) ? <div className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded flex-shrink-0 font-semibold">
+                            FINALIZADO
+                          </div> : !client.is_active && <div className="px-2 py-1 bg-red-500/20 text-red-500 text-xs rounded flex-shrink-0">
+                            Inativo
+                          </div>}
+                        
+                        <Button variant="outline" size="icon" onClick={e => {
+                      e.stopPropagation();
+                      handleOpenTimelineDialog(client);
+                    }} className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300" title="Ver Timeline">
+                          <TrendingUp className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </motion.div>)}
+                </div>}
+            </motion.div>
+
+            {/* Coluna Direita - Calendário e Retiradas */}
+            <div className="hidden xl:flex w-72 flex-col gap-4 flex-shrink-0">
+              <CalendarWidget />
+              <RetiradaWidget onClientSelect={(client) => handleOpenModal(client as Client)} />
             </div>
-
-            {filteredClients.length === 0 ? <div className="text-center py-20 text-muted-foreground">
-                <p>Nenhum cliente encontrado</p>
-              </div> : <div className="flex flex-col gap-3 w-full">
-                {filteredClients.map((client, index) => <motion.div key={client.id} initial={{
-                opacity: 0,
-                x: -20
-              }} animate={{
-                opacity: 1,
-                x: 0
-              }} transition={{
-                delay: index * 0.05
-              }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : 'bg-card hover:bg-card/80'}`}>
-                    <div className="flex-1 w-full cursor-pointer" onClick={() => handleOpenModal(client)}>
-                      <h3 className={`font-bold text-xl uppercase tracking-wide ${isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'}`}>
-                        {client.client_name}
-                      </h3>
-                      
-                      {/* Última Atualização */}
-                      {client.updated_at && <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-xs">🕐</span>
-                          <p className="text-xs text-muted-foreground">
-                            Última atualização: {formatLastUpdate(client.updated_at, client.profiles?.full_name)}
-                          </p>
-                        </div>}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {/* Badge dinâmico baseado no status */}
-                      {isCompleted(client.status) ? <div className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded flex-shrink-0 font-semibold">
-                          FINALIZADO
-                        </div> : !client.is_active && <div className="px-2 py-1 bg-red-500/20 text-red-500 text-xs rounded flex-shrink-0">
-                          Inativo
-                        </div>}
-                      
-                      <Button variant="outline" size="icon" onClick={e => {
-                    e.stopPropagation();
-                    handleOpenTimelineDialog(client);
-                  }} className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300" title="Ver Timeline">
-                        <TrendingUp className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </motion.div>)}
-              </div>}
-          </motion.div>
+          </div>
         </main>
       </div>
 
