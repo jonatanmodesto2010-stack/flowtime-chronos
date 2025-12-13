@@ -27,7 +27,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>​ </SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="my-[28px]">
             <SidebarMenu className="my-[26px]">
               {menuItems.map(item => <SidebarMenuItem key={item.path}>
                   <Tooltip>
