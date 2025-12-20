@@ -87,8 +87,6 @@ const Clients = () => {
     }) => {
       if (session?.user) {
         setUser(session.user);
-      } else {
-        navigate('/auth');
       }
     });
     const {
@@ -98,12 +96,10 @@ const Clients = () => {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-      } else {
-        navigate('/auth');
       }
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
   useEffect(() => {
     if (organizationId) {
       loadClients();

@@ -28,7 +28,7 @@ const AppContent = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/visual-timeline" element={<VisualTimeline />} />
-        <Route path="/auth" element={<Auth />} />
+        {/* Auth route removed - direct access enabled */}
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
