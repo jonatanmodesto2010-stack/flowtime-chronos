@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -53,9 +52,7 @@ const Calendar = () => {
   } | null>(null);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const shouldListenToChanges = useRef(true);
-  const navigate = useNavigate();
   const { toast } = useToast();
-
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -63,7 +60,8 @@ const Calendar = () => {
         setUser(session.user);
         loadEvents(session.user.id);
       } else {
-        navigate('/auth');
+        // Sem autenticação: não redireciona e não trava em loading
+        setLoading(false);
       }
     });
 
@@ -72,12 +70,13 @@ const Calendar = () => {
         setUser(session.user);
         loadEvents(session.user.id);
       } else {
-        navigate('/auth');
+        setUser(null);
+        setLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   // Real-time updates
   useEffect(() => {
