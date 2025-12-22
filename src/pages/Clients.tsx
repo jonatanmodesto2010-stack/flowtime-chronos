@@ -521,11 +521,6 @@ const Clients = () => {
                 Clientes
               </h2>
 
-              {!organizationId && (
-                <div className="mb-6 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
-                  Nenhuma organização foi identificada. Sem autenticação, os dados do backend podem não carregar.
-                </div>
-              )}
 
               <ClientSearchFilters onFilterChange={handleFilterChange} organizationId={organizationId} pageName="clients" />
 
@@ -619,12 +614,10 @@ const Clients = () => {
             </motion.div>
 
           {/* Coluna Direita - Calendário e Retiradas */}
-          {organizationId && (
-            <div className="hidden xl:flex flex-1 flex-col gap-4">
-              <CalendarWidget />
-              <RetiradaWidget onClientSelect={(client) => handleOpenModal(client as Client)} />
-            </div>
-          )}
+          <div className="hidden xl:flex flex-1 flex-col gap-4">
+            <CalendarWidget />
+            <RetiradaWidget onClientSelect={(client) => handleOpenModal(client as Client)} />
+          </div>
           </div>
         </main>
       </div>
