@@ -120,7 +120,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
     }
 
-    const data = await fetchIxcData(apiUrl, apiToken, 'cliente', page, 100);
+    const data = await fetchIxcData(apiUrl, apiToken, 'cliente', page, 500);
     const records = data.registros || data.rows || [];
 
     // On first page, save total_records for progress tracking
@@ -182,28 +182,23 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
 
-    // Batch update existing records (parallel with error handling)
+    // Batch update existing records via SQL function (single query!)
     if (toUpdate.length > 0) {
-      const CONCURRENCY = 10;
-      for (let i = 0; i < toUpdate.length; i += CONCURRENCY) {
-        const batch = toUpdate.slice(i, i + CONCURRENCY);
-        try {
-          await Promise.all(batch.map(record =>
-            supabaseAdmin
-              .from('client_timelines')
-              .update({
-                client_name: record.client_name,
-                is_active: record.is_active,
-                status: record.status,
-                updated_at: record.updated_at,
-              })
-              .eq('id', record.id)
-          ));
-        } catch (err) {
-          console.error(`Client update batch error at ${i}:`, err);
+      try {
+        const { error } = await supabaseAdmin.rpc('batch_upsert_clients', {
+          p_ids: toUpdate.map(r => r.id),
+          p_names: toUpdate.map(r => r.client_name),
+          p_active: toUpdate.map(r => r.is_active),
+          p_statuses: toUpdate.map(r => r.status),
+        });
+        if (error) {
+          console.error('Batch client update error:', error.message);
+        } else {
+          totalUpdated += toUpdate.length;
         }
+      } catch (err) {
+        console.error('Batch client update exception:', err);
       }
-      totalUpdated += toUpdate.length;
     }
 
     // Batch insert new records (single query!)
@@ -229,7 +224,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
 
     console.log(`Page ${page}: ${toInsert.length} created, ${toUpdate.length} updated (${totalProcessed} total)`);
 
-    if (records.length < 100) {
+    if (records.length < 500) {
       hasMore = false;
     }
     page++;
@@ -252,7 +247,7 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
     }
 
-    const data = await fetchIxcData(apiUrl, apiToken, 'fn_areceber', page, 100);
+    const data = await fetchIxcData(apiUrl, apiToken, 'fn_areceber', page, 500);
     const records = data.registros || data.rows || [];
 
     // On first page, save total_records for progress tracking
@@ -338,27 +333,24 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
 
-    // Batch updates (parallel with error handling)
-    const CONCURRENCY = 10;
-    for (let i = 0; i < toUpdateList.length; i += CONCURRENCY) {
-      const batch = toUpdateList.slice(i, i + CONCURRENCY);
+    // Batch update via SQL function (single query!)
+    if (toUpdateList.length > 0) {
       try {
-        await Promise.all(batch.map(record =>
-          supabaseAdmin
-            .from('client_boletos')
-            .update({
-              boleto_value: record.boleto_value,
-              due_date: record.due_date,
-              status: record.status,
-              updated_at: record.updated_at,
-            })
-            .eq('id', record.id)
-        ));
+        const { error } = await supabaseAdmin.rpc('batch_upsert_boletos', {
+          p_ids: toUpdateList.map(r => r.id),
+          p_values: toUpdateList.map(r => r.boleto_value),
+          p_dates: toUpdateList.map(r => r.due_date),
+          p_statuses: toUpdateList.map(r => r.status),
+        });
+        if (error) {
+          console.error('Batch boleto update error:', error.message);
+        } else {
+          totalUpdated += toUpdateList.length;
+        }
       } catch (err) {
-        console.error(`Boleto update batch error at ${i}:`, err);
+        console.error('Batch boleto update exception:', err);
       }
     }
-    totalUpdated += toUpdateList.length;
 
     // Batch insert (single query!)
     if (toInsert.length > 0) {
@@ -383,7 +375,7 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
 
     console.log(`Boletos page ${page}: ${toInsert.length} created, ${toUpdateList.length} updated (${totalProcessed} total)`);
 
-    if (records.length < 100) {
+    if (records.length < 500) {
       hasMore = false;
     }
     page++;
