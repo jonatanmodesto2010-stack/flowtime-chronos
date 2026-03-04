@@ -1,29 +1,54 @@
 
 
-## Diagnóstico
+## Plano: Progresso e Tempo Estimado da Sincronização
 
-O botão "Parar" não funciona porque o frontend tenta atualizar o status do log para `cancelled` na tabela `integration_sync_log`, mas a **política RLS bloqueia a operação**. A policy "Service role can manage sync logs" é do tipo **RESTRICTIVE** (não permissiva), o que significa que ela restringe em vez de permitir. O cliente autenticado com anon key só tem permissão de SELECT, não UPDATE. O update falha silenciosamente, e a edge function nunca vê o status `cancelled`.
+### Abordagem
 
-## Solução
+A API do IXC já retorna um campo `total` na resposta (visível na linha 393: `testData.total`). Podemos usar isso para calcular a porcentagem e estimar o tempo restante.
 
-Duas mudanças:
+### Mudanças
 
-### 1. Criar RLS policy para permitir UPDATE do status pelo usuário
-Adicionar uma policy que permita membros da organização atualizar logs de sync da sua organização (apenas o campo status).
+#### 1. Database: Adicionar coluna `total_records` na tabela `integration_sync_log`
 
 ```sql
-CREATE POLICY "Members can cancel sync logs"
-ON public.integration_sync_log
-FOR UPDATE
-TO authenticated
-USING (organization_id = get_user_organization(auth.uid()))
-WITH CHECK (organization_id = get_user_organization(auth.uid()));
+ALTER TABLE public.integration_sync_log 
+ADD COLUMN total_records integer DEFAULT 0;
 ```
 
-### 2. Verificar cancelamento com mais frequência na edge function
-Atualmente só verifica a cada 100 registros (por página). Adicionar verificação a cada 10 registros dentro do loop `for` em `syncClients` e `syncBoletos`, para resposta mais rápida ao cancelamento.
+#### 2. Edge Function (`supabase/functions/ixc-sync/index.ts`)
 
-**Arquivo:** `supabase/functions/ixc-sync/index.ts`
-- Dentro do `for` loop de `syncClients` (linha ~117): verificar `checkCancelled` a cada 10 registros
-- Dentro do `for` loop de `syncBoletos` (linha ~203): mesma verificação
+- Na primeira página de cada sync (`syncClients`, `syncBoletos`), capturar o `data.total` retornado pela API IXC
+- Salvar `total_records` no log imediatamente
+- Atualizar `records_processed` a cada página (100 registros) no log, para o frontend acompanhar o progresso em tempo real
+
+Exemplo no loop:
+```typescript
+// Primeira página: salvar total
+if (page === 1) {
+  totalRecords = parseInt(data.total) || 0;
+  await supabaseAdmin.from('integration_sync_log')
+    .update({ total_records: totalRecords })
+    .eq('id', logId);
+}
+
+// A cada página: atualizar progresso
+await supabaseAdmin.from('integration_sync_log')
+  .update({ records_processed: totalProcessed })
+  .eq('id', logId);
+```
+
+#### 3. Frontend (`src/components/settings/IXCIntegration.tsx`)
+
+- Adicionar `total_records` ao tipo `SyncLog`
+- Mostrar barra de progresso (`Progress`) durante syncs com status `running`
+- Calcular porcentagem: `(records_processed / total_records) * 100`
+- Calcular tempo estimado: baseado na taxa de processamento (registros/segundo) desde `started_at`
+- Reduzir intervalo de polling para 5s durante sync ativo
+- Exibir: `"42% concluído — ~2min restantes"`
+
+### Detalhes Técnicos
+
+- O polling a cada 5s busca os logs `running` e atualiza a UI com a barra de progresso
+- O cálculo de tempo usa: `tempoDecorrido * (totalRestante / totalProcessado)`
+- A barra de progresso usa o componente `Progress` já existente no projeto
 
