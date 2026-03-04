@@ -34,6 +34,8 @@ function mapIxcStatus(ixcStatus: string): string {
 async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, page: number = 1, perPage: number = 100) {
   const url = `${apiUrl}/webservice/v1/${endpoint}`;
   
+  console.log(`Fetching IXC data from: ${url} (page ${page})`);
+  
   const body = new URLSearchParams();
   body.append('qtype', 'id');
   body.append('query', '');
@@ -53,12 +55,31 @@ async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, 
     body: body.toString(),
   });
 
+  const contentType = response.headers.get('content-type') || '';
+  const responseText = await response.text();
+
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`IXC API error [${response.status}]: ${text}`);
+    console.error(`IXC API error [${response.status}]:`, responseText.substring(0, 300));
+    throw new Error(`IXC API error [${response.status}]: ${responseText.substring(0, 200)}`);
   }
 
-  return await response.json();
+  if (!contentType.includes('application/json') && !contentType.includes('text/json')) {
+    if (responseText.trim().startsWith('<') || responseText.includes('<html')) {
+      console.error('IXC returned HTML instead of JSON. Check API URL and token.');
+      console.error('Response preview:', responseText.substring(0, 300));
+      throw new Error(
+        `IXC API retornou HTML em vez de JSON. Verifique se a URL da API (${apiUrl}) e o token estão corretos. ` +
+        `Isso geralmente indica URL incorreta, token inválido ou o servidor IXC está inacessível.`
+      );
+    }
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch (e) {
+    console.error('Failed to parse IXC response:', responseText.substring(0, 300));
+    throw new Error(`Resposta do IXC não é JSON válido. Preview: ${responseText.substring(0, 100)}`);
+  }
 }
 
 async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string) {
