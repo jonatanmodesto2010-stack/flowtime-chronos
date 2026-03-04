@@ -1,8 +1,8 @@
 /**
  * Função de ordenação padrão para clientes/timelines:
- * 1. Finalizados (completed/archived) → sempre por último
- * 2. Bloqueados (is_active === false) → topo, ordenados por due_date ASC (mais atrasado primeiro)
- * 3. Ativos → meio, ordenados por updated_at DESC (mais recente primeiro)
+ * 1. Bloqueados (is_active === false) → topo, ordenados por due_date ASC (mais atrasado primeiro)
+ * 2. Ativos (is_active === true, status !== completed) → meio, ordenados por updated_at DESC
+ * 3. Finalizados (status === completed, is_active === true) → final
  */
 export const defaultClientSort = <T extends {
   status: string;
@@ -11,40 +11,34 @@ export const defaultClientSort = <T extends {
   updated_at?: string | null;
   created_at: string | null;
 }>(a: T, b: T): number => {
-  const aCompleted = a.status === 'completed' || a.status === 'archived';
-  const bCompleted = b.status === 'completed' || b.status === 'archived';
+  const aBlocked = !a.is_active;
+  const bBlocked = !b.is_active;
 
-  // Finalizados vão para o final
-  if (aCompleted !== bCompleted) {
-    return aCompleted ? 1 : -1;
-  }
-
-  // Se ambos finalizados, ordenar por updated_at DESC
-  if (aCompleted && bCompleted) {
-    const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
-    const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
-    return dateB - dateA;
-  }
-
-  // Bloqueados (is_active === false) vêm antes dos ativos
-  if (a.is_active !== b.is_active) {
-    return a.is_active ? 1 : -1;
+  // Bloqueados (is_active === false) sempre no topo
+  if (aBlocked !== bBlocked) {
+    return aBlocked ? -1 : 1;
   }
 
   // Se ambos bloqueados, ordenar por due_date ASC (mais atrasado/antigo primeiro, null por último)
-  if (!a.is_active && !b.is_active) {
+  if (aBlocked && bBlocked) {
     if (a.due_date && b.due_date) {
       return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
     }
     if (a.due_date && !b.due_date) return -1;
     if (!a.due_date && b.due_date) return 1;
-    // Ambos sem due_date, ordenar por updated_at DESC
     const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
     const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
     return dateB - dateA;
   }
 
-  // Ambos ativos, ordenar por updated_at DESC (mais recente primeiro)
+  // Entre os ativos: finalizados (completed) vão para o final
+  const aCompleted = a.status === 'completed';
+  const bCompleted = b.status === 'completed';
+  if (aCompleted !== bCompleted) {
+    return aCompleted ? 1 : -1;
+  }
+
+  // Ambos no mesmo grupo, ordenar por updated_at DESC (mais recente primeiro)
   const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
   const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
   return dateB - dateA;
