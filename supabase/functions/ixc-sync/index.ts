@@ -9,6 +9,7 @@ interface IXCClient {
   id: string;
   razao: string;
   ativo: string;
+  bloqueado: string;
   data_cadastro?: string;
 }
 
@@ -160,23 +161,28 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     for (const client of pageClients) {
       const clientId = client._clientId;
       const existingId = existingMap.get(clientId);
+      const isContractActive = client.ativo === 'S';
+      const isBlocked = client.bloqueado === 'S';
+      // is_active = contrato ativo E acesso não bloqueado
+      const isActive = isContractActive && !isBlocked;
+      const status = !isContractActive ? 'archived' : 'active';
 
       if (existingId) {
         toUpdate.push({
           id: existingId,
           client_name: client.razao || `Cliente ${clientId}`,
-          is_active: client.ativo === 'S',
-          status: client.ativo === 'S' ? 'active' : 'archived',
+          is_active: isActive,
+          status: status,
           updated_at: new Date().toISOString(),
         });
       } else {
         toInsert.push({
           client_id: clientId,
           client_name: client.razao || `Cliente ${clientId}`,
-          is_active: client.ativo === 'S',
+          is_active: isActive,
           organization_id: organizationId,
           start_date: client.data_cadastro || new Date().toISOString().split('T')[0],
-          status: client.ativo === 'S' ? 'active' : 'archived',
+          status: status,
           user_id: orgUser.user_id,
         });
       }
