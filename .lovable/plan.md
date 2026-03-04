@@ -2,51 +2,25 @@
 
 ## Diagnóstico
 
-O problema de performance é claro: **cada registro é processado individualmente com 2-3 queries sequenciais** ao banco de dados:
+Encontrei a causa raiz nos logs da edge function:
 
-1. `SELECT` para verificar se o cliente já existe
-2. `INSERT` ou `UPDATE` dependendo do resultado
-3. `checkCancelled` a cada 10 registros (mais 1 query)
-
-Para 690 clientes, isso são **~1400+ queries sequenciais**, o que explica a lentidão extrema (~1 minuto por página de 100 registros).
-
-## Solução: Processamento em lote (batch/bulk)
-
-Substituir o processamento individual por operações em lote usando `upsert` do Supabase.
-
-### Edge Function (`supabase/functions/ixc-sync/index.ts`)
-
-#### `syncClients` — Refatorar para batch upsert:
-- Coletar todos os `client_id`s da página
-- Fazer **1 query** para buscar todos os existentes de uma vez
-- Separar em listas de criação e atualização
-- Usar `upsert` com a página inteira em **1 operação**
-- Resultado: de ~200 queries por página para ~3 queries por página
-
-```typescript
-// ANTES (por registro):
-for (record of records) {
-  SELECT existing WHERE client_id = X  // 1 query
-  INSERT or UPDATE                      // 1 query
-}
-// = 200 queries por página de 100
-
-// DEPOIS (por lote):
-SELECT all existing WHERE client_id IN (...)  // 1 query
-UPSERT batch of records                       // 1 query
-UPDATE progress                               // 1 query
-// = 3 queries por página de 100
+```
+Batch insert error: new row for relation "client_timelines" violates check constraint "client_timelines_status_check"
 ```
 
-#### `syncBoletos` — Mesma refatoração:
-- Buscar todos os timelines dos clientes da página em 1 query
-- Buscar todos os boletos existentes em 1 query
-- Upsert em lote
+A tabela `client_timelines` tem uma check constraint que só permite os valores: `'active'`, `'completed'`, `'archived'`. Porém, o sync está setando `status: 'inactive'` para clientes com `ativo !== 'S'`, o que viola a constraint. Como o insert é em batch (100 por página), **uma única linha inválida faz toda a página falhar**, perdendo todos os clientes daquela página.
 
-#### Reduzir frequência de `checkCancelled`:
-- Verificar apenas 1x por página (a cada 100 registros) em vez de a cada 10, já que cada página agora será processada em segundos
+Resultado atual no banco: **169 active + 78 completed = 247** (exatamente o número que aparece).
 
-### Resultado esperado
-- **Antes**: ~60s por página de 100 registros → ~7 min para 690 clientes
-- **Depois**: ~2-3s por página → ~15-20s para 690 clientes
+## Solução
+
+**Arquivo:** `supabase/functions/ixc-sync/index.ts`
+
+Alterar o mapeamento de status para usar apenas valores permitidos pela constraint:
+- `ativo === 'S'` → `'active'`
+- `ativo !== 'S'` → `'archived'` (em vez de `'inactive'`)
+
+Isso se aplica em dois pontos no `syncClients`: na criação de novos registros (linha ~179) e na atualização de existentes (linha ~169).
+
+Após essa correção, re-sincronizar vai importar os ~500+ clientes que estavam falhando.
 
