@@ -17,6 +17,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 import { groupTimelinesByClient } from '@/lib/client-utils';
+import { defaultClientSort } from '@/lib/client-sort';
 import { CalendarWidget } from '@/components/CalendarWidget';
 import { RetiradaWidget } from '@/components/RetiradaWidget';
 interface Client {
@@ -131,22 +132,8 @@ const Clients = () => {
       const uniqueClients = groupTimelinesByClient(data || []) as Client[];
       console.log("loadClients: Após agrupamento:", uniqueClients.length);
 
-      // Ordenar: timelines ativas primeiro, depois finalizadas, cada grupo por updated_at
-      const sortedData = uniqueClients.sort((a, b) => {
-        // Verificar se é finalizada
-        const aCompleted = a.status === 'completed' || a.status === 'archived';
-        const bCompleted = b.status === 'completed' || b.status === 'archived';
-
-        // Se um é finalizado e outro não, o não-finalizado vem primeiro
-        if (aCompleted !== bCompleted) {
-          return aCompleted ? 1 : -1;
-        }
-
-        // Se ambos têm o mesmo status, ordenar por updated_at (mais recente primeiro)
-        const dateA = new Date(a.updated_at || a.created_at).getTime();
-        const dateB = new Date(b.updated_at || b.created_at).getTime();
-        return dateB - dateA;
-      });
+      // Ordenar: bloqueados no topo (por due_date ASC), ativos no meio, finalizados por último
+      const sortedData = uniqueClients.sort(defaultClientSort);
       setClients(sortedData);
       setFilteredClients(sortedData);
     } catch (error: any) {
@@ -328,21 +315,7 @@ const Clients = () => {
         });
       } else {
         // Se NÃO há ordenação específica, aplicar ordenação padrão
-        results.sort((a, b) => {
-          // Verificar se é finalizada
-          const aCompleted = a.status === 'completed' || a.status === 'archived';
-          const bCompleted = b.status === 'completed' || b.status === 'archived';
-
-          // Se um é finalizado e outro não, o não-finalizado vem primeiro
-          if (aCompleted !== bCompleted) {
-            return aCompleted ? 1 : -1;
-          }
-
-          // Se ambos têm o mesmo status, ordenar por updated_at (mais recente primeiro)
-          const dateA = new Date(a.updated_at || a.created_at).getTime();
-          const dateB = new Date(b.updated_at || b.created_at).getTime();
-          return dateB - dateA;
-        });
+        results.sort(defaultClientSort);
       }
 
       // ✅ Aplicar agrupamento por client_id nos resultados filtrados
