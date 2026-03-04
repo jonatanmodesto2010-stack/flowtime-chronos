@@ -1,0 +1,1 @@
+ALTER TABLE public.integration_sync_log ADD COLUMN total_records integer DEFAULT 0;

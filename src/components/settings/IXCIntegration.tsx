@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ interface SyncLog {
   records_processed: number;
   records_created: number;
   records_updated: number;
+  total_records: number;
   error_message: string | null;
   started_at: string;
   completed_at: string | null;
@@ -46,10 +48,10 @@ export function IXCIntegration() {
     }
   }, [organizationId]);
 
-  // Auto-refresh logs every 10s while syncing
+  // Auto-refresh logs every 5s while syncing
   useEffect(() => {
     if (!isAnySyncing) return;
-    const interval = setInterval(fetchSyncLogs, 10000);
+    const interval = setInterval(fetchSyncLogs, 5000);
     return () => clearInterval(interval);
   }, [syncingClients, syncingBoletos, syncingAll]);
 
@@ -243,6 +245,34 @@ export function IXCIntegration() {
   };
 
   const hasRunningSyncLogs = syncLogs.some(log => log.status === 'running');
+  const runningSyncLogs = syncLogs.filter(log => log.status === 'running');
+
+  const getProgressInfo = (log: SyncLog) => {
+    const processed = log.records_processed || 0;
+    const total = log.total_records || 0;
+    if (total === 0) return { percentage: 0, estimatedRemaining: '' };
+    
+    const percentage = Math.min(Math.round((processed / total) * 100), 100);
+    
+    // Estimate remaining time
+    const startedAt = new Date(log.started_at).getTime();
+    const now = Date.now();
+    const elapsed = (now - startedAt) / 1000; // seconds
+    
+    if (processed > 0 && elapsed > 0) {
+      const rate = processed / elapsed; // records per second
+      const remaining = total - processed;
+      const secondsLeft = remaining / rate;
+      
+      if (secondsLeft < 60) {
+        return { percentage, estimatedRemaining: `~${Math.ceil(secondsLeft)}s restantes` };
+      } else {
+        return { percentage, estimatedRemaining: `~${Math.ceil(secondsLeft / 60)}min restantes` };
+      }
+    }
+    
+    return { percentage, estimatedRemaining: 'calculando...' };
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -406,6 +436,27 @@ export function IXCIntegration() {
               </Button>
             )}
           </div>
+
+          {/* Progress bars for running syncs */}
+          {runningSyncLogs.map((log) => {
+            const { percentage, estimatedRemaining } = getProgressInfo(log);
+            return (
+              <div key={log.id} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">
+                    {log.sync_type === 'clients' ? 'Clientes' : 'Boletos'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {percentage}% concluído {estimatedRemaining && `— ${estimatedRemaining}`}
+                  </span>
+                </div>
+                <Progress value={percentage} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  {log.records_processed || 0} de {log.total_records || '?'} registros processados
+                </p>
+              </div>
+            );
+          })}
 
           {!hasConfig && configLoaded && (
             <p className="text-sm text-amber-600">

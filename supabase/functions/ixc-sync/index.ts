@@ -100,7 +100,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
   let hasMore = true;
 
   while (hasMore) {
-    // Check if cancelled every page
     if (await checkCancelled(supabaseAdmin, logId)) {
       console.log('Sync cancelled by user');
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
@@ -108,6 +107,14 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
 
     const data = await fetchIxcData(apiUrl, apiToken, 'cliente', page, 100);
     const records = data.registros || data.rows || [];
+
+    // On first page, save total_records for progress tracking
+    if (page === 1 && logId) {
+      const totalRecords = parseInt(data.total) || 0;
+      await supabaseAdmin.from('integration_sync_log')
+        .update({ total_records: totalRecords })
+        .eq('id', logId);
+    }
     
     if (!Array.isArray(records) || records.length === 0) {
       hasMore = false;
@@ -117,7 +124,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     for (let i = 0; i < records.length; i++) {
       const client = records[i] as IXCClient;
       
-      // Check cancellation every 10 records
       if (i % 10 === 0 && i > 0 && await checkCancelled(supabaseAdmin, logId)) {
         console.log('Sync cancelled by user (inside client loop)');
         return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
@@ -135,7 +141,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
         status: client.ativo === 'S' ? 'active' : 'inactive',
       };
 
-      // Check if client exists
       const { data: existing } = await supabaseAdmin
         .from('client_timelines')
         .select('id')
@@ -155,7 +160,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
           .eq('id', existing.id);
         totalUpdated++;
       } else {
-        // Need a user_id - use the first owner/admin of the org
         const { data: orgUser } = await supabaseAdmin
           .from('user_roles')
           .select('user_id')
@@ -177,6 +181,13 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       totalProcessed++;
     }
 
+    // Update progress after each page
+    if (logId) {
+      await supabaseAdmin.from('integration_sync_log')
+        .update({ records_processed: totalProcessed })
+        .eq('id', logId);
+    }
+
     if (records.length < 100) {
       hasMore = false;
     }
@@ -194,7 +205,6 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
   let hasMore = true;
 
   while (hasMore) {
-    // Check if cancelled every page
     if (await checkCancelled(supabaseAdmin, logId)) {
       console.log('Sync cancelled by user');
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
@@ -202,6 +212,14 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
 
     const data = await fetchIxcData(apiUrl, apiToken, 'fn_areceber', page, 100);
     const records = data.registros || data.rows || [];
+
+    // On first page, save total_records for progress tracking
+    if (page === 1 && logId) {
+      const totalRecords = parseInt(data.total) || 0;
+      await supabaseAdmin.from('integration_sync_log')
+        .update({ total_records: totalRecords })
+        .eq('id', logId);
+    }
     
     if (!Array.isArray(records) || records.length === 0) {
       hasMore = false;
@@ -211,7 +229,6 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
     for (let i = 0; i < records.length; i++) {
       const fatura = records[i] as IXCFatura;
       
-      // Check cancellation every 10 records
       if (i % 10 === 0 && i > 0 && await checkCancelled(supabaseAdmin, logId)) {
         console.log('Sync cancelled by user (inside boleto loop)');
         return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
@@ -220,7 +237,6 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
       const clientIxcId = fatura.id_cliente?.toString();
       if (!clientIxcId) continue;
 
-      // Find the client_timeline by IXC client_id
       const { data: timeline } = await supabaseAdmin
         .from('client_timelines')
         .select('id')
@@ -238,7 +254,6 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
         description: fatura.observacao || `Fatura IXC #${fatura.id}`,
       };
 
-      // Check if boleto already exists (by description containing IXC id)
       const ixcRef = `Fatura IXC #${fatura.id}`;
       const { data: existing } = await supabaseAdmin
         .from('client_boletos')
@@ -265,6 +280,13 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
         totalCreated++;
       }
       totalProcessed++;
+    }
+
+    // Update progress after each page
+    if (logId) {
+      await supabaseAdmin.from('integration_sync_log')
+        .update({ records_processed: totalProcessed })
+        .eq('id', logId);
     }
 
     if (records.length < 100) {

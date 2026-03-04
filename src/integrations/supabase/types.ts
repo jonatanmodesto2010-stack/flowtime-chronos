@@ -235,6 +235,7 @@ export type Database = {
           started_at: string | null
           status: string
           sync_type: string
+          total_records: number | null
         }
         Insert: {
           completed_at?: string | null
@@ -248,6 +249,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           sync_type: string
+          total_records?: number | null
         }
         Update: {
           completed_at?: string | null
@@ -261,6 +263,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           sync_type?: string
+          total_records?: number | null
         }
         Relationships: [
           {
