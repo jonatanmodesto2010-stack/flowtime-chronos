@@ -1,54 +1,52 @@
 
 
-## Plano: Progresso e Tempo Estimado da Sincronização
+## Diagnóstico
 
-### Abordagem
+O problema de performance é claro: **cada registro é processado individualmente com 2-3 queries sequenciais** ao banco de dados:
 
-A API do IXC já retorna um campo `total` na resposta (visível na linha 393: `testData.total`). Podemos usar isso para calcular a porcentagem e estimar o tempo restante.
+1. `SELECT` para verificar se o cliente já existe
+2. `INSERT` ou `UPDATE` dependendo do resultado
+3. `checkCancelled` a cada 10 registros (mais 1 query)
 
-### Mudanças
+Para 690 clientes, isso são **~1400+ queries sequenciais**, o que explica a lentidão extrema (~1 minuto por página de 100 registros).
 
-#### 1. Database: Adicionar coluna `total_records` na tabela `integration_sync_log`
+## Solução: Processamento em lote (batch/bulk)
 
-```sql
-ALTER TABLE public.integration_sync_log 
-ADD COLUMN total_records integer DEFAULT 0;
-```
+Substituir o processamento individual por operações em lote usando `upsert` do Supabase.
 
-#### 2. Edge Function (`supabase/functions/ixc-sync/index.ts`)
+### Edge Function (`supabase/functions/ixc-sync/index.ts`)
 
-- Na primeira página de cada sync (`syncClients`, `syncBoletos`), capturar o `data.total` retornado pela API IXC
-- Salvar `total_records` no log imediatamente
-- Atualizar `records_processed` a cada página (100 registros) no log, para o frontend acompanhar o progresso em tempo real
+#### `syncClients` — Refatorar para batch upsert:
+- Coletar todos os `client_id`s da página
+- Fazer **1 query** para buscar todos os existentes de uma vez
+- Separar em listas de criação e atualização
+- Usar `upsert` com a página inteira em **1 operação**
+- Resultado: de ~200 queries por página para ~3 queries por página
 
-Exemplo no loop:
 ```typescript
-// Primeira página: salvar total
-if (page === 1) {
-  totalRecords = parseInt(data.total) || 0;
-  await supabaseAdmin.from('integration_sync_log')
-    .update({ total_records: totalRecords })
-    .eq('id', logId);
+// ANTES (por registro):
+for (record of records) {
+  SELECT existing WHERE client_id = X  // 1 query
+  INSERT or UPDATE                      // 1 query
 }
+// = 200 queries por página de 100
 
-// A cada página: atualizar progresso
-await supabaseAdmin.from('integration_sync_log')
-  .update({ records_processed: totalProcessed })
-  .eq('id', logId);
+// DEPOIS (por lote):
+SELECT all existing WHERE client_id IN (...)  // 1 query
+UPSERT batch of records                       // 1 query
+UPDATE progress                               // 1 query
+// = 3 queries por página de 100
 ```
 
-#### 3. Frontend (`src/components/settings/IXCIntegration.tsx`)
+#### `syncBoletos` — Mesma refatoração:
+- Buscar todos os timelines dos clientes da página em 1 query
+- Buscar todos os boletos existentes em 1 query
+- Upsert em lote
 
-- Adicionar `total_records` ao tipo `SyncLog`
-- Mostrar barra de progresso (`Progress`) durante syncs com status `running`
-- Calcular porcentagem: `(records_processed / total_records) * 100`
-- Calcular tempo estimado: baseado na taxa de processamento (registros/segundo) desde `started_at`
-- Reduzir intervalo de polling para 5s durante sync ativo
-- Exibir: `"42% concluído — ~2min restantes"`
+#### Reduzir frequência de `checkCancelled`:
+- Verificar apenas 1x por página (a cada 100 registros) em vez de a cada 10, já que cada página agora será processada em segundos
 
-### Detalhes Técnicos
-
-- O polling a cada 5s busca os logs `running` e atualiza a UI com a barra de progresso
-- O cálculo de tempo usa: `tempoDecorrido * (totalRestante / totalProcessado)`
-- A barra de progresso usa o componente `Progress` já existente no projeto
+### Resultado esperado
+- **Antes**: ~60s por página de 100 registros → ~7 min para 690 clientes
+- **Depois**: ~2-3s por página → ~15-20s para 690 clientes
 
