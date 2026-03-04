@@ -93,6 +93,84 @@ async function checkCancelled(supabaseAdmin: any, logId: string | undefined): Pr
   return data?.status === 'cancelled';
 }
 
+async function fetchBlockedClientIds(apiUrl: string, apiToken: string): Promise<Set<string>> {
+  const blockedIds = new Set<string>();
+  
+  // Try radusuarios endpoint which has actual connection status
+  const endpoints = ['radusuarios', 'cliente_contrato'];
+  
+  for (const endpoint of endpoints) {
+    let page = 1;
+    let hasMore = true;
+    let foundBlockedField = false;
+
+    while (hasMore) {
+      try {
+        console.log(`Checking ${endpoint} for blocked status (page ${page})`);
+        const data = await fetchIxcData(apiUrl, apiToken, endpoint, page, 500);
+        const records = data.registros || data.rows || [];
+
+        if (page === 1 && records.length > 0) {
+          const fields = Object.keys(records[0]);
+          console.log(`${endpoint} total: ${data.total || 0}, fields count: ${fields.length}`);
+          // Log all fields that contain 'bloq', 'status', 'ativo', 'acesso'
+          const relevantFields = fields.filter(f => 
+            f.includes('bloq') || f.includes('status') || f.includes('ativo') || 
+            f.includes('acesso') || f.includes('online') || f.includes('oper')
+          );
+          console.log(`${endpoint} relevant fields:`, JSON.stringify(relevantFields));
+          
+          // Log first 3 records' relevant field values
+          for (let i = 0; i < Math.min(3, records.length); i++) {
+            const vals: Record<string, any> = {};
+            relevantFields.forEach(f => vals[f] = records[i][f]);
+            if (records[i].id_cliente) vals.id_cliente = records[i].id_cliente;
+            console.log(`${endpoint} sample[${i}]:`, JSON.stringify(vals));
+          }
+        }
+
+        if (!Array.isArray(records) || records.length === 0) {
+          break;
+        }
+
+        // Check for blocked status in various possible fields
+        for (const record of records) {
+          const clientId = (record.id_cliente || record.cliente_id)?.toString();
+          if (!clientId) continue;
+          
+          // Check multiple possible field names for blocked status
+          const statusFields = ['ativo', 'status', 'status_internet', 'bloqueado', 'operacao'];
+          for (const field of statusFields) {
+            const val = record[field]?.toString() || '';
+            if (val.includes('Bloqueio') || val.includes('bloqueio') || 
+                val === 'BA' || val === 'BM' || val === 'N' && field === 'bloqueado') {
+              blockedIds.add(clientId);
+              if (!foundBlockedField) {
+                console.log(`Found blocked via ${endpoint}.${field}=${val} for client ${clientId}`);
+                foundBlockedField = true;
+              }
+            }
+          }
+        }
+
+        if (records.length < 500) break;
+        page++;
+      } catch (err) {
+        console.error(`Error fetching ${endpoint}:`, err);
+        break;
+      }
+    }
+
+    if (blockedIds.size > 0) {
+      console.log(`Found ${blockedIds.size} blocked clients via ${endpoint}`);
+      break; // Found blocked clients, no need to check other endpoints
+    }
+  }
+
+  console.log(`Total unique blocked client IDs: ${blockedIds.size}`);
+  return blockedIds;
+}
+
 async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string, logId?: string) {
   let page = 1;
   let totalProcessed = 0;
@@ -113,6 +191,10 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     console.error('No admin/owner found for organization');
     return { totalProcessed: 0, totalCreated: 0, totalUpdated: 0, cancelled: false };
   }
+
+  // Fetch blocked client IDs from cliente_contrato endpoint
+  console.log('Fetching blocked clients from cliente_contrato...');
+  const blockedClientIds = await fetchBlockedClientIds(apiUrl, apiToken);
 
   while (hasMore) {
     // Check cancelled once per page
@@ -162,7 +244,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       const clientId = client._clientId;
       const existingId = existingMap.get(clientId);
       const isContractActive = client.ativo === 'S';
-      const isBlocked = client.bloqueado === 'S';
+      const isBlocked = blockedClientIds.has(clientId);
       // is_active = contrato ativo E acesso não bloqueado
       const isActive = isContractActive && !isBlocked;
       const status = !isContractActive ? 'archived' : 'active';
