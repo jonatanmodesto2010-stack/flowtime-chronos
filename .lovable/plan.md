@@ -1,24 +1,32 @@
 
 
-## Plano: Corrigir erro 500 na integração IXC
+## Plan: Clientes Bloqueados no Topo com Vencimentos Mais Atrasados Primeiro
 
-### Problema identificado
+### Entendimento
+Clientes com `is_active === false` (bloqueados/inativos) devem aparecer **no topo** da lista, ordenados pelo `due_date` mais atrasado primeiro. Clientes ativos ficam abaixo, mantendo a ordenação atual.
 
-Dois problemas na Edge Function `ixc-sync`:
+### Mudança
 
-**1. Autenticação do usuário quebrada:** O código usa `supabaseUser.auth.getClaims()` que não existe no SDK do Supabase. Isso causa um erro antes mesmo de tentar conectar ao IXC. Precisa trocar por `supabaseUser.auth.getUser()`.
+**Arquivo: `src/pages/Clients.tsx`**
 
-**2. IXC retornando HTML:** Pela screenshot, o IXC está em `ixc.glorianet.com.br`. O servidor está retornando a página de login HTML em vez de JSON da API. Isso indica que:
-- O `IXC_API_URL` pode estar incorreto (ex: incluindo `/app` no final)
-- O `IXC_API_TOKEN` pode estar em formato incorreto (precisa ser `token_do_usuario:` codificado em Base64)
+Alterar a lógica de ordenação em dois locais:
 
-### Correções
+1. **`loadClients`** (linhas 135-149) - ordenação padrão após carregar
+2. **`handleFilterChange`** - ordenação padrão no `else` final (linhas 331-345)
 
-1. **Trocar `getClaims` por `getUser`** na edge function para corrigir a autenticação
-2. **Melhorar logs** para mostrar exatamente qual URL está sendo chamada e qual resposta está vindo
-3. **Adicionar validação da URL** removendo paths extras como `/app` que possam ter sido incluídos
+Nova lógica de ordenação (ambos os locais):
 
-### Sobre as credenciais IXC
+```
+1. Finalizados (completed/archived) → sempre por último
+2. Bloqueados (is_active === false) → topo, ordenados por due_date ASC (mais atrasado primeiro, null por último)
+3. Ativos → meio, ordenados por updated_at DESC (mais recente primeiro)
+```
 
-O formato correto do token IXC é: o token da API do usuário IXC (encontrado em Configurações > Meu Perfil no IXC), seguido de `:`, codificado em Base64. A URL deve ser apenas o domínio base, ex: `https://ixc.glorianet.com.br`.
+### Detalhes Técnicos
+
+A função de sort será:
+- Se um é finalizado e outro não → finalizado vai para baixo
+- Se um é bloqueado e outro é ativo → bloqueado vai para cima
+- Se ambos bloqueados → ordenar por `due_date` ASC (mais antigo/atrasado primeiro, sem due_date por último)
+- Se ambos ativos → ordenar por `updated_at` DESC
 
