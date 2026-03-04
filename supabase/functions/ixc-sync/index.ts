@@ -182,22 +182,26 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
 
-    // Batch update existing records (parallel with concurrency limit)
+    // Batch update existing records (parallel with error handling)
     if (toUpdate.length > 0) {
       const CONCURRENCY = 10;
       for (let i = 0; i < toUpdate.length; i += CONCURRENCY) {
         const batch = toUpdate.slice(i, i + CONCURRENCY);
-        await Promise.all(batch.map(record =>
-          supabaseAdmin
-            .from('client_timelines')
-            .update({
-              client_name: record.client_name,
-              is_active: record.is_active,
-              status: record.status,
-              updated_at: record.updated_at,
-            })
-            .eq('id', record.id)
-        ));
+        try {
+          await Promise.all(batch.map(record =>
+            supabaseAdmin
+              .from('client_timelines')
+              .update({
+                client_name: record.client_name,
+                is_active: record.is_active,
+                status: record.status,
+                updated_at: record.updated_at,
+              })
+              .eq('id', record.id)
+          ));
+        } catch (err) {
+          console.error(`Client update batch error at ${i}:`, err);
+        }
       }
       totalUpdated += toUpdate.length;
     }
@@ -334,21 +338,25 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
 
-    // Batch updates (parallel with concurrency limit)
+    // Batch updates (parallel with error handling)
     const CONCURRENCY = 10;
     for (let i = 0; i < toUpdateList.length; i += CONCURRENCY) {
       const batch = toUpdateList.slice(i, i + CONCURRENCY);
-      await Promise.all(batch.map(record =>
-        supabaseAdmin
-          .from('client_boletos')
-          .update({
-            boleto_value: record.boleto_value,
-            due_date: record.due_date,
-            status: record.status,
-            updated_at: record.updated_at,
-          })
-          .eq('id', record.id)
-      ));
+      try {
+        await Promise.all(batch.map(record =>
+          supabaseAdmin
+            .from('client_boletos')
+            .update({
+              boleto_value: record.boleto_value,
+              due_date: record.due_date,
+              status: record.status,
+              updated_at: record.updated_at,
+            })
+            .eq('id', record.id)
+        ));
+      } catch (err) {
+        console.error(`Boleto update batch error at ${i}:`, err);
+      }
     }
     totalUpdated += toUpdateList.length;
 

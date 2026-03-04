@@ -41,6 +41,12 @@ export function IXCIntegration() {
   const [configLoaded, setConfigLoaded] = useState(false);
   const [hasConfig, setHasConfig] = useState(false);
 
+  const hasRunningSyncLogs = syncLogs.some(log => log.status === 'running');
+  const runningSyncLogs = syncLogs.filter(log => log.status === 'running');
+  const isAnySyncing = syncingClients || syncingBoletos || syncingAll;
+
+  const [lastProgress, setLastProgress] = useState<Record<string, { processed: number; checkedAt: number }>>({});
+
   useEffect(() => {
     fetchSyncLogs();
     if (organizationId) {
@@ -48,12 +54,61 @@ export function IXCIntegration() {
     }
   }, [organizationId]);
 
-  // Auto-refresh logs every 5s while syncing
+  // Auto-refresh logs every 5s while syncing, and detect stalled syncs
   useEffect(() => {
-    if (!isAnySyncing) return;
-    const interval = setInterval(fetchSyncLogs, 5000);
+    if (!isAnySyncing && !hasRunningSyncLogs) return;
+    const interval = setInterval(async () => {
+      await fetchSyncLogs();
+    }, 5000);
     return () => clearInterval(interval);
-  }, [syncingClients, syncingBoletos, syncingAll]);
+  }, [syncingClients, syncingBoletos, syncingAll, hasRunningSyncLogs]);
+
+  // Detect stalled syncs (no progress for 2 min)
+  useEffect(() => {
+    const running = syncLogs.filter(l => l.status === 'running');
+    if (running.length === 0) return;
+    
+    const now = Date.now();
+    const newProgress = { ...lastProgress };
+    
+    for (const log of running) {
+      const prev = newProgress[log.id];
+      const processed = log.records_processed || 0;
+      
+      if (!prev) {
+        newProgress[log.id] = { processed, checkedAt: now };
+        continue;
+      }
+      
+      if (processed !== prev.processed) {
+        newProgress[log.id] = { processed, checkedAt: now };
+        continue;
+      }
+      
+      const stalledSeconds = (now - prev.checkedAt) / 1000;
+      if (stalledSeconds > 120) {
+        console.warn(`Sync ${log.id} stalled for ${stalledSeconds}s, marking as error`);
+        (supabase as any)
+          .from('integration_sync_log')
+          .update({
+            status: 'error',
+            error_message: 'Sincronização travou (timeout). Tente novamente.',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', log.id)
+          .then(() => {
+            delete newProgress[log.id];
+            setSyncingClients(false);
+            setSyncingBoletos(false);
+            setSyncingAll(false);
+            toast.error('Sincronização travou e foi encerrada automaticamente.');
+            fetchSyncLogs();
+          });
+      }
+    }
+    
+    setLastProgress(newProgress);
+  }, [syncLogs]);
 
   const fetchConfig = async () => {
     try {
@@ -205,6 +260,28 @@ export function IXCIntegration() {
     } catch (err: any) {
       console.error('Sync error:', err);
       toast.error(`Erro na sincronização: ${err.message || 'Erro desconhecido'}`);
+      
+      // When the edge function errors/times out, mark running logs as error
+      try {
+        const { data: runningLogs } = await (supabase as any)
+          .from('integration_sync_log')
+          .select('id')
+          .eq('status', 'running')
+          .eq('organization_id', organizationId);
+        
+        for (const log of (runningLogs || [])) {
+          await (supabase as any)
+            .from('integration_sync_log')
+            .update({
+              status: 'error',
+              error_message: `Erro: ${err.message || 'Timeout da função'}`,
+              completed_at: new Date().toISOString(),
+            })
+            .eq('id', log.id);
+        }
+      } catch (cleanupErr) {
+        console.error('Error cleaning up sync logs:', cleanupErr);
+      }
     } finally {
       setLoadingState(false);
       fetchSyncLogs();
@@ -244,8 +321,6 @@ export function IXCIntegration() {
     }
   };
 
-  const hasRunningSyncLogs = syncLogs.some(log => log.status === 'running');
-  const runningSyncLogs = syncLogs.filter(log => log.status === 'running');
 
   const getProgressInfo = (log: SyncLog) => {
     const processed = log.records_processed || 0;
@@ -293,7 +368,6 @@ export function IXCIntegration() {
     return new Date(dateStr).toLocaleString('pt-BR');
   };
 
-  const isAnySyncing = syncingClients || syncingBoletos || syncingAll;
 
   return (
     <div className="space-y-6">
