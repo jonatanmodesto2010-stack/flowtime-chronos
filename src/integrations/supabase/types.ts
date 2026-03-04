@@ -345,6 +345,47 @@ export type Database = {
           },
         ]
       }
+      organization_integrations: {
+        Row: {
+          api_token: string | null
+          api_url: string | null
+          created_at: string | null
+          id: string
+          integration_type: string
+          is_active: boolean
+          organization_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_token?: string | null
+          api_url?: string | null
+          created_at?: string | null
+          id?: string
+          integration_type?: string
+          is_active?: boolean
+          organization_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_token?: string | null
+          api_url?: string | null
+          created_at?: string | null
+          id?: string
+          integration_type?: string
+          is_active?: boolean
+          organization_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_integrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
