@@ -11,6 +11,7 @@ import { TagsManagement } from '@/components/settings/TagsManagement';
 import { HistorySettings } from '@/components/settings/HistorySettings';
 import { ColorThemeSettings } from '@/components/settings/ColorThemeSettings';
 import { IconsManagement } from '@/components/settings/IconsManagement';
+import { IXCIntegration } from '@/components/settings/IXCIntegration';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -69,6 +70,7 @@ const Settings = () => {
                   <TabsTrigger value="colors">Paleta de Cores</TabsTrigger>
                   <TabsTrigger value="tags">Tags</TabsTrigger>
                   <TabsTrigger value="icons">Ícones</TabsTrigger>
+                  <TabsTrigger value="integrations">Integrações</TabsTrigger>
                 </>
               )}
             <TabsTrigger value="history">Histórico</TabsTrigger>
@@ -97,6 +99,9 @@ const Settings = () => {
                 </TabsContent>
                 <TabsContent value="icons">
                   <IconsManagement />
+                </TabsContent>
+                <TabsContent value="integrations">
+                  <IXCIntegration />
                 </TabsContent>
               </>
             )}
