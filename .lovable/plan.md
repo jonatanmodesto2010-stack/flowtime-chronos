@@ -1,36 +1,42 @@
 
 
-## Diagnóstico
+## Diagnostico
 
-O gargalo está nas **atualizações individuais** dos boletos. Nos logs vejo páginas com 100 updates sequenciais (ex: páginas 1-3 com 100 updates cada). Cada update é uma query separada e sequencial (linhas 336-346 e 189-199), o que é muito lento.
+Pelos logs, cada pagina de 100 boletos leva ~3s (fetch IXC ~1s + 10 rodadas de 10 updates paralelos ~2s). Com 12.000+ registros = 120+ paginas = ~6 minutos. O gargalo continua sendo updates individuais -- mesmo com concorrencia 10, sao 10 queries por rodada.
 
-A inserção de novos registros já é batch (1 query), mas os updates são 1 query por registro.
+## Solucao: Batch upsert via DB function + paginas maiores
 
-## Solução: Updates em paralelo
+### 1. Criar uma funcao SQL `batch_upsert_boletos`
 
-**Arquivo:** `supabase/functions/ixc-sync/index.ts`
+Uma funcao que recebe arrays e faz UPDATE em massa com uma unica query SQL (usando `unnest`), substituindo 100 queries individuais por 1 unica.
 
-Substituir os loops sequenciais de update por `Promise.all` com concorrência limitada (10 updates simultâneos) tanto em `syncClients` quanto em `syncBoletos`.
-
-```typescript
-// ANTES (sequencial): ~100 queries uma a uma
-for (const record of toUpdateList) {
-  await supabaseAdmin.from('client_boletos').update({...}).eq('id', record.id);
-}
-
-// DEPOIS (paralelo com concorrência 10):
-const CONCURRENCY = 10;
-for (let i = 0; i < toUpdateList.length; i += CONCURRENCY) {
-  const batch = toUpdateList.slice(i, i + CONCURRENCY);
-  await Promise.all(batch.map(record =>
-    supabaseAdmin.from('client_boletos').update({...}).eq('id', record.id)
-  ));
-}
+```sql
+CREATE FUNCTION batch_upsert_boletos(
+  p_ids uuid[], p_values numeric[], p_dates date[], p_statuses text[]
+) RETURNS void AS $$
+  UPDATE client_boletos SET
+    boleto_value = d.val,
+    due_date = d.dd,
+    status = d.st,
+    updated_at = now()
+  FROM unnest(p_ids, p_values, p_dates, p_statuses) AS d(id, val, dd, st)
+  WHERE client_boletos.id = d.id;
+$$ LANGUAGE sql SECURITY DEFINER;
 ```
 
-Isso se aplica em dois pontos:
-1. **`syncClients`** (linhas 189-199) — updates de clientes existentes
-2. **`syncBoletos`** (linhas 336-346) — updates de boletos existentes
+### 2. Mesma funcao para clientes: `batch_upsert_clients`
 
-Resultado esperado: uma página com 100 updates passa de ~100 queries sequenciais para ~10 rodadas de 10 em paralelo, reduzindo o tempo em ~10x.
+### 3. Edge function: substituir o loop de updates
+
+Em vez de 10 rodadas de `Promise.all`, chamar `supabaseAdmin.rpc('batch_upsert_boletos', { arrays })` -- 1 query por pagina.
+
+### 4. Aumentar tamanho da pagina de 100 para 500
+
+Menos paginas = menos roundtrips ao IXC e ao banco.
+
+### Resultado esperado
+
+- 100 updates individuais → 1 query batch por pagina
+- 120 paginas de 100 → 24 paginas de 500
+- Tempo estimado: de ~6min para ~30-60s
 
