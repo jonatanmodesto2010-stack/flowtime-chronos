@@ -1,42 +1,34 @@
 
 
-## Diagnostico
+## Plano: Destacar clientes bloqueados com fundo avermelhado e tag "BLOQUEADO"
 
-Pelos logs, cada pagina de 100 boletos leva ~3s (fetch IXC ~1s + 10 rodadas de 10 updates paralelos ~2s). Com 12.000+ registros = 120+ paginas = ~6 minutos. O gargalo continua sendo updates individuais -- mesmo com concorrencia 10, sao 10 queries por rodada.
+### O que muda
 
-## Solucao: Batch upsert via DB function + paginas maiores
+No arquivo `src/pages/Clients.tsx`, na renderização de cada card de cliente (linhas 547-585):
 
-### 1. Criar uma funcao SQL `batch_upsert_boletos`
+1. **Fundo avermelhado**: Clientes com `is_active === false` (e não finalizados) terão a classe `bg-red-500/10 hover:bg-red-500/15 border border-red-500/30` no card, em vez do `bg-card` padrão.
 
-Uma funcao que recebe arrays e faz UPDATE em massa com uma unica query SQL (usando `unnest`), substituindo 100 queries individuais por 1 unica.
+2. **Tag "BLOQUEADO"**: Substituir o badge atual "Inativo" por um badge mais visível com texto "BLOQUEADO", usando `bg-red-500/20 text-red-400 font-semibold` e um estilo mais destacado.
 
-```sql
-CREATE FUNCTION batch_upsert_boletos(
-  p_ids uuid[], p_values numeric[], p_dates date[], p_statuses text[]
-) RETURNS void AS $$
-  UPDATE client_boletos SET
-    boleto_value = d.val,
-    due_date = d.dd,
-    status = d.st,
-    updated_at = now()
-  FROM unnest(p_ids, p_values, p_dates, p_statuses) AS d(id, val, dd, st)
-  WHERE client_boletos.id = d.id;
-$$ LANGUAGE sql SECURITY DEFINER;
+### Alteração pontual
+
+```tsx
+// Card className: adicionar condição para bloqueados
+className={`... ${
+  isCompleted(client.status) 
+    ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' 
+    : !client.is_active 
+      ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' 
+      : 'bg-card hover:bg-card/80'
+}`}
+
+// Badge: trocar "Inativo" por "BLOQUEADO"
+!client.is_active && (
+  <div className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
+    🔒 BLOQUEADO
+  </div>
+)
 ```
 
-### 2. Mesma funcao para clientes: `batch_upsert_clients`
-
-### 3. Edge function: substituir o loop de updates
-
-Em vez de 10 rodadas de `Promise.all`, chamar `supabaseAdmin.rpc('batch_upsert_boletos', { arrays })` -- 1 query por pagina.
-
-### 4. Aumentar tamanho da pagina de 100 para 500
-
-Menos paginas = menos roundtrips ao IXC e ao banco.
-
-### Resultado esperado
-
-- 100 updates individuais → 1 query batch por pagina
-- 120 paginas de 100 → 24 paginas de 500
-- Tempo estimado: de ~6min para ~30-60s
+Apenas 1 arquivo alterado: `src/pages/Clients.tsx`.
 
