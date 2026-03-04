@@ -1,32 +1,29 @@
 
 
-## Plan: Clientes Bloqueados no Topo com Vencimentos Mais Atrasados Primeiro
+## Diagnóstico
 
-### Entendimento
-Clientes com `is_active === false` (bloqueados/inativos) devem aparecer **no topo** da lista, ordenados pelo `due_date` mais atrasado primeiro. Clientes ativos ficam abaixo, mantendo a ordenação atual.
+O botão "Parar" não funciona porque o frontend tenta atualizar o status do log para `cancelled` na tabela `integration_sync_log`, mas a **política RLS bloqueia a operação**. A policy "Service role can manage sync logs" é do tipo **RESTRICTIVE** (não permissiva), o que significa que ela restringe em vez de permitir. O cliente autenticado com anon key só tem permissão de SELECT, não UPDATE. O update falha silenciosamente, e a edge function nunca vê o status `cancelled`.
 
-### Mudança
+## Solução
 
-**Arquivo: `src/pages/Clients.tsx`**
+Duas mudanças:
 
-Alterar a lógica de ordenação em dois locais:
+### 1. Criar RLS policy para permitir UPDATE do status pelo usuário
+Adicionar uma policy que permita membros da organização atualizar logs de sync da sua organização (apenas o campo status).
 
-1. **`loadClients`** (linhas 135-149) - ordenação padrão após carregar
-2. **`handleFilterChange`** - ordenação padrão no `else` final (linhas 331-345)
-
-Nova lógica de ordenação (ambos os locais):
-
-```
-1. Finalizados (completed/archived) → sempre por último
-2. Bloqueados (is_active === false) → topo, ordenados por due_date ASC (mais atrasado primeiro, null por último)
-3. Ativos → meio, ordenados por updated_at DESC (mais recente primeiro)
+```sql
+CREATE POLICY "Members can cancel sync logs"
+ON public.integration_sync_log
+FOR UPDATE
+TO authenticated
+USING (organization_id = get_user_organization(auth.uid()))
+WITH CHECK (organization_id = get_user_organization(auth.uid()));
 ```
 
-### Detalhes Técnicos
+### 2. Verificar cancelamento com mais frequência na edge function
+Atualmente só verifica a cada 100 registros (por página). Adicionar verificação a cada 10 registros dentro do loop `for` em `syncClients` e `syncBoletos`, para resposta mais rápida ao cancelamento.
 
-A função de sort será:
-- Se um é finalizado e outro não → finalizado vai para baixo
-- Se um é bloqueado e outro é ativo → bloqueado vai para cima
-- Se ambos bloqueados → ordenar por `due_date` ASC (mais antigo/atrasado primeiro, sem due_date por último)
-- Se ambos ativos → ordenar por `updated_at` DESC
+**Arquivo:** `supabase/functions/ixc-sync/index.ts`
+- Dentro do `for` loop de `syncClients` (linha ~117): verificar `checkCancelled` a cada 10 registros
+- Dentro do `for` loop de `syncBoletos` (linha ~203): mesma verificação
 
