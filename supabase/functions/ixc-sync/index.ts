@@ -99,7 +99,22 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
   let totalUpdated = 0;
   let hasMore = true;
 
+  // Get a user_id for new inserts (fetch once, not per record)
+  const { data: orgUser } = await supabaseAdmin
+    .from('user_roles')
+    .select('user_id')
+    .eq('organization_id', organizationId)
+    .in('role', ['owner', 'admin'])
+    .limit(1)
+    .single();
+
+  if (!orgUser) {
+    console.error('No admin/owner found for organization');
+    return { totalProcessed: 0, totalCreated: 0, totalUpdated: 0, cancelled: false };
+  }
+
   while (hasMore) {
+    // Check cancelled once per page
     if (await checkCancelled(supabaseAdmin, logId)) {
       console.log('Sync cancelled by user');
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
@@ -121,65 +136,83 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       break;
     }
 
-    for (let i = 0; i < records.length; i++) {
-      const client = records[i] as IXCClient;
-      
-      if (i % 10 === 0 && i > 0 && await checkCancelled(supabaseAdmin, logId)) {
-        console.log('Sync cancelled by user (inside client loop)');
-        return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
+    // Collect all valid client IDs from this page
+    const pageClients = records
+      .map((r: IXCClient) => ({ ...r, _clientId: r.id?.toString() }))
+      .filter((r: any) => r._clientId);
+
+    const clientIds = pageClients.map((r: any) => r._clientId);
+
+    // 1 query: fetch all existing clients for this page
+    const { data: existingClients } = await supabaseAdmin
+      .from('client_timelines')
+      .select('id, client_id')
+      .eq('organization_id', organizationId)
+      .in('client_id', clientIds);
+
+    const existingMap = new Map<string, string>();
+    (existingClients || []).forEach((e: any) => existingMap.set(e.client_id, e.id));
+
+    // Separate into updates and inserts
+    const toUpdate: any[] = [];
+    const toInsert: any[] = [];
+
+    for (const client of pageClients) {
+      const clientId = client._clientId;
+      const existingId = existingMap.get(clientId);
+
+      if (existingId) {
+        toUpdate.push({
+          id: existingId,
+          client_name: client.razao || `Cliente ${clientId}`,
+          is_active: client.ativo === 'S',
+          status: client.ativo === 'S' ? 'active' : 'inactive',
+          updated_at: new Date().toISOString(),
+        });
+      } else {
+        toInsert.push({
+          client_id: clientId,
+          client_name: client.razao || `Cliente ${clientId}`,
+          is_active: client.ativo === 'S',
+          organization_id: organizationId,
+          start_date: client.data_cadastro || new Date().toISOString().split('T')[0],
+          status: client.ativo === 'S' ? 'active' : 'inactive',
+          user_id: orgUser.user_id,
+        });
       }
+    }
 
-      const clientId = client.id?.toString();
-      if (!clientId) continue;
-
-      const clientData = {
-        client_id: clientId,
-        client_name: client.razao || `Cliente ${clientId}`,
-        is_active: client.ativo === 'S',
-        organization_id: organizationId,
-        start_date: client.data_cadastro || new Date().toISOString().split('T')[0],
-        status: client.ativo === 'S' ? 'active' : 'inactive',
-      };
-
-      const { data: existing } = await supabaseAdmin
-        .from('client_timelines')
-        .select('id')
-        .eq('client_id', clientId)
-        .eq('organization_id', organizationId)
-        .maybeSingle();
-
-      if (existing) {
+    // Batch update existing records
+    if (toUpdate.length > 0) {
+      // Supabase doesn't support batch update by different IDs in one call,
+      // so we use upsert with the id column
+      for (const record of toUpdate) {
         await supabaseAdmin
           .from('client_timelines')
           .update({
-            client_name: clientData.client_name,
-            is_active: clientData.is_active,
-            status: clientData.status,
-            updated_at: new Date().toISOString(),
+            client_name: record.client_name,
+            is_active: record.is_active,
+            status: record.status,
+            updated_at: record.updated_at,
           })
-          .eq('id', existing.id);
-        totalUpdated++;
-      } else {
-        const { data: orgUser } = await supabaseAdmin
-          .from('user_roles')
-          .select('user_id')
-          .eq('organization_id', organizationId)
-          .in('role', ['owner', 'admin'])
-          .limit(1)
-          .single();
-
-        if (orgUser) {
-          await supabaseAdmin
-            .from('client_timelines')
-            .insert({
-              ...clientData,
-              user_id: orgUser.user_id,
-            });
-          totalCreated++;
-        }
+          .eq('id', record.id);
       }
-      totalProcessed++;
+      totalUpdated += toUpdate.length;
     }
+
+    // Batch insert new records (single query!)
+    if (toInsert.length > 0) {
+      const { error } = await supabaseAdmin
+        .from('client_timelines')
+        .insert(toInsert);
+      if (error) {
+        console.error('Batch insert error:', error.message);
+      } else {
+        totalCreated += toInsert.length;
+      }
+    }
+
+    totalProcessed += pageClients.length;
 
     // Update progress after each page
     if (logId) {
@@ -187,6 +220,8 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
         .update({ records_processed: totalProcessed })
         .eq('id', logId);
     }
+
+    console.log(`Page ${page}: ${toInsert.length} created, ${toUpdate.length} updated (${totalProcessed} total)`);
 
     if (records.length < 100) {
       hasMore = false;
@@ -205,6 +240,7 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
   let hasMore = true;
 
   while (hasMore) {
+    // Check cancelled once per page
     if (await checkCancelled(supabaseAdmin, logId)) {
       console.log('Sync cancelled by user');
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
@@ -226,61 +262,103 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
       break;
     }
 
-    for (let i = 0; i < records.length; i++) {
-      const fatura = records[i] as IXCFatura;
-      
-      if (i % 10 === 0 && i > 0 && await checkCancelled(supabaseAdmin, logId)) {
-        console.log('Sync cancelled by user (inside boleto loop)');
-        return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
-      }
+    // Collect all unique client IXC IDs from this page
+    const validRecords = records
+      .map((r: IXCFatura) => ({ ...r, _clientId: r.id_cliente?.toString() }))
+      .filter((r: any) => r._clientId);
 
-      const clientIxcId = fatura.id_cliente?.toString();
-      if (!clientIxcId) continue;
+    const uniqueClientIds = [...new Set(validRecords.map((r: any) => r._clientId))];
 
-      const { data: timeline } = await supabaseAdmin
-        .from('client_timelines')
-        .select('id')
-        .eq('client_id', clientIxcId)
-        .eq('organization_id', organizationId)
-        .maybeSingle();
+    // 1 query: fetch all timelines for these clients
+    const { data: timelines } = await supabaseAdmin
+      .from('client_timelines')
+      .select('id, client_id')
+      .eq('organization_id', organizationId)
+      .in('client_id', uniqueClientIds);
 
-      if (!timeline) continue;
+    const timelineMap = new Map<string, string>();
+    (timelines || []).forEach((t: any) => timelineMap.set(t.client_id, t.id));
 
-      const boletoData = {
-        timeline_id: timeline.id,
-        boleto_value: parseFloat(fatura.valor) || 0,
-        due_date: fatura.data_vencimento,
-        status: mapIxcStatus(fatura.status),
-        description: fatura.observacao || `Fatura IXC #${fatura.id}`,
-      };
+    // Build boleto refs for batch lookup
+    const boletoRefs: string[] = [];
+    const validFaturas: any[] = [];
 
+    for (const fatura of validRecords) {
+      const timelineId = timelineMap.get(fatura._clientId);
+      if (!timelineId) continue;
       const ixcRef = `Fatura IXC #${fatura.id}`;
-      const { data: existing } = await supabaseAdmin
-        .from('client_boletos')
-        .select('id')
-        .eq('timeline_id', timeline.id)
-        .eq('description', ixcRef)
-        .maybeSingle();
-
-      if (existing) {
-        await supabaseAdmin
-          .from('client_boletos')
-          .update({
-            boleto_value: boletoData.boleto_value,
-            due_date: boletoData.due_date,
-            status: boletoData.status,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-        totalUpdated++;
-      } else {
-        await supabaseAdmin
-          .from('client_boletos')
-          .insert(boletoData);
-        totalCreated++;
-      }
-      totalProcessed++;
+      boletoRefs.push(ixcRef);
+      validFaturas.push({ ...fatura, _timelineId: timelineId, _ixcRef: ixcRef });
     }
+
+    // 1 query: fetch all existing boletos by description
+    let existingBoletosMap = new Map<string, string>();
+    if (boletoRefs.length > 0) {
+      const timelineIds = [...new Set(validFaturas.map((f: any) => f._timelineId))];
+      const { data: existingBoletos } = await supabaseAdmin
+        .from('client_boletos')
+        .select('id, timeline_id, description')
+        .in('timeline_id', timelineIds)
+        .in('description', boletoRefs);
+
+      (existingBoletos || []).forEach((b: any) => {
+        existingBoletosMap.set(`${b.timeline_id}:${b.description}`, b.id);
+      });
+    }
+
+    const toInsert: any[] = [];
+    const toUpdateList: any[] = [];
+
+    for (const fatura of validFaturas) {
+      const key = `${fatura._timelineId}:${fatura._ixcRef}`;
+      const existingId = existingBoletosMap.get(key);
+
+      if (existingId) {
+        toUpdateList.push({
+          id: existingId,
+          boleto_value: parseFloat(fatura.valor) || 0,
+          due_date: fatura.data_vencimento,
+          status: mapIxcStatus(fatura.status),
+          updated_at: new Date().toISOString(),
+        });
+      } else {
+        toInsert.push({
+          timeline_id: fatura._timelineId,
+          boleto_value: parseFloat(fatura.valor) || 0,
+          due_date: fatura.data_vencimento,
+          status: mapIxcStatus(fatura.status),
+          description: fatura._ixcRef,
+        });
+      }
+    }
+
+    // Batch updates
+    for (const record of toUpdateList) {
+      await supabaseAdmin
+        .from('client_boletos')
+        .update({
+          boleto_value: record.boleto_value,
+          due_date: record.due_date,
+          status: record.status,
+          updated_at: record.updated_at,
+        })
+        .eq('id', record.id);
+    }
+    totalUpdated += toUpdateList.length;
+
+    // Batch insert (single query!)
+    if (toInsert.length > 0) {
+      const { error } = await supabaseAdmin
+        .from('client_boletos')
+        .insert(toInsert);
+      if (error) {
+        console.error('Batch boleto insert error:', error.message);
+      } else {
+        totalCreated += toInsert.length;
+      }
+    }
+
+    totalProcessed += validRecords.length;
 
     // Update progress after each page
     if (logId) {
@@ -288,6 +366,8 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
         .update({ records_processed: totalProcessed })
         .eq('id', logId);
     }
+
+    console.log(`Boletos page ${page}: ${toInsert.length} created, ${toUpdateList.length} updated (${totalProcessed} total)`);
 
     if (records.length < 100) {
       hasMore = false;
