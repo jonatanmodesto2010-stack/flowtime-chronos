@@ -1,50 +1,24 @@
 
 
-## Plano: Integração com IXC Provedor
+## Plano: Corrigir erro 500 na integração IXC
 
-### Resumo
+### Problema identificado
 
-Criar uma integração completa com o sistema IXC Provedor para sincronizar clientes e boletos/faturas automaticamente com o sistema de cobrança.
+Dois problemas na Edge Function `ixc-sync`:
 
-### Como funciona a API do IXC
+**1. Autenticação do usuário quebrada:** O código usa `supabaseUser.auth.getClaims()` que não existe no SDK do Supabase. Isso causa um erro antes mesmo de tentar conectar ao IXC. Precisa trocar por `supabaseUser.auth.getUser()`.
 
-A API do IXC usa autenticação via **Basic Auth** com token base64. Os endpoints principais são:
-- `POST /webservice/v1/cliente` - listar/buscar clientes
-- `POST /webservice/v1/fn_areceber` - listar faturas/boletos (contas a receber)
+**2. IXC retornando HTML:** Pela screenshot, o IXC está em `ixc.glorianet.com.br`. O servidor está retornando a página de login HTML em vez de JSON da API. Isso indica que:
+- O `IXC_API_URL` pode estar incorreto (ex: incluindo `/app` no final)
+- O `IXC_API_TOKEN` pode estar em formato incorreto (precisa ser `token_do_usuario:` codificado em Base64)
 
-A API usa POST com parâmetros de busca no body para listar registros.
+### Correções
 
-### Etapas de implementação
+1. **Trocar `getClaims` por `getUser`** na edge function para corrigir a autenticação
+2. **Melhorar logs** para mostrar exatamente qual URL está sendo chamada e qual resposta está vindo
+3. **Adicionar validação da URL** removendo paths extras como `/app` que possam ter sido incluídos
 
-**1. Armazenar credenciais IXC como secrets**
-- `IXC_API_URL` - URL do servidor IXC (ex: `https://seudominio.ixcsoft.com.br`)
-- `IXC_API_TOKEN` - Token de acesso da API (formato Base64)
+### Sobre as credenciais IXC
 
-**2. Criar Edge Function `ixc-sync`**
-- Endpoint para sincronizar clientes do IXC com a tabela `client_timelines`
-- Endpoint para sincronizar faturas/boletos do IXC com a tabela `client_boletos`
-- Mapeamento de campos:
-  - IXC `razao` → `client_name`
-  - IXC `id` → `client_id`
-  - IXC `ativo` → `is_active`
-  - IXC faturas `valor` → `boleto_value`
-  - IXC faturas `data_vencimento` → `due_date`
-  - IXC faturas `status` → `status` (mapeando para pendente/pago/atrasado/cancelado)
-
-**3. Adicionar aba "Integrações" nas Configurações**
-- Nova aba na página Settings com formulário para:
-  - Indicar status da conexão com IXC
-  - Botão "Sincronizar Clientes" e "Sincronizar Boletos"
-  - Log de última sincronização
-  - Opção de sincronização automática
-
-**4. Criar tabela de controle de sincronização**
-- Tabela `integration_sync_log` para registrar quando cada sincronização foi executada e quantos registros foram processados
-
-### Detalhes técnicos
-
-- A Edge Function usará `SUPABASE_SERVICE_ROLE_KEY` para inserir/atualizar dados
-- Upsert baseado no `client_id` (ID do IXC) para evitar duplicatas
-- Paginação na API do IXC (registros por página) para importar todos os dados
-- Tratamento de erros e rate limiting
+O formato correto do token IXC é: o token da API do usuário IXC (encontrado em Configurações > Meu Perfil no IXC), seguido de `:`, codificado em Base64. A URL deve ser apenas o domínio base, ex: `https://ixc.glorianet.com.br`.
 
