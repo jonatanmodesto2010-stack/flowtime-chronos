@@ -10,7 +10,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.analyze-collection-strategy]
-verify_jwt = true
+verify_jwt = false
 
 [functions.ixc-sync]
 verify_jwt = false
