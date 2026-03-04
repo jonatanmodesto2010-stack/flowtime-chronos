@@ -292,8 +292,8 @@ Deno.serve(async (req) => {
 
     const { syncType } = await req.json();
     
-    if (!['clients', 'boletos', 'all'].includes(syncType)) {
-      return new Response(JSON.stringify({ error: 'Invalid sync type. Use: clients, boletos, or all' }), { 
+    if (!['clients', 'boletos', 'all', 'test'].includes(syncType)) {
+      return new Response(JSON.stringify({ error: 'Invalid sync type. Use: clients, boletos, all, or test' }), { 
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
@@ -319,9 +319,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Clean IXC URL - remove trailing slash and any path like /adm.php, /app, /admin, etc.
-    let cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '');
-    console.log(`IXC sync starting. Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
+    // Clean IXC URL
+    const cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '');
+    console.log(`IXC sync. Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
 
     // Auto-encode token to Base64 if it's not already base64
     let finalToken = ixcApiToken;
@@ -329,27 +329,33 @@ Deno.serve(async (req) => {
       const decoded = atob(ixcApiToken);
       if (!decoded.includes(':')) {
         finalToken = btoa(ixcApiToken + ':');
-        console.log('Token re-encoded with ":" suffix');
       }
     } catch {
       finalToken = btoa(ixcApiToken + ':');
-      console.log('Token encoded to base64 with ":" suffix');
     }
 
-    // Auto-encode token to Base64 if it's not already base64
-    let finalToken = ixcApiToken;
-    try {
-      const decoded = atob(ixcApiToken);
-      // If decoding works and contains ':', it's already base64 encoded
-      if (!decoded.includes(':')) {
-        // It decoded but doesn't have ':', re-encode with ':' appended
-        finalToken = btoa(ixcApiToken + ':');
-        console.log('Token was not in expected format, re-encoded with ":" suffix');
+    // Test connection mode - just try to fetch 1 client
+    if (syncType === 'test') {
+      try {
+        const testData = await fetchIxcData(cleanUrl, finalToken, 'cliente', 1, 1);
+        const records = testData.registros || testData.rows || [];
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: `Conexão estabelecida com sucesso! ${Array.isArray(records) ? records.length : 0} registro(s) retornado(s) no teste.`,
+          totalRecords: testData.total || records.length || 0,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: err instanceof Error ? err.message : 'Erro desconhecido ao testar conexão',
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
-    } catch {
-      // Not valid base64, encode it with ':' appended
-      finalToken = btoa(ixcApiToken + ':');
-      console.log('Token was not base64, encoded with ":" suffix');
     }
 
     if (syncType === 'clients' || syncType === 'all') {
