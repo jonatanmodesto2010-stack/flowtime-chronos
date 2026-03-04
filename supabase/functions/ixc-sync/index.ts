@@ -326,13 +326,23 @@ Deno.serve(async (req) => {
     // Auto-encode token to Base64 if it's not already base64
     let finalToken = ixcApiToken;
     try {
+      // Try decoding - if it works and looks valid, it's already base64
       const decoded = atob(ixcApiToken);
+      // If decoded contains ':', it's a valid base64-encoded token
       if (!decoded.includes(':')) {
+        // It decoded but doesn't look like a token, re-encode with ':'
         finalToken = btoa(ixcApiToken + ':');
       }
+      // else: already valid base64, use as-is
     } catch {
-      finalToken = btoa(ixcApiToken + ':');
+      // Not base64 - encode it. If it already has ':', just encode as-is
+      if (ixcApiToken.includes(':')) {
+        finalToken = btoa(ixcApiToken);
+      } else {
+        finalToken = btoa(ixcApiToken + ':');
+      }
     }
+    console.log(`Token format: original has colon=${ixcApiToken.includes(':')}, finalToken length=${finalToken.length}`);
 
     // Test connection mode - just try to fetch 1 client
     if (syncType === 'test') {
