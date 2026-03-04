@@ -635,6 +635,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      batch_upsert_boletos: {
+        Args: {
+          p_dates: string[]
+          p_ids: string[]
+          p_statuses: string[]
+          p_values: number[]
+        }
+        Returns: undefined
+      }
+      batch_upsert_clients: {
+        Args: {
+          p_active: boolean[]
+          p_ids: string[]
+          p_names: string[]
+          p_statuses: string[]
+        }
+        Returns: undefined
+      }
       generate_client_sequential_id: {
         Args: { org_id: string }
         Returns: string
