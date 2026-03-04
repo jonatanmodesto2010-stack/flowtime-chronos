@@ -310,8 +310,25 @@ Deno.serve(async (req) => {
     const results: any = {};
 
     // Clean IXC URL (remove trailing slash)
-    const cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/(app|admin|webservice).*$/i, '');
-    console.log(`IXC sync starting. Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
+    // Clean IXC URL - remove trailing slash and any path like /adm.php, /app, /admin, etc.
+    let cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '');
+    console.log(`IXC sync starting. Original URL: ${ixcApiUrl}, Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
+
+    // Auto-encode token to Base64 if it's not already base64
+    let finalToken = ixcApiToken;
+    try {
+      const decoded = atob(ixcApiToken);
+      // If decoding works and contains ':', it's already base64 encoded
+      if (!decoded.includes(':')) {
+        // It decoded but doesn't have ':', re-encode with ':' appended
+        finalToken = btoa(ixcApiToken + ':');
+        console.log('Token was not in expected format, re-encoded with ":" suffix');
+      }
+    } catch {
+      // Not valid base64, encode it with ':' appended
+      finalToken = btoa(ixcApiToken + ':');
+      console.log('Token was not base64, encoded with ":" suffix');
+    }
 
     if (syncType === 'clients' || syncType === 'all') {
       // Create log entry
@@ -322,7 +339,7 @@ Deno.serve(async (req) => {
         .single();
 
       try {
-        const clientResult = await syncClients(supabaseAdmin, organizationId, cleanUrl, ixcApiToken);
+        const clientResult = await syncClients(supabaseAdmin, organizationId, cleanUrl, finalToken);
         results.clients = clientResult;
         
         if (logEntry) {
@@ -360,7 +377,7 @@ Deno.serve(async (req) => {
         .single();
 
       try {
-        const boletoResult = await syncBoletos(supabaseAdmin, organizationId, cleanUrl, ixcApiToken);
+        const boletoResult = await syncBoletos(supabaseAdmin, organizationId, cleanUrl, finalToken);
         results.boletos = boletoResult;
         
         if (logEntry) {
