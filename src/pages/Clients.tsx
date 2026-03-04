@@ -552,7 +552,7 @@ const Clients = () => {
                   x: 0
                 }} transition={{
                   delay: index * 0.05
-                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : 'bg-card hover:bg-card/80'}`}>
+                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : 'bg-card hover:bg-card/80'}`}>
                       <div className="flex-1 w-full cursor-pointer" onClick={() => handleOpenModal(client)}>
                         <h3 className={`font-bold text-xl uppercase tracking-wide ${isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'}`}>
                           {client.client_name}
@@ -571,8 +571,8 @@ const Clients = () => {
                         {/* Badge dinâmico baseado no status */}
                         {isCompleted(client.status) ? <div className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded flex-shrink-0 font-semibold">
                             FINALIZADO
-                          </div> : !client.is_active && <div className="px-2 py-1 bg-red-500/20 text-red-500 text-xs rounded flex-shrink-0">
-                            Inativo
+                          </div> : !client.is_active && <div className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
+                            🔒 BLOQUEADO
                           </div>}
                         
                         <Button variant="outline" size="icon" onClick={e => {
