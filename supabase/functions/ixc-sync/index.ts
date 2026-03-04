@@ -166,7 +166,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
           id: existingId,
           client_name: client.razao || `Cliente ${clientId}`,
           is_active: client.ativo === 'S',
-          status: client.ativo === 'S' ? 'active' : 'inactive',
+          status: client.ativo === 'S' ? 'active' : 'archived',
           updated_at: new Date().toISOString(),
         });
       } else {
@@ -176,7 +176,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
           is_active: client.ativo === 'S',
           organization_id: organizationId,
           start_date: client.data_cadastro || new Date().toISOString().split('T')[0],
-          status: client.ativo === 'S' ? 'active' : 'inactive',
+          status: client.ativo === 'S' ? 'active' : 'archived',
           user_id: orgUser.user_id,
         });
       }
