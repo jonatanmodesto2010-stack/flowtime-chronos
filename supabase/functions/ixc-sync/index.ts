@@ -82,7 +82,17 @@ async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, 
   }
 }
 
-async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string) {
+async function checkCancelled(supabaseAdmin: any, logId: string | undefined): Promise<boolean> {
+  if (!logId) return false;
+  const { data } = await supabaseAdmin
+    .from('integration_sync_log')
+    .select('status')
+    .eq('id', logId)
+    .single();
+  return data?.status === 'cancelled';
+}
+
+async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string, logId?: string) {
   let page = 1;
   let totalProcessed = 0;
   let totalCreated = 0;
@@ -90,6 +100,12 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
   let hasMore = true;
 
   while (hasMore) {
+    // Check if cancelled every page
+    if (await checkCancelled(supabaseAdmin, logId)) {
+      console.log('Sync cancelled by user');
+      return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
+    }
+
     const data = await fetchIxcData(apiUrl, apiToken, 'cliente', page, 100);
     const records = data.registros || data.rows || [];
     
@@ -159,10 +175,10 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     page++;
   }
 
-  return { totalProcessed, totalCreated, totalUpdated };
+  return { totalProcessed, totalCreated, totalUpdated, cancelled: false };
 }
 
-async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string) {
+async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string, logId?: string) {
   let page = 1;
   let totalProcessed = 0;
   let totalCreated = 0;
@@ -170,6 +186,12 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
   let hasMore = true;
 
   while (hasMore) {
+    // Check if cancelled every page
+    if (await checkCancelled(supabaseAdmin, logId)) {
+      console.log('Sync cancelled by user');
+      return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
+    }
+
     const data = await fetchIxcData(apiUrl, apiToken, 'fn_areceber', page, 100);
     const records = data.registros || data.rows || [];
     
@@ -235,7 +257,7 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
     page++;
   }
 
-  return { totalProcessed, totalCreated, totalUpdated };
+  return { totalProcessed, totalCreated, totalUpdated, cancelled: false };
 }
 
 Deno.serve(async (req) => {
@@ -377,10 +399,10 @@ Deno.serve(async (req) => {
         .single();
 
       try {
-        const clientResult = await syncClients(supabaseAdmin, organizationId, cleanUrl, finalToken);
+        const clientResult = await syncClients(supabaseAdmin, organizationId, cleanUrl, finalToken, logEntry?.id);
         results.clients = clientResult;
         
-        if (logEntry) {
+        if (logEntry && !clientResult.cancelled) {
           await supabaseAdmin
             .from('integration_sync_log')
             .update({
@@ -415,10 +437,10 @@ Deno.serve(async (req) => {
         .single();
 
       try {
-        const boletoResult = await syncBoletos(supabaseAdmin, organizationId, cleanUrl, finalToken);
+        const boletoResult = await syncBoletos(supabaseAdmin, organizationId, cleanUrl, finalToken, logEntry?.id);
         results.boletos = boletoResult;
         
-        if (logEntry) {
+        if (logEntry && !boletoResult.cancelled) {
           await supabaseAdmin
             .from('integration_sync_log')
             .update({
