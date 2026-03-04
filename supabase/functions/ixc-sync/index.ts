@@ -267,12 +267,13 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(authHeader.replace('Bearer ', ''));
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    if (userError || !user) {
+      console.error('Auth error:', userError?.message);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     // Get user's organization
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
@@ -309,7 +310,8 @@ Deno.serve(async (req) => {
     const results: any = {};
 
     // Clean IXC URL (remove trailing slash)
-    const cleanUrl = ixcApiUrl.replace(/\/+$/, '');
+    const cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/(app|admin|webservice).*$/i, '');
+    console.log(`IXC sync starting. Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
 
     if (syncType === 'clients' || syncType === 'all') {
       // Create log entry
