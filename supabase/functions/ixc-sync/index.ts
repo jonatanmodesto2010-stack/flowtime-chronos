@@ -182,20 +182,22 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
 
-    // Batch update existing records
+    // Batch update existing records (parallel with concurrency limit)
     if (toUpdate.length > 0) {
-      // Supabase doesn't support batch update by different IDs in one call,
-      // so we use upsert with the id column
-      for (const record of toUpdate) {
-        await supabaseAdmin
-          .from('client_timelines')
-          .update({
-            client_name: record.client_name,
-            is_active: record.is_active,
-            status: record.status,
-            updated_at: record.updated_at,
-          })
-          .eq('id', record.id);
+      const CONCURRENCY = 10;
+      for (let i = 0; i < toUpdate.length; i += CONCURRENCY) {
+        const batch = toUpdate.slice(i, i + CONCURRENCY);
+        await Promise.all(batch.map(record =>
+          supabaseAdmin
+            .from('client_timelines')
+            .update({
+              client_name: record.client_name,
+              is_active: record.is_active,
+              status: record.status,
+              updated_at: record.updated_at,
+            })
+            .eq('id', record.id)
+        ));
       }
       totalUpdated += toUpdate.length;
     }
@@ -332,17 +334,21 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
 
-    // Batch updates
-    for (const record of toUpdateList) {
-      await supabaseAdmin
-        .from('client_boletos')
-        .update({
-          boleto_value: record.boleto_value,
-          due_date: record.due_date,
-          status: record.status,
-          updated_at: record.updated_at,
-        })
-        .eq('id', record.id);
+    // Batch updates (parallel with concurrency limit)
+    const CONCURRENCY = 10;
+    for (let i = 0; i < toUpdateList.length; i += CONCURRENCY) {
+      const batch = toUpdateList.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(record =>
+        supabaseAdmin
+          .from('client_boletos')
+          .update({
+            boleto_value: record.boleto_value,
+            due_date: record.due_date,
+            status: record.status,
+            updated_at: record.updated_at,
+          })
+          .eq('id', record.id)
+      ));
     }
     totalUpdated += toUpdateList.length;
 
