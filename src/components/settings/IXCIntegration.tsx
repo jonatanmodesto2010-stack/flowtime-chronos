@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
-import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2, Save, Eye, EyeOff, Settings2 } from 'lucide-react';
+import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2, Save, Eye, EyeOff, Settings2, Plug, Wifi } from 'lucide-react';
 
 interface SyncLog {
   id: string;
@@ -34,6 +34,7 @@ export function IXCIntegration() {
   const [apiToken, setApiToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [hasConfig, setHasConfig] = useState(false);
 
@@ -114,6 +115,32 @@ export function IXCIntegration() {
       toast.error(`Erro ao salvar configuração: ${err.message}`);
     } finally {
       setSavingConfig(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!hasConfig) {
+      toast.error('Salve a configuração antes de testar.');
+      return;
+    }
+    setTestingConnection(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-sync', {
+        body: { syncType: 'test' },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(data.message || 'Conexão com IXC estabelecida com sucesso!');
+      } else {
+        toast.error(`Falha na conexão: ${data?.error || 'Erro desconhecido'}`);
+      }
+    } catch (err: any) {
+      console.error('Test connection error:', err);
+      toast.error(`Erro ao testar conexão: ${err.message || 'Erro desconhecido'}`);
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -246,14 +273,29 @@ export function IXCIntegration() {
             </p>
           </div>
 
-          <Button onClick={handleSaveConfig} disabled={savingConfig}>
-            {savingConfig ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Salvar Configuração
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={handleSaveConfig} disabled={savingConfig}>
+              {savingConfig ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Salvar Configuração
+            </Button>
+
+            <Button 
+              onClick={handleTestConnection} 
+              disabled={testingConnection || !hasConfig}
+              variant="outline"
+            >
+              {testingConnection ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Wifi className="w-4 h-4 mr-2" />
+              )}
+              Testar Conexão
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
