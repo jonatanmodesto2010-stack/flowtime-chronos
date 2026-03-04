@@ -114,7 +114,15 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       break;
     }
 
-    for (const client of records as IXCClient[]) {
+    for (let i = 0; i < records.length; i++) {
+      const client = records[i] as IXCClient;
+      
+      // Check cancellation every 10 records
+      if (i % 10 === 0 && i > 0 && await checkCancelled(supabaseAdmin, logId)) {
+        console.log('Sync cancelled by user (inside client loop)');
+        return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
+      }
+
       const clientId = client.id?.toString();
       if (!clientId) continue;
 
@@ -200,7 +208,15 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
       break;
     }
 
-    for (const fatura of records as IXCFatura[]) {
+    for (let i = 0; i < records.length; i++) {
+      const fatura = records[i] as IXCFatura;
+      
+      // Check cancellation every 10 records
+      if (i % 10 === 0 && i > 0 && await checkCancelled(supabaseAdmin, logId)) {
+        console.log('Sync cancelled by user (inside boleto loop)');
+        return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
+      }
+
       const clientIxcId = fatura.id_cliente?.toString();
       if (!clientIxcId) continue;
 
