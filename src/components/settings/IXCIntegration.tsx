@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
-import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2, Save, Eye, EyeOff, Settings2, Plug, Wifi } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2, Save, Eye, EyeOff, Settings2, Plug, Wifi, History } from 'lucide-react';
 
 interface SyncLog {
   id: string;
@@ -44,6 +45,13 @@ export function IXCIntegration() {
       fetchConfig();
     }
   }, [organizationId]);
+
+  // Auto-refresh logs every 10s while syncing
+  useEffect(() => {
+    if (!isAnySyncing) return;
+    const interval = setInterval(fetchSyncLogs, 10000);
+    return () => clearInterval(interval);
+  }, [syncingClients, syncingBoletos, syncingAll]);
 
   const fetchConfig = async () => {
     try {
@@ -361,9 +369,17 @@ export function IXCIntegration() {
 
       {/* Sync Logs */}
       <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Sincronizações</CardTitle>
-          <CardDescription>Últimas sincronizações realizadas</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Histórico de Sincronizações
+            </CardTitle>
+            <CardDescription>Últimas sincronizações realizadas</CardDescription>
+          </div>
+          <Button variant="ghost" size="icon" onClick={fetchSyncLogs} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -375,33 +391,46 @@ export function IXCIntegration() {
               Nenhuma sincronização realizada ainda.
             </p>
           ) : (
-            <div className="space-y-3">
-              {syncLogs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      {log.sync_type === 'clients' ? (
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                      ) : (
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                      )}
-                      <span className="font-medium text-sm">
-                        {log.sync_type === 'clients' ? 'Clientes' : 'Boletos'}
-                      </span>
-                      {getStatusBadge(log.status)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(log.started_at)}
-                      {log.status === 'success' && (
-                        <span> — {log.records_processed} processados, {log.records_created} novos, {log.records_updated} atualizados</span>
-                      )}
-                      {log.error_message && (
-                        <span className="text-destructive"> — {log.error_message}</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Processados</TableHead>
+                    <TableHead>Novos</TableHead>
+                    <TableHead>Atualizados</TableHead>
+                    <TableHead>Início</TableHead>
+                    <TableHead>Conclusão</TableHead>
+                    <TableHead>Erro</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {syncLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1.5">
+                          {log.sync_type === 'clients' ? (
+                            <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                          ) : (
+                            <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                          {log.sync_type === 'clients' ? 'Clientes' : 'Boletos'}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(log.status)}</TableCell>
+                      <TableCell>{log.records_processed ?? '-'}</TableCell>
+                      <TableCell>{log.records_created ?? '-'}</TableCell>
+                      <TableCell>{log.records_updated ?? '-'}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{formatDate(log.started_at)}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{log.completed_at ? formatDate(log.completed_at) : '-'}</TableCell>
+                      <TableCell className="text-xs text-destructive max-w-[200px] truncate" title={log.error_message || ''}>
+                        {log.error_message || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
