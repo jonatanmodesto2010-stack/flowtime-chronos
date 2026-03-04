@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2, Save, Eye, EyeOff, Settings2, Plug, Wifi, History } from 'lucide-react';
+import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2, Save, Eye, EyeOff, Settings2, Plug, Wifi, History, StopCircle, Ban } from 'lucide-react';
 
 interface SyncLog {
   id: string;
@@ -209,6 +209,41 @@ export function IXCIntegration() {
     }
   };
 
+  const handleStopSync = async () => {
+    try {
+      // Find running sync logs and mark them as cancelled
+      const runningLogs = syncLogs.filter(log => log.status === 'running');
+      
+      if (runningLogs.length === 0) {
+        toast.info('Nenhuma sincronização em execução.');
+        return;
+      }
+
+      for (const log of runningLogs) {
+        await (supabase as any)
+          .from('integration_sync_log')
+          .update({
+            status: 'cancelled',
+            error_message: 'Cancelado pelo usuário',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', log.id);
+      }
+
+      toast.success('Sincronização cancelada!');
+      // Reset UI states
+      setSyncingClients(false);
+      setSyncingBoletos(false);
+      setSyncingAll(false);
+      fetchSyncLogs();
+    } catch (err: any) {
+      console.error('Error stopping sync:', err);
+      toast.error(`Erro ao cancelar: ${err.message}`);
+    }
+  };
+
+  const hasRunningSyncLogs = syncLogs.some(log => log.status === 'running');
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
@@ -217,6 +252,8 @@ export function IXCIntegration() {
         return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" /> Erro</Badge>;
       case 'running':
         return <Badge variant="secondary"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Executando</Badge>;
+      case 'cancelled':
+        return <Badge variant="outline" className="border-orange-500 text-orange-500"><Ban className="w-3 h-3 mr-1" /> Cancelado</Badge>;
       default:
         return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" /> Pendente</Badge>;
     }
@@ -357,6 +394,17 @@ export function IXCIntegration() {
               )}
               Sincronizar Tudo
             </Button>
+
+
+            {(isAnySyncing || hasRunningSyncLogs) && (
+              <Button
+                onClick={handleStopSync}
+                variant="destructive"
+              >
+                <StopCircle className="w-4 h-4 mr-2" />
+                Parar Sincronização
+              </Button>
+            )}
           </div>
 
           {!hasConfig && configLoaded && (
