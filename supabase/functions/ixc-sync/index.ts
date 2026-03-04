@@ -253,14 +253,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const ixcApiUrl = Deno.env.get('IXC_API_URL');
-    const ixcApiToken = Deno.env.get('IXC_API_TOKEN');
-
-    if (!ixcApiUrl || !ixcApiToken) {
-      return new Response(JSON.stringify({ error: 'IXC credentials not configured' }), { 
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
 
     // Verify user
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
@@ -309,10 +301,40 @@ Deno.serve(async (req) => {
     const organizationId = userRole.organization_id;
     const results: any = {};
 
-    // Clean IXC URL (remove trailing slash)
+    // Read IXC credentials from organization_integrations table
+    const { data: integrationConfig } = await supabaseAdmin
+      .from('organization_integrations')
+      .select('api_url, api_token')
+      .eq('organization_id', organizationId)
+      .eq('integration_type', 'ixc')
+      .maybeSingle();
+
+    // Fallback to env vars if no DB config
+    const ixcApiUrl = integrationConfig?.api_url || Deno.env.get('IXC_API_URL');
+    const ixcApiToken = integrationConfig?.api_token || Deno.env.get('IXC_API_TOKEN');
+
+    if (!ixcApiUrl || !ixcApiToken) {
+      return new Response(JSON.stringify({ error: 'Credenciais IXC não configuradas. Acesse Configurações → Integrações para configurar.' }), { 
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
     // Clean IXC URL - remove trailing slash and any path like /adm.php, /app, /admin, etc.
     let cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '');
-    console.log(`IXC sync starting. Original URL: ${ixcApiUrl}, Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
+    console.log(`IXC sync starting. Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
+
+    // Auto-encode token to Base64 if it's not already base64
+    let finalToken = ixcApiToken;
+    try {
+      const decoded = atob(ixcApiToken);
+      if (!decoded.includes(':')) {
+        finalToken = btoa(ixcApiToken + ':');
+        console.log('Token re-encoded with ":" suffix');
+      }
+    } catch {
+      finalToken = btoa(ixcApiToken + ':');
+      console.log('Token encoded to base64 with ":" suffix');
+    }
 
     // Auto-encode token to Base64 if it's not already base64
     let finalToken = ixcApiToken;

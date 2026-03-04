@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
-import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
+import { RefreshCw, Users, FileText, CheckCircle, XCircle, Clock, Loader2, Save, Eye, EyeOff, Settings2 } from 'lucide-react';
 
 interface SyncLog {
   id: string;
@@ -19,15 +22,100 @@ interface SyncLog {
 }
 
 export function IXCIntegration() {
+  const { organizationId } = useUserRole();
   const [syncingClients, setSyncingClients] = useState(false);
   const [syncingBoletos, setSyncingBoletos] = useState(false);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Config state
+  const [apiUrl, setApiUrl] = useState('');
+  const [apiToken, setApiToken] = useState('');
+  const [showToken, setShowToken] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const [hasConfig, setHasConfig] = useState(false);
+
   useEffect(() => {
     fetchSyncLogs();
-  }, []);
+    if (organizationId) {
+      fetchConfig();
+    }
+  }, [organizationId]);
+
+  const fetchConfig = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('organization_integrations')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('integration_type', 'ixc')
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setApiUrl(data.api_url || '');
+        setApiToken(data.api_token || '');
+        setHasConfig(true);
+      }
+    } catch (err) {
+      console.error('Error fetching config:', err);
+    } finally {
+      setConfigLoaded(true);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    if (!organizationId) return;
+    if (!apiUrl.trim()) {
+      toast.error('Informe a URL da API do IXC');
+      return;
+    }
+    if (!apiToken.trim()) {
+      toast.error('Informe o Token da API do IXC');
+      return;
+    }
+
+    setSavingConfig(true);
+    try {
+      const cleanUrl = apiUrl.trim().replace(/\/+$/, '');
+      
+      if (hasConfig) {
+        const { error } = await (supabase as any)
+          .from('organization_integrations')
+          .update({
+            api_url: cleanUrl,
+            api_token: apiToken.trim(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('organization_id', organizationId)
+          .eq('integration_type', 'ixc');
+
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any)
+          .from('organization_integrations')
+          .insert({
+            organization_id: organizationId,
+            integration_type: 'ixc',
+            api_url: cleanUrl,
+            api_token: apiToken.trim(),
+          });
+
+        if (error) throw error;
+        setHasConfig(true);
+      }
+
+      toast.success('Configuração do IXC salva com sucesso!');
+    } catch (err: any) {
+      console.error('Error saving config:', err);
+      toast.error(`Erro ao salvar configuração: ${err.message}`);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   const fetchSyncLogs = async () => {
     try {
@@ -47,8 +135,13 @@ export function IXCIntegration() {
   };
 
   const handleSync = async (syncType: 'clients' | 'boletos' | 'all') => {
-    const setLoading = syncType === 'clients' ? setSyncingClients : syncType === 'boletos' ? setSyncingBoletos : setSyncingAll;
-    setLoading(true);
+    if (!hasConfig) {
+      toast.error('Configure a URL e o Token do IXC antes de sincronizar.');
+      return;
+    }
+
+    const setLoadingState = syncType === 'clients' ? setSyncingClients : syncType === 'boletos' ? setSyncingBoletos : setSyncingAll;
+    setLoadingState(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('ixc-sync', {
@@ -76,7 +169,7 @@ export function IXCIntegration() {
       console.error('Sync error:', err);
       toast.error(`Erro na sincronização: ${err.message || 'Erro desconhecido'}`);
     } finally {
-      setLoading(false);
+      setLoadingState(false);
       fetchSyncLogs();
     }
   };
@@ -102,21 +195,84 @@ export function IXCIntegration() {
 
   return (
     <div className="space-y-6">
+      {/* Configuration Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="w-5 h-5" />
+            Configuração IXC
+          </CardTitle>
+          <CardDescription>
+            Informe a URL e o Token de acesso da API do IXC Provedor. O token pode ser encontrado no IXC em Usuários → seu perfil → seção API → Token de acesso.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="ixc-url">URL da API do IXC</Label>
+            <Input
+              id="ixc-url"
+              placeholder="https://ixc.suaempresa.com.br"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Apenas o domínio base, sem /adm.php ou /webservice. Ex: https://ixc.glorianet.com.br
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ixc-token">Token de Acesso da API</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="ixc-token"
+                  type={showToken ? 'text' : 'password'}
+                  placeholder="Cole o token de acesso da API aqui"
+                  value={apiToken}
+                  onChange={(e) => setApiToken(e.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setShowToken(!showToken)}
+              >
+                {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Encontre em: IXC → Usuários → Seu perfil → Seção API → Token de acesso
+            </p>
+          </div>
+
+          <Button onClick={handleSaveConfig} disabled={savingConfig}>
+            {savingConfig ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Salvar Configuração
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Sync Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <RefreshCw className="w-5 h-5" />
-            Integração IXC Provedor
+            Sincronização
           </CardTitle>
           <CardDescription>
-            Sincronize clientes e boletos do sistema IXC Provedor com o sistema de cobrança.
+            Sincronize clientes e boletos do sistema IXC Provedor.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <Button
               onClick={() => handleSync('clients')}
-              disabled={isAnySyncing}
+              disabled={isAnySyncing || !hasConfig}
             >
               {syncingClients ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -128,7 +284,7 @@ export function IXCIntegration() {
 
             <Button
               onClick={() => handleSync('boletos')}
-              disabled={isAnySyncing}
+              disabled={isAnySyncing || !hasConfig}
               variant="secondary"
             >
               {syncingBoletos ? (
@@ -141,7 +297,7 @@ export function IXCIntegration() {
 
             <Button
               onClick={() => handleSync('all')}
-              disabled={isAnySyncing}
+              disabled={isAnySyncing || !hasConfig}
               variant="outline"
             >
               {syncingAll ? (
@@ -153,12 +309,15 @@ export function IXCIntegration() {
             </Button>
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            A sincronização de clientes importa todos os clientes do IXC. A sincronização de boletos importa as faturas (contas a receber) e associa aos clientes já importados.
-          </p>
+          {!hasConfig && configLoaded && (
+            <p className="text-sm text-amber-600">
+              ⚠️ Configure a URL e o Token acima antes de sincronizar.
+            </p>
+          )}
         </CardContent>
       </Card>
 
+      {/* Sync Logs */}
       <Card>
         <CardHeader>
           <CardTitle>Histórico de Sincronizações</CardTitle>
