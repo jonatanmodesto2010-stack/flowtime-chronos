@@ -1,21 +1,28 @@
 
 
-## Plano: Corrigir busca de clientes para retornar todos os registros
+## Plano: Garantir bloqueados sempre no topo, mesmo com filtros de ordenação
 
 ### Problema
-Os logs mostram que a API do IXC retorna apenas 690 clientes (página 1: 500, página 2: 190), mas deveria ter ~835. O problema está nos parâmetros de consulta: usar `oper: "="` com `query: ""` pode estar filtrando registros em algumas versões do IXC.
+A função `defaultClientSort` já coloca bloqueados primeiro, mas quando o usuário aplica filtros de ordenação (por quantidade de eventos ou data de atualização), a ordenação padrão é completamente substituída (linhas 300-318 de `Clients.tsx`), fazendo com que os bloqueados percam a prioridade.
 
 ### Solução
-Alterar a função `fetchIxcData` para usar `oper: ">"` com `query: "0"` quando o endpoint for `cliente`, garantindo que todos os registros sejam retornados. Também adicionar log do `data.total` reportado pela API para diagnóstico.
+Modificar as ordenações alternativas em `Clients.tsx` para sempre manter bloqueados (`is_active === false`) no topo, independente do critério de ordenação selecionado.
 
 ### Detalhes técnicos
 
-**Arquivo: `supabase/functions/ixc-sync/index.ts`**
+**Arquivo: `src/pages/Clients.tsx`** (linhas 299-318)
 
-1. Modificar `fetchIxcData` para aceitar parâmetros de query opcionais (oper/query), com defaults que retornem todos os registros:
-   - `oper: ">"` e `query: "0"` como default (busca todos os registros com id > 0)
-   
-2. Adicionar log explícito do `data.total` na primeira página de clientes para validar quantos registros a API reporta.
+Nas duas ordenações alternativas (por event count e por update date), adicionar a mesma lógica de prioridade:
 
-3. Manter compatibilidade com os outros endpoints (`cliente_contrato`, `cliente_bloqueado`, `fn_areceber`).
+```typescript
+results.sort((a, b) => {
+  // Bloqueados SEMPRE no topo
+  if (!a.is_active !== !b.is_active) return !a.is_active ? -1 : 1;
+  
+  // Dentro do mesmo grupo, aplicar ordenação específica
+  // ... (lógica existente de event count ou update date)
+});
+```
+
+Isso garante que, qualquer que seja o filtro ativo, clientes bloqueados apareçam primeiro.
 
