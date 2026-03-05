@@ -116,7 +116,7 @@ const Clients = () => {
     console.log("loadClients: Iniciando, definindo loading para true");
     try {
       setLoading(true);
-      
+
       // Paginação para buscar todos os clientes (Supabase limita a 1000 por query)
       const allData: any[] = [];
       let offset = 0;
@@ -129,9 +129,9 @@ const Clients = () => {
             profiles:user_id (
               full_name
             )
-          `).eq('organization_id', organizationId)
-          .order('updated_at', { ascending: false })
-          .range(offset, offset + batchSize - 1);
+          `).eq('organization_id', organizationId).
+        order('updated_at', { ascending: false }).
+        range(offset, offset + batchSize - 1);
 
         if (error) throw error;
 
@@ -234,7 +234,7 @@ const Clients = () => {
       let results = allData;
 
       // Executar todas as queries auxiliares em paralelo
-      const clientIds = results.map(c => c.id);
+      const clientIds = results.map((c) => c.id);
       const [tagsData, boletosData, linesData, analysisData] = await Promise.all([
       // Tags filter
       filters.tagsFilter && filters.tagsFilter.length > 0 ? supabaseClient.from('client_timeline_tags').select('timeline_id').in('timeline_id', clientIds).in('tag_id', filters.tagsFilter) : Promise.resolve({
@@ -255,21 +255,21 @@ const Clients = () => {
 
       // Aplicar filtros de tags
       if (filters.tagsFilter && filters.tagsFilter.length > 0 && tagsData.data) {
-        const filteredIds = tagsData.data.map(ct => ct.timeline_id);
-        results = results.filter(c => filteredIds.includes(c.id));
+        const filteredIds = tagsData.data.map((ct) => ct.timeline_id);
+        results = results.filter((c) => filteredIds.includes(c.id));
       }
 
       // Aplicar filtros de boleto
       if (filters.boletoFilter !== 'all' && boletosData.data) {
         if (filters.boletoFilter === 'pending') {
-          const idsWithPending = boletosData.data.filter(b => b.status === 'pendente' || b.status === 'atrasado').map(b => b.timeline_id);
-          results = results.filter(c => idsWithPending.includes(c.id));
+          const idsWithPending = boletosData.data.filter((b) => b.status === 'pendente' || b.status === 'atrasado').map((b) => b.timeline_id);
+          results = results.filter((c) => idsWithPending.includes(c.id));
         } else if (filters.boletoFilter === 'paid') {
-          const idsWithPaid = boletosData.data.filter(b => b.status === 'pago').map(b => b.timeline_id);
-          results = results.filter(c => idsWithPaid.includes(c.id));
+          const idsWithPaid = boletosData.data.filter((b) => b.status === 'pago').map((b) => b.timeline_id);
+          results = results.filter((c) => idsWithPaid.includes(c.id));
         } else if (filters.boletoFilter === 'none') {
-          const idsWithBoletos = boletosData.data.map(b => b.timeline_id);
-          results = results.filter(c => !idsWithBoletos.includes(c.id));
+          const idsWithBoletos = boletosData.data.map((b) => b.timeline_id);
+          results = results.filter((c) => !idsWithBoletos.includes(c.id));
         }
       }
 
@@ -278,57 +278,57 @@ const Clients = () => {
         const lines = linesData.data;
 
         // Buscar eventos se necessário
-        const lineIds = lines.map(l => l.id);
+        const lineIds = lines.map((l) => l.id);
         const {
           data: events
         } = await supabaseClient.from('timeline_events').select('line_id, icon').in('line_id', lineIds);
 
         // Aplicar filtro de timeline
         if (filters.timelineFilter === 'with_events' || filters.timelineFilter === 'no_events') {
-          const linesWithEvents = events?.map(e => e.line_id) || [];
-          const timelinesWithEvents = lines.filter(l => linesWithEvents.includes(l.id)).map(l => l.timeline_id);
+          const linesWithEvents = events?.map((e) => e.line_id) || [];
+          const timelinesWithEvents = lines.filter((l) => linesWithEvents.includes(l.id)).map((l) => l.timeline_id);
           if (filters.timelineFilter === 'with_events') {
-            results = results.filter(c => timelinesWithEvents.includes(c.id));
+            results = results.filter((c) => timelinesWithEvents.includes(c.id));
           } else {
-            results = results.filter(c => !timelinesWithEvents.includes(c.id));
+            results = results.filter((c) => !timelinesWithEvents.includes(c.id));
           }
         }
 
         // Aplicar filtro de ícones
         if (filters.iconsFilter && filters.iconsFilter.length > 0) {
-          const eventsWithIcons = events?.filter(e => filters.iconsFilter.includes(e.icon)) || [];
-          const linesWithIcons = eventsWithIcons.map(e => e.line_id);
-          const timelinesWithIcons = lines.filter(l => linesWithIcons.includes(l.id)).map(l => l.timeline_id);
-          results = results.filter(c => timelinesWithIcons.includes(c.id));
+          const eventsWithIcons = events?.filter((e) => filters.iconsFilter.includes(e.icon)) || [];
+          const linesWithIcons = eventsWithIcons.map((e) => e.line_id);
+          const timelinesWithIcons = lines.filter((l) => linesWithIcons.includes(l.id)).map((l) => l.timeline_id);
+          results = results.filter((c) => timelinesWithIcons.includes(c.id));
         }
       }
 
       // Aplicar filtro de análise
       if (filters.timelineFilter === 'with_analysis' && analysisData.data) {
-        const idsWithAnalysis = analysisData.data.map(a => a.timeline_id);
-        results = results.filter(c => idsWithAnalysis.includes(c.id));
+        const idsWithAnalysis = analysisData.data.map((a) => a.timeline_id);
+        results = results.filter((c) => idsWithAnalysis.includes(c.id));
       }
 
       // Aplicar ordenação por quantidade de eventos
       if (filters.eventCountSort !== 'none') {
         // Buscar contagem de eventos para cada cliente
-        const clientIds = results.map(c => c.id);
+        const clientIds = results.map((c) => c.id);
 
         // Buscar linhas e eventos em paralelo
         const {
           data: allLines
         } = await supabaseClient.from('timeline_lines').select('id, timeline_id').in('timeline_id', clientIds);
-        const lineIds = allLines?.map(l => l.id) || [];
+        const lineIds = allLines?.map((l) => l.id) || [];
         const {
           data: allEvents
         } = await supabaseClient.from('timeline_events').select('id, line_id').in('line_id', lineIds);
 
         // Criar mapa de contagem de eventos por cliente
         const eventCountMap = new Map<string, number>();
-        results.forEach(client => {
-          const clientLines = allLines?.filter(l => l.timeline_id === client.id) || [];
-          const clientLineIds = clientLines.map(l => l.id);
-          const eventCount = allEvents?.filter(e => clientLineIds.includes(e.line_id)).length || 0;
+        results.forEach((client) => {
+          const clientLines = allLines?.filter((l) => l.timeline_id === client.id) || [];
+          const clientLineIds = clientLines.map((l) => l.id);
+          const eventCount = allEvents?.filter((e) => clientLineIds.includes(e.line_id)).length || 0;
           eventCountMap.set(client.id, eventCount);
         });
 
@@ -516,7 +516,7 @@ const Clients = () => {
               <div className="max-w-4xl mx-auto">
                 <div className="h-9 w-48 bg-muted animate-pulse rounded mb-6" />
                 <div className="flex flex-col gap-3">
-                  {[1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
+                  {[1, 2, 3, 4].map((i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
                 </div>
               </div>
             </main>
@@ -560,13 +560,13 @@ const Clients = () => {
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} title="Primeira página">
                       <ChevronFirst className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} title="Página anterior">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} title="Página anterior">
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => loadClients()} title="Atualizar">
                       <RefreshCw className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} title="Próxima página">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} title="Próxima página">
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} title="Última página">
@@ -630,7 +630,8 @@ const Clients = () => {
                         
                         {/* Última Atualização */}
                         {client.updated_at && <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-xs">🕐</span>
+                            <span className="text-xs">
+</span>
                             <p className="text-xs text-muted-foreground">
                               Última atualização: {formatLastUpdate(client.updated_at, client.profiles?.full_name)}
                             </p>
@@ -649,10 +650,9 @@ const Clients = () => {
                             ✅ ATIVO
                           </div>}
                         
-                        <Button variant="outline" size="icon" onClick={e => {
-                      e.stopPropagation();
-                      handleOpenTimelineDialog(client);
-                    }} className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300" title="Ver Timeline">
+                        <Button variant="outline" size="icon" onClick={(e) => {e.stopPropagation();
+                        handleOpenTimelineDialog(client);
+                      }} className="border-green-500/30 hover:bg-green-500/10 text-green-400 hover:text-green-300" title="Ver Timeline">
                           <TrendingUp className="w-4 h-4" />
                         </Button>
                       </div>
@@ -683,10 +683,10 @@ const Clients = () => {
               <label htmlFor="new-client-name" className="text-sm font-medium">
                 Nome do Cliente *
               </label>
-              <Input id="new-client-name" placeholder="Ex: João Silva" value={newClientData.client_name} onChange={e => setNewClientData(prev => ({
+              <Input id="new-client-name" placeholder="Ex: João Silva" value={newClientData.client_name} onChange={(e) => setNewClientData((prev) => ({
                 ...prev,
                 client_name: e.target.value
-              }))} className="w-full" autoFocus onKeyDown={e => {
+              }))} className="w-full" autoFocus onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   handleCreateClient();
@@ -698,7 +698,7 @@ const Clients = () => {
               <label htmlFor="new-client-id" className="text-sm font-medium">
                 ID do Cliente
               </label>
-              <Input id="new-client-id" placeholder="Ex: 00064" value={newClientData.client_id} onChange={e => setNewClientData(prev => ({
+              <Input id="new-client-id" placeholder="Ex: 00064" value={newClientData.client_id} onChange={(e) => setNewClientData((prev) => ({
                 ...prev,
                 client_id: e.target.value
               }))} className="w-full" />
@@ -708,7 +708,7 @@ const Clients = () => {
               <label htmlFor="new-client-date" className="text-sm font-medium">
                 Data de Cadastro
               </label>
-              <Input id="new-client-date" type="date" value={newClientData.start_date} onChange={e => setNewClientData(prev => ({
+              <Input id="new-client-date" type="date" value={newClientData.start_date} onChange={(e) => setNewClientData((prev) => ({
                 ...prev,
                 start_date: e.target.value
               }))} className="w-full" />
