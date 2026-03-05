@@ -543,7 +543,7 @@ const Clients = () => {
 
               <div className="mb-4 flex items-center justify-between gap-4">
                 <p className="text-sm text-muted-foreground">
-                  Mostrando {filteredClients.length} de {clients.length} clientes
+                  {filteredClients.length} de {clients.length}
                 </p>
                 
                 <div className="flex items-center gap-3">
