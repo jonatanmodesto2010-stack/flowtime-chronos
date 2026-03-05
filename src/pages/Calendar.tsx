@@ -62,9 +62,19 @@ const Calendar = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        loadEvents(session.user.id);
+        // Try cache first
+        const cached = getCachedData<Event[]>(CACHE_KEYS.CALENDAR_EVENTS);
+        if (cached) {
+          setEvents(cached.data);
+          setLoading(false);
+          isInitialLoad.current = false;
+          if (cached.isStale) {
+            loadEvents(session.user.id, true);
+          }
+        } else {
+          loadEvents(session.user.id);
+        }
       } else {
-        // Sem autenticação: não redireciona e não trava em loading
         setLoading(false);
       }
     });
@@ -72,7 +82,9 @@ const Calendar = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        loadEvents(session.user.id);
+        if (!getCachedData<Event[]>(CACHE_KEYS.CALENDAR_EVENTS)) {
+          loadEvents(session.user.id);
+        }
       } else {
         setUser(null);
         setLoading(false);
