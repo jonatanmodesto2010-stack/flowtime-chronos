@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import type { User } from '@supabase/supabase-js';
 
 interface Event {
@@ -54,6 +55,7 @@ const Index = () => {
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { organizationId } = useUserRole();
+  const { log: auditLog } = useAuditLog();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -228,6 +230,7 @@ const Index = () => {
       if (eventError) throw eventError;
 
       loadTimelines();
+      auditLog({ action: 'create', entityType: 'client_timeline', entityId: newTimeline.id, details: { client_name: '' } });
 
       toast({
         title: 'Cliente adicionado',
@@ -283,6 +286,8 @@ const Index = () => {
         .insert(eventsToInsert);
 
       if (insertError) throw insertError;
+
+      auditLog({ action: 'update', entityType: 'timeline_event', entityId: lineId, details: { events_count: events.length } });
 
       toast({
         title: 'Eventos atualizados',
@@ -408,6 +413,8 @@ const Index = () => {
 
       if (error) throw error;
 
+      auditLog({ action: 'update', entityType: 'client_timeline', entityId: timelineId, details: { client_name: info.name } });
+
       toast({
         title: 'Cliente atualizado',
         description: 'Informações salvas com sucesso.',
@@ -440,6 +447,7 @@ const Index = () => {
       if (error) throw error;
 
       loadTimelines();
+      auditLog({ action: 'complete', entityType: 'client_timeline', entityId: timelineId });
 
       toast({
         title: 'Cobrança finalizada',

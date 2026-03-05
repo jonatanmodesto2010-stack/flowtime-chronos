@@ -8,6 +8,7 @@ import { useVersionCheck } from "./hooks/useVersionCheck";
 import Index from "./pages/Index";
 import Clients from "./pages/Clients";
 import Calendar from "./pages/Calendar";
+import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import VisualTimeline from "./pages/VisualTimeline";
@@ -25,6 +26,7 @@ const AppContent = () => {
         <Route path="/" element={<Clients />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/visual-timeline" element={<VisualTimeline />} />

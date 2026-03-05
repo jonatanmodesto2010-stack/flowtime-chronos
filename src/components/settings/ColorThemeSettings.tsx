@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check } from 'lucide-react';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 interface ColorPalette {
   id: string;
@@ -213,8 +214,9 @@ export const ColorThemeSettings = () => {
   const [selectedPalette, setSelectedPalette] = useState<string>(() => {
     return localStorage.getItem('colorPalette') || 'green';
   });
+  const { getPreference, setPreference, loading } = useUserPreferences();
 
-  const applyPalette = (palette: ColorPalette) => {
+  const applyPalette = (palette: ColorPalette, saveToDb = true) => {
     const root = document.documentElement;
     const isDark = root.classList.contains('dark');
     const vars = isDark ? palette.cssVars.dark : palette.cssVars.light;
@@ -225,17 +227,34 @@ export const ColorThemeSettings = () => {
 
     localStorage.setItem('colorPalette', palette.id);
     setSelectedPalette(palette.id);
+
+    if (saveToDb) {
+      setPreference('colorPalette', palette.id);
+    }
   };
 
-  // Aplicar paleta salva ao carregar
+  // Load from DB after auth resolves
   useEffect(() => {
-    const savedPaletteId = localStorage.getItem('colorPalette');
-    if (savedPaletteId) {
-      const palette = COLOR_PALETTES.find(p => p.id === savedPaletteId);
+    if (loading) return;
+    getPreference('colorPalette', 'green').then((savedId) => {
+      const palette = COLOR_PALETTES.find(p => p.id === savedId);
       if (palette) {
-        applyPalette(palette);
+        applyPalette(palette, false);
       }
-    }
+    });
+  }, [loading]);
+
+  // Re-apply on theme-changed event (light/dark toggle)
+  useEffect(() => {
+    const handler = () => {
+      const savedPaletteId = localStorage.getItem('colorPalette');
+      if (savedPaletteId) {
+        const palette = COLOR_PALETTES.find(p => p.id === savedPaletteId);
+        if (palette) applyPalette(palette, false);
+      }
+    };
+    window.addEventListener('theme-changed', handler);
+    return () => window.removeEventListener('theme-changed', handler);
   }, []);
 
   return (

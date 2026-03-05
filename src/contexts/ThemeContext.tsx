@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 interface ThemeContextType {
   theme: 'light' | 'dark';
@@ -9,17 +10,27 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    // Fast sync from localStorage for instant render
     const stored = localStorage.getItem('theme');
     return (stored as 'light' | 'dark') || 'light';
   });
+  const { getPreference, setPreference, loading } = useUserPreferences();
+
+  // Load from DB after auth resolves
+  useEffect(() => {
+    if (loading) return;
+    getPreference('theme', 'light').then((val) => {
+      const t = val as 'light' | 'dark';
+      if (t !== theme) setTheme(t);
+    });
+  }, [loading]);
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     localStorage.setItem('theme', theme);
-    
-    // Reaplica a paleta de cores ao mudar o tema (claro/escuro)
+
     const savedPalette = localStorage.getItem('colorPalette');
     if (savedPalette) {
       window.dispatchEvent(new CustomEvent('theme-changed'));
@@ -27,7 +38,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    setPreference('theme', next);
   };
 
   return (
