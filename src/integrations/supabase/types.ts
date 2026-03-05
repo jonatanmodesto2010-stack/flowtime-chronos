@@ -127,6 +127,7 @@ export type Database = {
           description: string | null
           due_date: string
           id: string
+          ixc_boleto_id: string | null
           status: string
           timeline_id: string
           updated_at: string | null
@@ -137,6 +138,7 @@ export type Database = {
           description?: string | null
           due_date: string
           id?: string
+          ixc_boleto_id?: string | null
           status?: string
           timeline_id: string
           updated_at?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           description?: string | null
           due_date?: string
           id?: string
+          ixc_boleto_id?: string | null
           status?: string
           timeline_id?: string
           updated_at?: string | null
