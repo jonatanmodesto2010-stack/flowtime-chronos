@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import type { User } from '@supabase/supabase-js';
 
 interface Event {
