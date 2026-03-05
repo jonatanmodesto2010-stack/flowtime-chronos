@@ -127,11 +127,11 @@ const Clients = () => {
       setLoading(false);
     }
   }, [organizationId]);
-  const loadClients = async () => {
+  const loadClients = async (background = false) => {
     if (!organizationId) return;
-    console.log("loadClients: Iniciando, definindo loading para true");
+    console.log("loadClients: Iniciando", background ? "(background)" : "");
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
 
       // Paginação para buscar todos os clientes (Supabase limita a 1000 por query)
       const allData: any[] = [];
