@@ -154,11 +154,11 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
         onClick={(e) => e.stopPropagation()}
         className={`bg-card rounded-2xl shadow-2xl ${
           position === 'left' 
-            ? 'w-[420px] border-2 border-border'
+            ? 'w-[420px] max-h-[90vh] flex flex-col border-2 border-border'
             : 'w-full max-w-2xl border border-border'
         }`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-xl font-semibold">
             {event.isNew ? 'Novo Evento' : 'Editar Evento'}
           </h2>
@@ -170,10 +170,10 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6">
-        <div className="flex flex-col gap-4">
+        <div className="p-4 overflow-y-auto flex-1">
+        <div className="flex flex-col gap-3">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Ícone</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Ícone</label>
             <Select value={formData.icon} onValueChange={(value) => setFormData({ ...formData, icon: value })}>
               <SelectTrigger className="w-full bg-background">
                 <SelectValue />
@@ -189,7 +189,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Data</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Data</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -217,7 +217,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Plataforma</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Plataforma</label>
             <Select value={formData.time || ''} onValueChange={(value) => setFormData({ ...formData, time: value })}>
               <SelectTrigger className="w-full bg-background">
                 <SelectValue placeholder="Selecione a plataforma" />
@@ -230,7 +230,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           </div>
           
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Mensagens Padrões</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Mensagens Padrões</label>
             <Select 
               value="" 
               onValueChange={(value) => setFormData({ ...formData, description: value })}
@@ -249,7 +249,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-2 block">
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">
               Descrição
               <span className="float-right text-xs">
                 {formData.description.length}/150
@@ -259,7 +259,7 @@ export const EventModal = ({ event, onSave, onDelete, onCancel, position = 'left
               value={formData.description} 
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
               maxLength={150}
-              className="w-full p-3 bg-background rounded-md border border-border h-20 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full p-3 bg-background rounded-md border border-border h-16 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Descreva o evento..."
               autoFocus={event.isNew}
             />
