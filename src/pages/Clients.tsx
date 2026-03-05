@@ -44,6 +44,7 @@ const Clients = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [overdueDaysMap, setOverdueDaysMap] = useState<Map<string, number>>(new Map());
   const isFilteringRef = useRef(isFiltering); // Ref para o estado isFiltering
   const {
     organizationId
@@ -154,6 +155,31 @@ const Clients = () => {
       const sortedData = uniqueClients.sort(defaultClientSort);
       setClients(sortedData);
       setFilteredClients(sortedData);
+
+      // Buscar boletos pendentes para calcular dias em atraso
+      const timelineIds = sortedData.map(c => c.id);
+      if (timelineIds.length > 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: overdueBoletos } = await supabaseClient
+          .from('client_boletos')
+          .select('timeline_id, due_date')
+          .in('timeline_id', timelineIds)
+          .not('status', 'in', '("pago","cancelado")')
+          .lt('due_date', today)
+          .order('due_date', { ascending: true });
+
+        const map = new Map<string, number>();
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        (overdueBoletos || []).forEach((b: any) => {
+          if (!map.has(b.timeline_id)) {
+            const bDate = new Date(b.due_date + 'T00:00:00');
+            const diff = Math.floor((todayDate.getTime() - bDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (diff > 0) map.set(b.timeline_id, diff);
+          }
+        });
+        setOverdueDaysMap(map);
+      }
     } catch (error: any) {
       console.error("loadClients: Erro ao carregar clientes:", error.message);
       toast({
@@ -635,15 +661,11 @@ const Clients = () => {
                         {/* Dias em atraso - boleto mais antigo vencido */}
                         {(() => {
                           if (isCompleted(client.status) || client.status === 'archived') return null;
-                          const dueDate = client.due_date ? new Date(client.due_date + 'T00:00:00') : null;
-                          if (!dueDate || isNaN(dueDate.getTime())) return null;
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          const diffDays = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-                          if (diffDays <= 0) return null;
+                          const days = overdueDaysMap.get(client.id);
+                          if (!days || days <= 0) return null;
                           return (
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-red-500 text-red-500 text-xs font-bold flex-shrink-0" title={`${diffDays} dias em atraso`}>
-                              {diffDays}d
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-destructive text-destructive text-xs font-bold flex-shrink-0" title={`${days} dias em atraso`}>
+                              {days}d
                             </div>
                           );
                         })()}
