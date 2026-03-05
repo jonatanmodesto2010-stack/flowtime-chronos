@@ -108,9 +108,22 @@ const Clients = () => {
   }, []);
   useEffect(() => {
     if (organizationId) {
-      loadClients();
+      // Try to restore from cache immediately
+      const cached = getCachedData<Client[]>(CACHE_KEYS.CLIENTS);
+      const cachedOverdue = getCachedData<Map<string, number>>(CACHE_KEYS.CLIENTS_OVERDUE);
+      if (cached) {
+        setClients(cached.data);
+        setFilteredClients(cached.data);
+        if (cachedOverdue) setOverdueDaysMap(cachedOverdue.data);
+        setLoading(false);
+        // If stale, refresh in background
+        if (cached.isStale) {
+          loadClients(true);
+        }
+      } else {
+        loadClients();
+      }
     } else {
-      // Sem organização (ex.: sem autenticação) — evita ficar preso no skeleton
       setLoading(false);
     }
   }, [organizationId]);
