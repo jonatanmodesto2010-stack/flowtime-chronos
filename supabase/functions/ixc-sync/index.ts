@@ -94,16 +94,62 @@ async function checkCancelled(supabaseAdmin: any, logId: string | undefined): Pr
 }
 
 async function fetchBlockedClientIds(apiUrl: string, apiToken: string, contractsApiUrl?: string | null): Promise<Set<string>> {
-  const baseUrl = contractsApiUrl || apiUrl;
   const blockedIds = new Set<string>();
+
+  // 1. Try cliente_bloqueado endpoint first (direct blocked list)
   let page = 1;
   let hasMore = true;
-  const allStatusValues = new Set<string>();
-  const activeContractClients = new Map<string, string>(); // id_cliente -> status_internet
+  let bloqueadoWorked = false;
 
   while (hasMore) {
     try {
-      const data = await fetchIxcData(baseUrl, apiToken, 'cliente_contrato', page, 500);
+      const data = await fetchIxcData(apiUrl, apiToken, 'cliente_bloqueado', page, 500);
+      const records = data.registros || data.rows || [];
+
+      if (page === 1) {
+        console.log(`cliente_bloqueado total: ${data.total || 0}`);
+        if (Array.isArray(records) && records.length > 0) {
+          bloqueadoWorked = true;
+          const fields = Object.keys(records[0]);
+          const relevantFields = fields.filter(f => 
+            f.includes('cliente') || f.includes('id_') || f.includes('bloq') || f.includes('status')
+          );
+          console.log(`cliente_bloqueado fields:`, JSON.stringify(relevantFields));
+          console.log(`cliente_bloqueado sample:`, JSON.stringify(records[0]));
+        }
+      }
+
+      if (!Array.isArray(records) || records.length === 0) break;
+
+      for (const record of records) {
+        const clientId = (record.id_cliente || record.cliente_id || record.id)?.toString();
+        if (clientId) {
+          blockedIds.add(clientId);
+        }
+      }
+
+      if (records.length < 500) break;
+      page++;
+    } catch (err) {
+      console.error('Error fetching cliente_bloqueado:', err);
+      break;
+    }
+  }
+
+  if (bloqueadoWorked) {
+    console.log(`Found ${blockedIds.size} blocked clients via cliente_bloqueado`);
+  }
+
+  // 2. Also check cliente_contrato for active contracts with non-active internet
+  const contractsUrl = contractsApiUrl || apiUrl;
+  page = 1;
+  hasMore = true;
+  const allStatusValues = new Set<string>();
+  let contractBlocked = 0;
+
+  while (hasMore) {
+    try {
+      const data = await fetchIxcData(contractsUrl, apiToken, 'cliente_contrato', page, 500);
       const records = data.registros || data.rows || [];
 
       if (page === 1) {
@@ -117,12 +163,11 @@ async function fetchBlockedClientIds(apiUrl: string, apiToken: string, contracts
         const status = record.status?.toString() || '';
         allStatusValues.add(statusInternet);
         
-        // Track active contracts with non-active access
         if (status === 'A' && statusInternet !== 'A') {
           const clientId = record.id_cliente?.toString();
-          if (clientId) {
-            activeContractClients.set(clientId, statusInternet);
+          if (clientId && !blockedIds.has(clientId)) {
             blockedIds.add(clientId);
+            contractBlocked++;
           }
         }
       }
@@ -136,13 +181,7 @@ async function fetchBlockedClientIds(apiUrl: string, apiToken: string, contracts
   }
 
   console.log(`All unique status_internet values: ${JSON.stringify([...allStatusValues])}`);
-  console.log(`Active contracts with non-active access: ${activeContractClients.size}`);
-  // Log first 5 blocked for debugging
-  let count = 0;
-  for (const [clientId, si] of activeContractClients) {
-    if (count++ >= 5) break;
-    console.log(`Blocked client ${clientId}: status_internet=${si}`);
-  }
+  console.log(`Additional blocked from cliente_contrato: ${contractBlocked}`);
   console.log(`Total unique blocked client IDs: ${blockedIds.size}`);
   return blockedIds;
 }
