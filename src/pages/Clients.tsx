@@ -298,6 +298,8 @@ const Clients = () => {
 
         // Ordenar resultados
         results.sort((a, b) => {
+          // Bloqueados SEMPRE no topo
+          if (!a.is_active !== !b.is_active) return !a.is_active ? -1 : 1;
           const countA = eventCountMap.get(a.id) || 0;
           const countB = eventCountMap.get(b.id) || 0;
           if (filters.eventCountSort === 'desc') {
@@ -309,6 +311,8 @@ const Clients = () => {
       } else if (filters.updateDateSort !== 'none') {
         // Ordenação por data de atualização
         results.sort((a, b) => {
+          // Bloqueados SEMPRE no topo
+          if (!a.is_active !== !b.is_active) return !a.is_active ? -1 : 1;
           const dateA = new Date(a.updated_at || a.created_at).getTime();
           const dateB = new Date(b.updated_at || b.created_at).getTime();
           return filters.updateDateSort === 'desc' ? dateB - dateA : dateA - dateB;
