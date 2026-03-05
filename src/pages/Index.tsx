@@ -55,6 +55,7 @@ const Index = () => {
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { organizationId } = useUserRole();
+  const { log: auditLog } = useAuditLog();
   const navigate = useNavigate();
   const { toast } = useToast();
 
