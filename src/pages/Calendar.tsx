@@ -8,6 +8,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
+import { fetchAllPaginated, fetchInChunks } from '@/lib/supabase-helpers';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -87,14 +88,8 @@ const Calendar = () => {
       .channel('calendar-events-changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'timeline_events'
-        },
-        (payload) => {
-          console.log('📅 Evento atualizado - Recarregando calendário...', payload);
-          console.log('Payload específico:', payload.new || payload.old);
+        { event: '*', schema: 'public', table: 'timeline_events' },
+        () => {
           if (shouldListenToChanges.current) {
             loadEvents(user.id);
           }
@@ -107,14 +102,8 @@ const Calendar = () => {
       .channel('calendar-timelines-changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'client_timelines'
-        },
-        (payload) => {
-          console.log('👤 Cliente atualizado - Recarregando calendário...', payload);
-          console.log('Payload específico:', payload.new || payload.old);
+        { event: '*', schema: 'public', table: 'client_timelines' },
+        () => {
           if (shouldListenToChanges.current) {
             loadEvents(user.id);
           }
@@ -127,14 +116,8 @@ const Calendar = () => {
       .channel('calendar-lines-changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'timeline_lines'
-        },
-        (payload) => {
-          console.log('📊 Linha atualizada - Recarregando calendário...', payload);
-          console.log('Payload específico:', payload.new || payload.old);
+        { event: '*', schema: 'public', table: 'timeline_lines' },
+        () => {
           if (shouldListenToChanges.current) {
             loadEvents(user.id);
           }
@@ -154,9 +137,7 @@ const Calendar = () => {
     try {
       setLoading(true);
       
-      console.log('🔄 Carregando eventos para userId:', userId);
-      
-      // Buscar timelines pela organização ao invés de user_id
+      // Buscar organização do usuário
       const { data: userRoles } = await supabaseClient
         .from('user_roles')
         .select('organization_id')
@@ -164,75 +145,64 @@ const Calendar = () => {
         .single();
       
       if (!userRoles?.organization_id) {
-        console.error('❌ Usuário sem organização');
         setLoading(false);
         return;
       }
       
-      console.log('🏢 Organization ID:', userRoles.organization_id);
-      
-      const { data: timelines, error: timelinesError } = await supabaseClient
-        .from('client_timelines')
-        .select('id, client_name, status')
-        .eq('organization_id', userRoles.organization_id);
+      // Buscar todas as timelines com paginação
+      const timelines = await fetchAllPaginated(
+        'client_timelines',
+        'id, client_name, status',
+        [{ column: 'organization_id', value: userRoles.organization_id }]
+      );
 
-      if (timelinesError) throw timelinesError;
-      
-      console.log('📋 Timelines encontradas:', timelines?.length || 0);
-
-      if (timelines && timelines.length > 0) {
-        const timelineIds = timelines.map(t => t.id);
-        
-        const { data: lines, error: linesError } = await supabaseClient
-          .from('timeline_lines')
-          .select('id, timeline_id')
-          .in('timeline_id', timelineIds);
-
-        if (linesError) throw linesError;
-        
-        console.log('📊 Lines encontradas:', lines?.length || 0);
-
-        if (lines && lines.length > 0) {
-          const lineIds = lines.map(l => l.id);
-          
-          const { data: eventsData, error: eventsError } = await supabaseClient
-            .from('timeline_events')
-            .select('*')
-            .in('line_id', lineIds);
-
-          if (eventsError) throw eventsError;
-
-          // Map events with client names
-          const eventsWithClients = (eventsData || []).map(event => {
-            const line = lines.find(l => l.id === event.line_id);
-            const timeline = timelines.find(t => t.id === line?.timeline_id);
-            
-            return {
-              id: event.id,
-              client_name: timeline?.client_name || 'Cliente',
-              event_date: event.event_date,
-              event_time: event.event_time,
-              description: event.description,
-              status: event.status,
-              icon: event.icon,
-              timeline_id: line?.timeline_id || '',
-              timeline_status: timeline?.status || 'active',
-            };
-          });
-
-          console.log('📊 Eventos carregados:', {
-            total: eventsWithClients.length,
-            eventos: eventsWithClients.map(e => ({
-              client: e.client_name,
-              date: e.event_date,
-              status: e.status
-            }))
-          });
-
-          setEvents(eventsWithClients);
-          setRefreshKey(prev => prev + 1);
-        }
+      if (timelines.length === 0) {
+        setEvents([]);
+        setLoading(false);
+        return;
       }
+
+      const timelineIds = timelines.map((t: any) => t.id);
+      
+      // Buscar lines em chunks de 200 IDs
+      const lines = await fetchInChunks('timeline_lines', 'timeline_id', timelineIds, 'id, timeline_id');
+
+      if (lines.length === 0) {
+        setEvents([]);
+        setLoading(false);
+        return;
+      }
+
+      const lineIds = lines.map((l: any) => l.id);
+      
+      // Buscar events em chunks de 200 IDs
+      const eventsData = await fetchInChunks('timeline_events', 'line_id', lineIds, '*');
+
+      // Criar maps para lookup rápido
+      const lineMap = new Map(lines.map((l: any) => [l.id, l.timeline_id]));
+      const timelineMap = new Map(timelines.map((t: any) => [t.id, t]));
+
+      const eventsWithClients = eventsData.map((event: any) => {
+        const timelineId = lineMap.get(event.line_id);
+        const timeline = timelineId ? timelineMap.get(timelineId) : null;
+        
+        return {
+          id: event.id,
+          client_name: timeline?.client_name || 'Cliente',
+          event_date: event.event_date,
+          event_time: event.event_time,
+          description: event.description,
+          status: event.status,
+          icon: event.icon,
+          timeline_id: timelineId || '',
+          timeline_status: timeline?.status || 'active',
+        };
+      });
+
+      console.log(`📅 Calendário: ${timelines.length} timelines, ${lines.length} lines, ${eventsData.length} eventos carregados`);
+
+      setEvents(eventsWithClients);
+      setRefreshKey(prev => prev + 1);
     } catch (error: any) {
       toast({
         title: 'Erro ao carregar eventos',
@@ -277,16 +247,7 @@ const Calendar = () => {
   const getEventsForDay = (day: number, month?: number) => {
     const targetMonth = month !== undefined ? month : currentDate.getMonth() + 1;
     const dateStr = `${String(day).padStart(2, '0')}/${String(targetMonth).padStart(2, '0')}`;
-    const dayEvents = filteredEvents.filter(event => event.event_date === dateStr);
-    
-    console.log(`🔍 Buscando eventos para dia ${day}/${targetMonth}:`, {
-      dateStr,
-      totalFilteredEvents: filteredEvents.length,
-      eventsFound: dayEvents.length,
-      eventos: dayEvents.map(e => ({ client: e.client_name, date: e.event_date, status: e.status }))
-    });
-    
-    return dayEvents;
+    return filteredEvents.filter(event => event.event_date === dateStr);
   };
 
   const monthlyStats = useMemo(() => {
