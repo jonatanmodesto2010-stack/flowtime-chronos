@@ -1,21 +1,31 @@
 
 
-## Plano: Destacar em amarelo clientes com faturas em atraso mas não bloqueados
+## Plano: Reordenar lista de clientes com nova hierarquia
 
-### O que será feito
-Na linha 651, onde as classes CSS do card são definidas, adicionar uma condição: se o cliente é **ativo** (`is_active === true`), **não está finalizado/arquivado**, e **tem dias em atraso** no `overdueDaysMap`, o card terá fundo amarelo ao invés do fundo padrão.
+### Nova ordem
+1. **Bloqueados** (vermelho) — `!is_active && status !== 'archived'`
+2. **Vencidos** (amarelo) — `is_active && overdueDaysMap.has(id)` e não finalizado/arquivado
+3. **Ativos** (verde) — `is_active && !overdueDaysMap.has(id)` e não finalizado/arquivado
+4. **Inativos** (cinza) — `status === 'archived'` ou `status === 'completed'`
 
-### Mudança técnica
-No `src/pages/Clients.tsx`, linha 651, alterar a lógica de classes CSS:
+### Mudanças técnicas
 
-- Condição atual para cliente ativo: `'bg-card hover:bg-card/80'`
-- Nova condição: se `client.is_active && overdueDaysMap.has(client.id)` → `'bg-yellow-500/10 hover:bg-yellow-500/15 border border-yellow-500/30'`
-- Caso contrário, mantém `'bg-card hover:bg-card/80'`
+**`src/pages/Clients.tsx`** — Substituir as chamadas a `defaultClientSort` por uma função de ordenação local que tenha acesso ao `overdueDaysMap`:
 
-A ordem de prioridade das cores ficará:
-1. Archived (cinza) 
-2. Finalizado (cinza + grayscale)
-3. Bloqueado / `!is_active` (vermelho)
-4. Ativo com atraso (amarelo) ← **novo**
-5. Ativo normal (padrão)
+```typescript
+const sortWithOverdue = (a, b) => {
+  const getGroup = (c) => {
+    if (c.status === 'archived' || c.status === 'completed') return 3; // Inativo
+    if (!c.is_active) return 0; // Bloqueado
+    if (overdueDaysMap.has(c.id)) return 1; // Vencido
+    return 2; // Ativo
+  };
+  const diff = getGroup(a) - getGroup(b);
+  if (diff !== 0) return diff;
+  // Dentro do mesmo grupo: updated_at DESC
+  return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+};
+```
+
+Aplicar esse sort nos dois pontos onde `defaultClientSort` é usado (linha ~155 e ~384), mas apenas quando `overdueDaysMap` já estiver populado. No `loadClients`, mover o sort para depois do cálculo do `overdueDaysMap`.
 
