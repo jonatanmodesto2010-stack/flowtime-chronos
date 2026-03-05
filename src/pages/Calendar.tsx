@@ -149,9 +149,9 @@ const Calendar = () => {
   }, [user]);
 
 
-  const loadEvents = async (userId: string) => {
+  const loadEvents = async (userId: string, background = false) => {
     try {
-      if (isInitialLoad.current) {
+      if (isInitialLoad.current && !background) {
         setLoading(true);
       }
       
