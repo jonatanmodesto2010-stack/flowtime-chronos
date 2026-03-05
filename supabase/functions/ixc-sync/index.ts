@@ -341,6 +341,156 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     page++;
   }
 
+  // === STEP 2: Discover additional clients from cliente_contrato ===
+  // Some clients may not appear in the `cliente` endpoint but have contracts
+  console.log('[DIAG] Fetching cliente_contrato to discover additional clients...');
+  const contractsUrl = contractsApiUrl || apiUrl;
+  const allContractClientIds = new Set<string>();
+  const contractClientNames = new Map<string, string>();
+  
+  let cPage = 1;
+  let cHasMore = true;
+  while (cHasMore) {
+    if (await checkCancelled(supabaseAdmin, logId)) {
+      return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
+    }
+    
+    const cData = await fetchIxcData(contractsUrl, apiToken, 'cliente_contrato', cPage, 500);
+    const cRecords = cData.registros || cData.rows || [];
+    
+    if (cPage === 1) {
+      console.log(`[DIAG] cliente_contrato reports total: ${cData.total || 0}`);
+      if (Array.isArray(cRecords) && cRecords.length > 0) {
+        console.log(`[DIAG] cliente_contrato sample fields: ${JSON.stringify(Object.keys(cRecords[0]))}`);
+      }
+    }
+    
+    if (!Array.isArray(cRecords) || cRecords.length === 0) break;
+    
+    for (const record of cRecords) {
+      const clientId = record.id_cliente?.toString();
+      if (clientId) {
+        allContractClientIds.add(clientId);
+        if (!contractClientNames.has(clientId)) {
+          const name = record.razao || record.razao_social || record.nome || null;
+          if (name) contractClientNames.set(clientId, name);
+        }
+      }
+    }
+    
+    if (cRecords.length < 500) break;
+    cPage++;
+  }
+  
+  console.log(`[DIAG] Total unique client IDs from cliente_contrato: ${allContractClientIds.size}`);
+  
+  // Find client IDs from contracts not yet in our DB
+  const contractClientArray = [...allContractClientIds];
+  const missingClientIds: string[] = [];
+  
+  for (let i = 0; i < contractClientArray.length; i += 500) {
+    const batch = contractClientArray.slice(i, i + 500);
+    const { data: existing } = await supabaseAdmin
+      .from('client_timelines')
+      .select('client_id')
+      .eq('organization_id', organizationId)
+      .in('client_id', batch);
+    
+    const existingSet = new Set((existing || []).map((e: any) => e.client_id));
+    for (const cid of batch) {
+      if (!existingSet.has(cid)) {
+        missingClientIds.push(cid);
+      }
+    }
+  }
+  
+  console.log(`[DIAG] Missing clients (in contracts but not in DB): ${missingClientIds.length}`);
+  
+  if (missingClientIds.length > 0) {
+    const toInsertMissing: any[] = [];
+    
+    for (const clientId of missingClientIds) {
+      if (await checkCancelled(supabaseAdmin, logId)) {
+        return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
+      }
+      
+      try {
+        // Fetch individual client details from `cliente` endpoint
+        const clientData = await fetchIxcData(apiUrl, apiToken, 'cliente', 1, 1, {
+          qtype: 'cliente.id',
+          query: clientId,
+          oper: '=',
+        });
+        
+        const records = clientData.registros || clientData.rows || [];
+        
+        if (Array.isArray(records) && records.length > 0) {
+          const client = records[0];
+          const isContractActive = client.ativo === 'S';
+          const isBlocked = blockedClientIds.has(clientId);
+          const isActive = isContractActive && !isBlocked;
+          const status = !isContractActive ? 'archived' : 'active';
+          
+          toInsertMissing.push({
+            client_id: clientId,
+            client_name: client.razao || contractClientNames.get(clientId) || `Cliente ${clientId}`,
+            is_active: isActive,
+            organization_id: organizationId,
+            start_date: client.data_cadastro || new Date().toISOString().split('T')[0],
+            status: status,
+            user_id: orgUser.user_id,
+          });
+        } else {
+          // Client not in `cliente` endpoint, use contract data
+          const isBlocked = blockedClientIds.has(clientId);
+          toInsertMissing.push({
+            client_id: clientId,
+            client_name: contractClientNames.get(clientId) || `Cliente ${clientId}`,
+            is_active: !isBlocked,
+            organization_id: organizationId,
+            start_date: new Date().toISOString().split('T')[0],
+            status: 'active',
+            user_id: orgUser.user_id,
+          });
+        }
+      } catch (err) {
+        console.error(`Error fetching client ${clientId}:`, err);
+        toInsertMissing.push({
+          client_id: clientId,
+          client_name: contractClientNames.get(clientId) || `Cliente ${clientId}`,
+          is_active: !blockedClientIds.has(clientId),
+          organization_id: organizationId,
+          start_date: new Date().toISOString().split('T')[0],
+          status: 'active',
+          user_id: orgUser.user_id,
+        });
+      }
+    }
+    
+    // Batch insert missing clients
+    if (toInsertMissing.length > 0) {
+      for (let i = 0; i < toInsertMissing.length; i += 100) {
+        const batch = toInsertMissing.slice(i, i + 100);
+        const { error } = await supabaseAdmin
+          .from('client_timelines')
+          .insert(batch);
+        if (error) {
+          console.error('Batch insert missing clients error:', error.message);
+        } else {
+          totalCreated += batch.length;
+        }
+      }
+      totalProcessed += toInsertMissing.length;
+      console.log(`[DIAG] Inserted ${toInsertMissing.length} additional clients from cliente_contrato`);
+    }
+    
+    if (logId) {
+      await supabaseAdmin.from('integration_sync_log')
+        .update({ records_processed: totalProcessed })
+        .eq('id', logId);
+    }
+  }
+
   return { totalProcessed, totalCreated, totalUpdated, cancelled: false };
 }
 
