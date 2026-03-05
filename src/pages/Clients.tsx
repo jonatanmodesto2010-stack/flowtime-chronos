@@ -232,6 +232,9 @@ const Clients = () => {
       query = query.eq('is_active', true).neq('status', 'completed').neq('status', 'archived');
     } else if (filters.statusFilter === 'blocked') {
       query = query.eq('is_active', false).eq('status', 'active');
+    } else if (filters.statusFilter === 'overdue') {
+      // Vencidos: buscar ativos, filtrar client-side pelo overdueDaysMap
+      query = query.eq('is_active', true).neq('status', 'completed').neq('status', 'archived');
     } else if (filters.statusFilter === 'inactive') {
       query = query.eq('status', 'archived');
     } else if (filters.statusFilter === 'completed') {
@@ -345,6 +348,11 @@ const Clients = () => {
       if (filters.timelineFilter === 'with_analysis' && analysisData.data) {
         const idsWithAnalysis = analysisData.data.map((a) => a.timeline_id);
         results = results.filter((c) => idsWithAnalysis.includes(c.id));
+      }
+
+      // Aplicar filtro de vencidos (client-side, baseado no overdueDaysMap)
+      if (filters.statusFilter === 'overdue') {
+        results = results.filter((c) => overdueDaysMap.has(c.id));
       }
 
       // Aplicar ordenação por quantidade de eventos

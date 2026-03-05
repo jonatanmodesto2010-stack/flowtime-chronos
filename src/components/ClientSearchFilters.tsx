@@ -167,6 +167,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="active">✅ Ativos</SelectItem>
                     <SelectItem value="blocked">🔒 Bloqueados</SelectItem>
+                    <SelectItem value="overdue">⏰ Vencidos</SelectItem>
                     <SelectItem value="inactive">⚠️ Inativos</SelectItem>
                     <SelectItem value="completed">📋 Finalizados</SelectItem>
                   </SelectContent>
@@ -320,7 +321,7 @@ export const ClientSearchFilters = ({ onFilterChange, organizationId, pageName }
         <div className="flex flex-wrap gap-2">
           {filters.statusFilter !== 'all' && (
             <Badge variant="secondary" className="gap-1">
-              Status: {filters.statusFilter === 'active' ? '✅ Ativos' : filters.statusFilter === 'blocked' ? '🔒 Bloqueados' : filters.statusFilter === 'inactive' ? '⚠️ Inativos' : '📋 Finalizados'}
+              Status: {filters.statusFilter === 'active' ? '✅ Ativos' : filters.statusFilter === 'blocked' ? '🔒 Bloqueados' : filters.statusFilter === 'overdue' ? '⏰ Vencidos' : filters.statusFilter === 'inactive' ? '⚠️ Inativos' : '📋 Finalizados'}
               <X
                 className="w-3 h-3 cursor-pointer"
                 onClick={() => applyFilters({ statusFilter: 'all' })}
