@@ -205,6 +205,8 @@ const Clients = () => {
       };
 
       const sortedData = uniqueClients.sort(sortWithOverdue);
+      setCachedData(CACHE_KEYS.CLIENTS, sortedData);
+      setCachedData(CACHE_KEYS.CLIENTS_OVERDUE, overdueMap);
       setClients(sortedData);
       setFilteredClients(sortedData);
     } catch (error: any) {
