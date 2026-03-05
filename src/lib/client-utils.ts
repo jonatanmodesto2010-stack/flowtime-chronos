@@ -10,14 +10,21 @@ export interface TimelineRecord {
 }
 
 /**
- * Agrupa timelines por client_id, mantendo apenas a timeline mais recente de cada cliente
- * Prioriza timelines ativas sobre inativas quando há empate em datas
+ * Agrupa timelines por client_id, mantendo apenas uma timeline por cliente.
+ * Prioridade: bloqueados (is_active=false) > ativos > finalizados (completed)
+ * Dentro do mesmo grupo, a mais recente vence.
  */
 export const groupTimelinesByClient = <T extends TimelineRecord>(
   timelines: T[]
 ): T[] => {
   const clientsMap = new Map<string, T>();
   
+  const getPriority = (t: T): number => {
+    if (!t.is_active) return 0; // bloqueado = maior prioridade
+    if (t.status !== 'completed') return 1; // ativo
+    return 2; // finalizado
+  };
+
   timelines.forEach(timeline => {
     const clientId = timeline.client_id;
     
@@ -25,14 +32,19 @@ export const groupTimelinesByClient = <T extends TimelineRecord>(
       clientsMap.set(clientId, timeline);
     } else {
       const existing = clientsMap.get(clientId)!;
-      const existingDate = new Date(existing.updated_at || existing.created_at);
-      const currentDate = new Date(timeline.updated_at || timeline.created_at);
+      const existingPriority = getPriority(existing);
+      const currentPriority = getPriority(timeline);
       
-      // Priorizar timeline ativa mais recente
-      if (timeline.is_active && !existing.is_active) {
+      if (currentPriority < existingPriority) {
+        // Maior prioridade (bloqueado > ativo > finalizado)
         clientsMap.set(clientId, timeline);
-      } else if (timeline.is_active === existing.is_active && currentDate > existingDate) {
-        clientsMap.set(clientId, timeline);
+      } else if (currentPriority === existingPriority) {
+        // Mesmo grupo: mais recente vence
+        const existingDate = new Date(existing.updated_at || existing.created_at);
+        const currentDate = new Date(timeline.updated_at || timeline.created_at);
+        if (currentDate > existingDate) {
+          clientsMap.set(clientId, timeline);
+        }
       }
     }
   });
