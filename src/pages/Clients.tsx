@@ -17,6 +17,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 import { groupTimelinesByClient } from '@/lib/client-utils';
+import { getCachedData, setCachedData, CACHE_KEYS } from '@/lib/route-cache';
+import { ClientsListSkeleton } from '@/components/ClientsListSkeleton';
 
 import { CalendarWidget } from '@/components/CalendarWidget';
 import { RetiradaWidget } from '@/components/RetiradaWidget';
@@ -106,17 +108,30 @@ const Clients = () => {
   }, []);
   useEffect(() => {
     if (organizationId) {
-      loadClients();
+      // Try to restore from cache immediately
+      const cached = getCachedData<Client[]>(CACHE_KEYS.CLIENTS);
+      const cachedOverdue = getCachedData<Map<string, number>>(CACHE_KEYS.CLIENTS_OVERDUE);
+      if (cached) {
+        setClients(cached.data);
+        setFilteredClients(cached.data);
+        if (cachedOverdue) setOverdueDaysMap(cachedOverdue.data);
+        setLoading(false);
+        // If stale, refresh in background
+        if (cached.isStale) {
+          loadClients(true);
+        }
+      } else {
+        loadClients();
+      }
     } else {
-      // Sem organização (ex.: sem autenticação) — evita ficar preso no skeleton
       setLoading(false);
     }
   }, [organizationId]);
-  const loadClients = async () => {
+  const loadClients = async (background = false) => {
     if (!organizationId) return;
-    console.log("loadClients: Iniciando, definindo loading para true");
+    console.log("loadClients: Iniciando", background ? "(background)" : "");
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
 
       // Paginação para buscar todos os clientes (Supabase limita a 1000 por query)
       const allData: any[] = [];
@@ -190,6 +205,8 @@ const Clients = () => {
       };
 
       const sortedData = uniqueClients.sort(sortWithOverdue);
+      setCachedData(CACHE_KEYS.CLIENTS, sortedData);
+      setCachedData(CACHE_KEYS.CLIENTS_OVERDUE, overdueMap);
       setClients(sortedData);
       setFilteredClients(sortedData);
     } catch (error: any) {
@@ -569,10 +586,10 @@ const Clients = () => {
           <div className="flex-1 flex flex-col">
             <Header />
             <main className="flex-1 p-6 overflow-auto">
-              <div className="max-w-4xl mx-auto">
-                <div className="h-9 w-48 bg-muted animate-pulse rounded mb-6" />
-                <div className="flex flex-col gap-3">
-                  {[1, 2, 3, 4].map((i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
+              <div className="flex gap-6">
+                <div className="flex-1 max-w-4xl">
+                  <div className="h-8 w-32 bg-muted animate-pulse rounded mb-6" />
+                  <ClientsListSkeleton />
                 </div>
               </div>
             </main>

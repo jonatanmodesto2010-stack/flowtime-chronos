@@ -9,6 +9,8 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { fetchAllPaginated, fetchInChunks } from '@/lib/supabase-helpers';
+import { getCachedData, setCachedData, CACHE_KEYS } from '@/lib/route-cache';
+import { CalendarSkeleton } from '@/components/CalendarSkeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -60,9 +62,19 @@ const Calendar = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        loadEvents(session.user.id);
+        // Try cache first
+        const cached = getCachedData<Event[]>(CACHE_KEYS.CALENDAR_EVENTS);
+        if (cached) {
+          setEvents(cached.data);
+          setLoading(false);
+          isInitialLoad.current = false;
+          if (cached.isStale) {
+            loadEvents(session.user.id, true);
+          }
+        } else {
+          loadEvents(session.user.id);
+        }
       } else {
-        // Sem autenticação: não redireciona e não trava em loading
         setLoading(false);
       }
     });
@@ -70,7 +82,9 @@ const Calendar = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        loadEvents(session.user.id);
+        if (!getCachedData<Event[]>(CACHE_KEYS.CALENDAR_EVENTS)) {
+          loadEvents(session.user.id);
+        }
       } else {
         setUser(null);
         setLoading(false);
@@ -135,9 +149,9 @@ const Calendar = () => {
   }, [user]);
 
 
-  const loadEvents = async (userId: string) => {
+  const loadEvents = async (userId: string, background = false) => {
     try {
-      if (isInitialLoad.current) {
+      if (isInitialLoad.current && !background) {
         setLoading(true);
       }
       
@@ -205,6 +219,7 @@ const Calendar = () => {
 
       console.log(`📅 Calendário: ${timelines.length} timelines, ${lines.length} lines, ${eventsData.length} eventos carregados`);
 
+      setCachedData(CACHE_KEYS.CALENDAR_EVENTS, eventsWithClients);
       setEvents(eventsWithClients);
       setRefreshKey(prev => prev + 1);
     } catch (error: any) {
@@ -368,10 +383,7 @@ const Calendar = () => {
           <div className="flex-1 flex flex-col">
             <Header />
             <main className="flex-1 p-6 overflow-auto">
-              <div className="max-w-6xl mx-auto">
-                <div className="h-9 w-64 bg-muted animate-pulse rounded mb-6" />
-                <div className="h-96 bg-muted animate-pulse rounded-xl" />
-              </div>
+              <CalendarSkeleton />
             </main>
           </div>
         </div>
