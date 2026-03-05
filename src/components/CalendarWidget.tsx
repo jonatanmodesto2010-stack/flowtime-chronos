@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabaseClient } from '@/lib/supabase-client';
+import { fetchAllPaginated, fetchInChunks } from '@/lib/supabase-helpers';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { cn } from '@/lib/utils';
@@ -100,38 +101,40 @@ export const CalendarWidget = () => {
     try {
       setLoading(true);
 
-      const { data: timelines } = await supabaseClient
-        .from('client_timelines')
-        .select('id, client_name, status')
-        .eq('organization_id', organizationId);
+      // Buscar todas as timelines com paginação
+      const timelines = await fetchAllPaginated(
+        'client_timelines',
+        'id, client_name, status',
+        [{ column: 'organization_id', value: organizationId }]
+      );
 
-      if (!timelines || timelines.length === 0) {
+      if (timelines.length === 0) {
         setEvents([]);
         return;
       }
 
-      const timelineIds = timelines.map(t => t.id);
+      const timelineIds = timelines.map((t: any) => t.id);
 
-      const { data: lines } = await supabaseClient
-        .from('timeline_lines')
-        .select('id, timeline_id')
-        .in('timeline_id', timelineIds);
+      // Buscar lines em chunks
+      const lines = await fetchInChunks('timeline_lines', 'timeline_id', timelineIds, 'id, timeline_id');
 
-      if (!lines || lines.length === 0) {
+      if (lines.length === 0) {
         setEvents([]);
         return;
       }
 
-      const lineIds = lines.map(l => l.id);
+      const lineIds = lines.map((l: any) => l.id);
 
-      const { data: eventsData } = await supabaseClient
-        .from('timeline_events')
-        .select('*')
-        .in('line_id', lineIds);
+      // Buscar events em chunks
+      const eventsData = await fetchInChunks('timeline_events', 'line_id', lineIds, '*');
 
-      const eventsWithClients = (eventsData || []).map(event => {
-        const line = lines.find(l => l.id === event.line_id);
-        const timeline = timelines.find(t => t.id === line?.timeline_id);
+      // Criar maps para lookup rápido
+      const lineMap = new Map(lines.map((l: any) => [l.id, l.timeline_id]));
+      const timelineMap = new Map(timelines.map((t: any) => [t.id, t]));
+
+      const eventsWithClients = eventsData.map((event: any) => {
+        const timelineId = lineMap.get(event.line_id);
+        const timeline = timelineId ? timelineMap.get(timelineId) : null;
         
         return {
           id: event.id,
@@ -141,7 +144,7 @@ export const CalendarWidget = () => {
           description: event.description,
           status: event.status,
           icon: event.icon,
-          timeline_id: line?.timeline_id || '',
+          timeline_id: timelineId || '',
           timeline_status: timeline?.status || 'active',
         };
       });
