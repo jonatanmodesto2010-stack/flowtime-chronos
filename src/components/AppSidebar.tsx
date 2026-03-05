@@ -1,4 +1,4 @@
-import { Calendar, Settings, Users } from 'lucide-react';
+import { Calendar, Settings, Users, LayoutDashboard } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { APP_NAME, getFullVersion, BUILD_VERSION } from '@/config/version';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
@@ -11,6 +11,10 @@ const menuItems = [{
   icon: Calendar,
   label: 'Calendário',
   path: '/calendar'
+}, {
+  icon: LayoutDashboard,
+  label: 'Dashboard',
+  path: '/dashboard'
 }, {
   icon: Settings,
   label: 'Configurações',
