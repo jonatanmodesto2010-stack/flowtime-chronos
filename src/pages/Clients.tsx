@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, History, Loader2, TrendingUp } from 'lucide-react';
+import { Plus, History, Loader2, TrendingUp, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, RefreshCw } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -39,6 +39,8 @@ interface Client {
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -493,6 +495,17 @@ const Clients = () => {
       });
     }
   };
+  // Pagination derived values
+  const totalPages = Math.max(1, Math.ceil(filteredClients.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, filteredClients.length);
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+  // Reset page when filtered results change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredClients.length]);
+
   if (loading) {
     return <SidebarProvider>
         <div className="min-h-screen flex w-full bg-background">
@@ -542,9 +555,28 @@ const Clients = () => {
                 </div>}
 
               <div className="mb-4 flex items-center justify-between gap-4">
-                <p className="text-sm text-muted-foreground">
-                  {filteredClients.length} de {clients.length}
-                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} title="Primeira página">
+                      <ChevronFirst className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} title="Página anterior">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => loadClients()} title="Atualizar">
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} title="Próxima página">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} title="Última página">
+                      <ChevronLast className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground whitespace-nowrap">
+                    {filteredClients.length === 0 ? '0 / 0' : `${startIndex + 1} - ${endIndex} / ${filteredClients.length}`}
+                  </p>
+                </div>
                 
                 <div className="flex items-center gap-3">
                   <motion.button onClick={() => navigate('/history')} initial={{
@@ -579,17 +611,17 @@ const Clients = () => {
                 </div>
               </div>
 
-              {filteredClients.length === 0 ? <div className="text-center py-20 text-muted-foreground">
+              {paginatedClients.length === 0 ? <div className="text-center py-20 text-muted-foreground">
                   <p>Nenhum cliente encontrado</p>
                 </div> : <div className="flex flex-col gap-3 w-full">
-                  {filteredClients.map((client, index) => <motion.div key={client.id} initial={{
+                  {paginatedClients.map((client, index) => <motion.div key={client.id} initial={{
                   opacity: 0,
                   x: -20
                 }} animate={{
                   opacity: 1,
                   x: 0
                 }} transition={{
-                  delay: index * 0.05
+                  duration: 0.2
                 }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${client.status === 'archived' ? 'bg-muted/50 hover:bg-muted/60 border border-muted-foreground/20 opacity-70' : isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : 'bg-card hover:bg-card/80'}`}>
                       <div className="flex-1 w-full cursor-pointer" onClick={() => handleOpenModal(client)}>
                         <h3 className={`font-bold text-xl uppercase tracking-wide ${isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'}`}>
