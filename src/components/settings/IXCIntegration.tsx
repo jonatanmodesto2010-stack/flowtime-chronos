@@ -34,6 +34,7 @@ export function IXCIntegration() {
 
   // Config state
   const [apiUrl, setApiUrl] = useState('');
+  const [apiUrlContracts, setApiUrlContracts] = useState('');
   const [apiToken, setApiToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
@@ -123,6 +124,7 @@ export function IXCIntegration() {
 
       if (data) {
         setApiUrl(data.api_url || '');
+        setApiUrlContracts(data.api_url_contracts || '');
         setApiToken(data.api_token || '');
         setHasConfig(true);
       }
@@ -147,12 +149,14 @@ export function IXCIntegration() {
     setSavingConfig(true);
     try {
       const cleanUrl = apiUrl.trim().replace(/\/+$/, '');
+      const cleanUrlContracts = apiUrlContracts.trim().replace(/\/+$/, '') || null;
       
       if (hasConfig) {
         const { error } = await (supabase as any)
           .from('organization_integrations')
           .update({
             api_url: cleanUrl,
+            api_url_contracts: cleanUrlContracts,
             api_token: apiToken.trim(),
             updated_at: new Date().toISOString(),
           })
@@ -167,6 +171,7 @@ export function IXCIntegration() {
             organization_id: organizationId,
             integration_type: 'ixc',
             api_url: cleanUrl,
+            api_url_contracts: cleanUrlContracts,
             api_token: apiToken.trim(),
           });
 
@@ -393,6 +398,19 @@ export function IXCIntegration() {
             />
             <p className="text-xs text-muted-foreground">
               Apenas o domínio base, sem /adm.php ou /webservice. Ex: https://ixc.glorianet.com.br
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ixc-url-contracts">URL da API de Contratos (opcional)</Label>
+            <Input
+              id="ixc-url-contracts"
+              placeholder="https://contratos.suaempresa.com.br"
+              value={apiUrlContracts}
+              onChange={(e) => setApiUrlContracts(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              URL alternativa para consultar contratos (cliente_contrato). Se não informada, será usada a URL base acima.
             </p>
           </div>
 

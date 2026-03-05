@@ -1,0 +1,1 @@
+ALTER TABLE organization_integrations ADD COLUMN api_url_contracts text;

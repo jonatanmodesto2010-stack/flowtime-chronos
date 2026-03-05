@@ -352,6 +352,7 @@ export type Database = {
         Row: {
           api_token: string | null
           api_url: string | null
+          api_url_contracts: string | null
           created_at: string | null
           id: string
           integration_type: string
@@ -362,6 +363,7 @@ export type Database = {
         Insert: {
           api_token?: string | null
           api_url?: string | null
+          api_url_contracts?: string | null
           created_at?: string | null
           id?: string
           integration_type?: string
@@ -372,6 +374,7 @@ export type Database = {
         Update: {
           api_token?: string | null
           api_url?: string | null
+          api_url_contracts?: string | null
           created_at?: string | null
           id?: string
           integration_type?: string

@@ -93,7 +93,8 @@ async function checkCancelled(supabaseAdmin: any, logId: string | undefined): Pr
   return data?.status === 'cancelled';
 }
 
-async function fetchBlockedClientIds(apiUrl: string, apiToken: string): Promise<Set<string>> {
+async function fetchBlockedClientIds(apiUrl: string, apiToken: string, contractsApiUrl?: string | null): Promise<Set<string>> {
+  const baseUrl = contractsApiUrl || apiUrl;
   const blockedIds = new Set<string>();
   let page = 1;
   let hasMore = true;
@@ -102,7 +103,7 @@ async function fetchBlockedClientIds(apiUrl: string, apiToken: string): Promise<
 
   while (hasMore) {
     try {
-      const data = await fetchIxcData(apiUrl, apiToken, 'cliente_contrato', page, 500);
+      const data = await fetchIxcData(baseUrl, apiToken, 'cliente_contrato', page, 500);
       const records = data.registros || data.rows || [];
 
       if (page === 1) {
@@ -146,7 +147,7 @@ async function fetchBlockedClientIds(apiUrl: string, apiToken: string): Promise<
   return blockedIds;
 }
 
-async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string, logId?: string) {
+async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: string, apiToken: string, logId?: string, contractsApiUrl?: string | null) {
   let page = 1;
   let totalProcessed = 0;
   let totalCreated = 0;
@@ -169,7 +170,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
 
   // Fetch blocked client IDs from cliente_contrato endpoint
   console.log('Fetching blocked clients from cliente_contrato...');
-  const blockedClientIds = await fetchBlockedClientIds(apiUrl, apiToken);
+  const blockedClientIds = await fetchBlockedClientIds(apiUrl, apiToken, contractsApiUrl);
 
   while (hasMore) {
     // Check cancelled once per page
@@ -513,7 +514,7 @@ Deno.serve(async (req) => {
     // Read IXC credentials from organization_integrations table
     const { data: integrationConfig } = await supabaseAdmin
       .from('organization_integrations')
-      .select('api_url, api_token')
+      .select('api_url, api_url_contracts, api_token')
       .eq('organization_id', organizationId)
       .eq('integration_type', 'ixc')
       .maybeSingle();
@@ -530,7 +531,12 @@ Deno.serve(async (req) => {
 
     // Clean IXC URL
     const cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '');
-    console.log(`IXC sync. Clean URL: ${cleanUrl}, Sync type: ${syncType}, Org: ${organizationId}`);
+    // Clean contracts URL if available
+    const ixcApiUrlContracts = integrationConfig?.api_url_contracts;
+    const cleanUrlContracts = ixcApiUrlContracts 
+      ? ixcApiUrlContracts.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '')
+      : null;
+    console.log(`IXC sync. Clean URL: ${cleanUrl}, Contracts URL: ${cleanUrlContracts || 'using base'}, Sync type: ${syncType}, Org: ${organizationId}`);
 
     // Auto-encode token to Base64 if it's not already base64
     let finalToken = ixcApiToken;
@@ -586,7 +592,7 @@ Deno.serve(async (req) => {
         .single();
 
       try {
-        const clientResult = await syncClients(supabaseAdmin, organizationId, cleanUrl, finalToken, logEntry?.id);
+        const clientResult = await syncClients(supabaseAdmin, organizationId, cleanUrl, finalToken, logEntry?.id, cleanUrlContracts);
         results.clients = clientResult;
         
         if (logEntry && !clientResult.cancelled) {
