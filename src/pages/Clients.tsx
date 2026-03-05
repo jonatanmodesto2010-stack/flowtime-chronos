@@ -231,7 +231,7 @@ const Clients = () => {
     if (filters.statusFilter === 'active') {
       query = query.eq('is_active', true).neq('status', 'completed').neq('status', 'archived');
     } else if (filters.statusFilter === 'blocked') {
-      query = query.eq('is_active', false).eq('status', 'active');
+      query = query.eq('is_active', false).neq('status', 'archived').neq('status', 'completed');
     } else if (filters.statusFilter === 'overdue') {
       // Vencidos: buscar ativos, filtrar client-side pelo overdueDaysMap
       query = query.eq('is_active', true).neq('status', 'completed').neq('status', 'archived');
