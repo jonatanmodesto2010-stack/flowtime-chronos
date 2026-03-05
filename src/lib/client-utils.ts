@@ -11,7 +11,7 @@ export interface TimelineRecord {
 
 /**
  * Agrupa timelines por client_id, mantendo apenas uma timeline por cliente.
- * Prioridade: bloqueados (is_active=false) > ativos > finalizados (completed)
+ * Prioridade: inativos (archived) > bloqueados (is_active=false) > ativos > finalizados (completed)
  * Dentro do mesmo grupo, a mais recente vence.
  */
 export const groupTimelinesByClient = <T extends TimelineRecord>(
@@ -20,9 +20,10 @@ export const groupTimelinesByClient = <T extends TimelineRecord>(
   const clientsMap = new Map<string, T>();
   
   const getPriority = (t: T): number => {
-    if (!t.is_active) return 0; // bloqueado = maior prioridade
-    if (t.status !== 'completed') return 1; // ativo
-    return 2; // finalizado
+    if (t.status === 'archived') return 0; // inativo = maior prioridade
+    if (!t.is_active) return 1; // bloqueado
+    if (t.status !== 'completed') return 2; // ativo
+    return 3; // finalizado
   };
 
   timelines.forEach(timeline => {
