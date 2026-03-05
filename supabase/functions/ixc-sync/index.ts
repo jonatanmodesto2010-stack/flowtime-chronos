@@ -531,24 +531,37 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
 
     const uniqueClientIds = [...new Set(validRecords.map((r: any) => r._clientId))];
 
-    // 1 query: fetch all timelines for these clients
+    // 1 query: fetch only ACTIVE timelines for these clients (avoid duplicating boletos across multiple timelines)
     const { data: timelines } = await supabaseAdmin
       .from('client_timelines')
       .select('id, client_id')
       .eq('organization_id', organizationId)
-      .in('client_id', uniqueClientIds);
+      .in('client_id', uniqueClientIds)
+      .eq('is_active', true);
 
     const timelineMap = new Map<string, string>();
-    (timelines || []).forEach((t: any) => timelineMap.set(t.client_id, t.id));
+    (timelines || []).forEach((t: any) => {
+      // Only keep first active timeline per client_id
+      if (!timelineMap.has(t.client_id)) {
+        timelineMap.set(t.client_id, t.id);
+      }
+    });
 
-    // Build boleto refs for batch lookup
+    // Build boleto refs for batch lookup, deduplicating by IXC fatura ID
     const boletoRefs: string[] = [];
     const validFaturas: any[] = [];
+    const seenFaturaRefs = new Set<string>();
 
     for (const fatura of validRecords) {
       const timelineId = timelineMap.get(fatura._clientId);
       if (!timelineId) continue;
       const ixcRef = `Fatura IXC #${fatura.id}`;
+      
+      // Deduplicate: skip if we already processed this fatura for this timeline
+      const dedupeKey = `${timelineId}:${ixcRef}`;
+      if (seenFaturaRefs.has(dedupeKey)) continue;
+      seenFaturaRefs.add(dedupeKey);
+      
       boletoRefs.push(ixcRef);
       validFaturas.push({ ...fatura, _timelineId: timelineId, _ixcRef: ixcRef });
     }
