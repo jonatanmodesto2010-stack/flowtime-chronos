@@ -76,8 +76,7 @@ export const Header = ({ showSidebarTrigger = true }: HeaderProps) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}>
-
-
+          Cobra Fácil
         </motion.h1>
       </div>
 
