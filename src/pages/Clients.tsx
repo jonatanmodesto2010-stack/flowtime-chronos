@@ -114,22 +114,38 @@ const Clients = () => {
     console.log("loadClients: Iniciando, definindo loading para true");
     try {
       setLoading(true);
-      const {
-        data,
-        error
-      } = await supabaseClient.from('client_timelines').select(`
-          *,
-          profiles:user_id (
-            full_name
-          )
-        `).eq('organization_id', organizationId).order('updated_at', {
-        ascending: false
-      });
-      if (error) throw error;
-      console.log("loadClients: Clientes carregados:", data?.length);
+      
+      // Paginação para buscar todos os clientes (Supabase limita a 1000 por query)
+      const allData: any[] = [];
+      let offset = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabaseClient.from('client_timelines').select(`
+            *,
+            profiles:user_id (
+              full_name
+            )
+          `).eq('organization_id', organizationId)
+          .order('updated_at', { ascending: false })
+          .range(offset, offset + batchSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData.push(...data);
+          offset += batchSize;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log("loadClients: Clientes carregados:", allData.length);
 
       // ✅ Agrupar por client_id, mantendo apenas a timeline mais recente de cada cliente
-      const uniqueClients = groupTimelinesByClient(data || []) as Client[];
+      const uniqueClients = groupTimelinesByClient(allData) as Client[];
       console.log("loadClients: Após agrupamento:", uniqueClients.length);
 
       // Ordenar: bloqueados no topo (por due_date ASC), ativos no meio, finalizados por último
@@ -193,13 +209,27 @@ const Clients = () => {
     // Remover ordenação SQL - faremos no cliente após os filtros
 
     try {
-      const {
-        data,
-        error
-      } = await query;
-      if (error) throw error;
-      console.log("handleFilterChange: Clientes filtrados carregados:", data?.length);
-      let results = data || [];
+      // Paginação para buscar todos os resultados filtrados
+      const allData: any[] = [];
+      let offset = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batchData, error: batchError } = await query.range(offset, offset + batchSize - 1);
+        if (batchError) throw batchError;
+
+        if (batchData && batchData.length > 0) {
+          allData.push(...batchData);
+          offset += batchSize;
+          hasMore = batchData.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log("handleFilterChange: Clientes filtrados carregados:", allData.length);
+      let results = allData;
 
       // Executar todas as queries auxiliares em paralelo
       const clientIds = results.map(c => c.id);
@@ -560,7 +590,7 @@ const Clients = () => {
                   x: 0
                 }} transition={{
                   delay: index * 0.05
-                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${client.status === 'archived' ? 'bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/30 opacity-80' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : 'bg-card hover:bg-card/80'}`}>
+                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${client.status === 'archived' ? 'bg-muted/50 hover:bg-muted/60 border border-muted-foreground/20 opacity-70' : isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : 'bg-card hover:bg-card/80'}`}>
                       <div className="flex-1 w-full cursor-pointer" onClick={() => handleOpenModal(client)}>
                         <h3 className={`font-bold text-xl uppercase tracking-wide ${isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'}`}>
                           {client.client_name}
@@ -577,7 +607,7 @@ const Clients = () => {
 
                       <div className="flex items-center gap-2">
                         {/* Badge dinâmico baseado no status */}
-                        {client.status === 'archived' ? <div className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
+                        {client.status === 'archived' ? <div className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded flex-shrink-0 font-semibold uppercase">
                             ⚠️ INATIVO
                           </div> : isCompleted(client.status) ? <div className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded flex-shrink-0 font-semibold">
                             FINALIZADO
