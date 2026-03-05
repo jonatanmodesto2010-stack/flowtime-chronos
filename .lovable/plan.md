@@ -1,29 +1,21 @@
 
 
-## Plano: Paginação com navegação e 30 clientes por página
+## Plano: Destacar em amarelo clientes com faturas em atraso mas não bloqueados
 
 ### O que será feito
+Na linha 651, onde as classes CSS do card são definidas, adicionar uma condição: se o cliente é **ativo** (`is_active === true`), **não está finalizado/arquivado**, e **tem dias em atraso** no `overdueDaysMap`, o card terá fundo amarelo ao invés do fundo padrão.
 
-Adicionar controles de paginação no formato do primeiro print (botões de navegação: primeiro, anterior, atualizar, próximo, último + indicador "1 - 30 / 1770") com 30 clientes por página.
+### Mudança técnica
+No `src/pages/Clients.tsx`, linha 651, alterar a lógica de classes CSS:
 
-### Detalhes técnicos
+- Condição atual para cliente ativo: `'bg-card hover:bg-card/80'`
+- Nova condição: se `client.is_active && overdueDaysMap.has(client.id)` → `'bg-yellow-500/10 hover:bg-yellow-500/15 border border-yellow-500/30'`
+- Caso contrário, mantém `'bg-card hover:bg-card/80'`
 
-**Arquivo: `src/pages/Clients.tsx`**
-
-1. **Novos estados de paginação**:
-   - `currentPage` (default: 1)
-   - `itemsPerPage` (30)
-   - Derivar `totalPages`, `startIndex`, `endIndex`, `paginatedClients`
-
-2. **Substituir renderização de `filteredClients`** pelo slice paginado (`paginatedClients`), mantendo animações apenas nos 30 itens visíveis (melhora performance).
-
-3. **Substituir o texto "44 de 1770"** por uma barra de paginação no estilo do print:
-   ```
-   |◄  ◄◄  🔄  ►►  ►|   1 - 30 / 1770
-   ```
-   Botões: primeiro (`ChevronFirst`), anterior (`ChevronLeft`), atualizar (`RefreshCw`), próximo (`ChevronRight`), último (`ChevronLast`) + texto "1 - 30 / 1770".
-
-4. **Reset da página** para 1 sempre que `filteredClients` mudar (novo filtro aplicado).
-
-5. **Remover delay de animação** por index (`delay: index * 0.05`) que causa lentidão com muitos itens — usar delay fixo ou nenhum.
+A ordem de prioridade das cores ficará:
+1. Archived (cinza) 
+2. Finalizado (cinza + grayscale)
+3. Bloqueado / `!is_active` (vermelho)
+4. Ativo com atraso (amarelo) ← **novo**
+5. Ativo normal (padrão)
 
