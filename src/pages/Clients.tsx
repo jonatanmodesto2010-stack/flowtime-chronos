@@ -628,14 +628,7 @@ const Clients = () => {
                           {client.client_name}
                         </h3>
                         
-                        {/* Última Atualização */}
-                        {client.updated_at && <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-xs">
-</span>
-                            <p className="text-xs text-muted-foreground">
-                              Última atualização: {formatLastUpdate(client.updated_at, client.profiles?.full_name)}
-                            </p>
-                          </div>}
+                        {/* Última Atualização - hidden */}
                       </div>
 
                       <div className="flex items-center gap-2">
