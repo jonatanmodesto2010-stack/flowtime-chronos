@@ -9,6 +9,8 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseClient } from '@/lib/supabase-client';
 import { fetchAllPaginated, fetchInChunks } from '@/lib/supabase-helpers';
+import { getCachedData, setCachedData, CACHE_KEYS } from '@/lib/route-cache';
+import { CalendarSkeleton } from '@/components/CalendarSkeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';

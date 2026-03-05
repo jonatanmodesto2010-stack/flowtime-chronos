@@ -586,10 +586,10 @@ const Clients = () => {
           <div className="flex-1 flex flex-col">
             <Header />
             <main className="flex-1 p-6 overflow-auto">
-              <div className="max-w-4xl mx-auto">
-                <div className="h-9 w-48 bg-muted animate-pulse rounded mb-6" />
-                <div className="flex flex-col gap-3">
-                  {[1, 2, 3, 4].map((i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
+              <div className="flex gap-6">
+                <div className="flex-1 max-w-4xl">
+                  <div className="h-8 w-32 bg-muted animate-pulse rounded mb-6" />
+                  <ClientsListSkeleton />
                 </div>
               </div>
             </main>
