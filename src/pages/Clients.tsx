@@ -173,9 +173,11 @@ const Clients = () => {
 
     // Status filter
     if (filters.statusFilter === 'active') {
-      query = query.eq('is_active', true);
-    } else if (filters.statusFilter === 'inactive') {
+      query = query.eq('is_active', true).neq('status', 'completed');
+    } else if (filters.statusFilter === 'blocked') {
       query = query.eq('is_active', false);
+    } else if (filters.statusFilter === 'completed') {
+      query = query.eq('status', 'completed').eq('is_active', true);
     }
 
     // Date range filter (data de cadastro)
