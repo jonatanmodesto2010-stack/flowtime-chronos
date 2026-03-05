@@ -37,7 +37,6 @@ async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, 
   
   console.log(`Fetching IXC data from: ${url} (page ${page})`);
   
-  // Default: oper ">" with query "0" to fetch ALL records (id > 0)
   const qtype = queryOverrides?.qtype || `${endpoint}.id`;
   const query = queryOverrides?.query ?? '0';
   const oper = queryOverrides?.oper || '>';
@@ -71,11 +70,8 @@ async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, 
 
   if (!contentType.includes('application/json') && !contentType.includes('text/json')) {
     if (responseText.trim().startsWith('<') || responseText.includes('<html')) {
-      console.error('IXC returned HTML instead of JSON. Check API URL and token.');
-      console.error('Response preview:', responseText.substring(0, 300));
       throw new Error(
-        `IXC API retornou HTML em vez de JSON. Verifique se a URL da API (${apiUrl}) e o token estão corretos. ` +
-        `Isso geralmente indica URL incorreta, token inválido ou o servidor IXC está inacessível.`
+        `IXC API retornou HTML em vez de JSON. Verifique se a URL da API (${apiUrl}) e o token estão corretos.`
       );
     }
   }
@@ -83,7 +79,6 @@ async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, 
   try {
     return JSON.parse(responseText);
   } catch (e) {
-    console.error('Failed to parse IXC response:', responseText.substring(0, 300));
     throw new Error(`Resposta do IXC não é JSON válido. Preview: ${responseText.substring(0, 100)}`);
   }
 }
@@ -101,36 +96,20 @@ async function checkCancelled(supabaseAdmin: any, logId: string | undefined): Pr
 async function fetchBlockedClientIds(apiUrl: string, apiToken: string, contractsApiUrl?: string | null): Promise<Set<string>> {
   const blockedIds = new Set<string>();
 
-  // 1. Try cliente_bloqueado endpoint first (direct blocked list)
+  // 1. cliente_bloqueado endpoint
   let page = 1;
-  let hasMore = true;
   let bloqueadoWorked = false;
 
-  while (hasMore) {
+  while (true) {
     try {
       const data = await fetchIxcData(apiUrl, apiToken, 'cliente_bloqueado', page, 500);
       const records = data.registros || data.rows || [];
-
-      if (page === 1) {
-        console.log(`cliente_bloqueado total: ${data.total || 0}`);
-        if (Array.isArray(records) && records.length > 0) {
-          bloqueadoWorked = true;
-          const fields = Object.keys(records[0]);
-          const relevantFields = fields.filter(f => 
-            f.includes('cliente') || f.includes('id_') || f.includes('bloq') || f.includes('status')
-          );
-          console.log(`cliente_bloqueado fields:`, JSON.stringify(relevantFields));
-          console.log(`cliente_bloqueado sample:`, JSON.stringify(records[0]));
-        }
-      }
-
+      if (page === 1 && Array.isArray(records) && records.length > 0) bloqueadoWorked = true;
       if (!Array.isArray(records) || records.length === 0) break;
 
       for (const record of records) {
         const clientId = (record.id_cliente || record.cliente_id || record.id)?.toString();
-        if (clientId) {
-          blockedIds.add(clientId);
-        }
+        if (clientId) blockedIds.add(clientId);
       }
 
       if (records.length < 500) break;
@@ -141,33 +120,22 @@ async function fetchBlockedClientIds(apiUrl: string, apiToken: string, contracts
     }
   }
 
-  if (bloqueadoWorked) {
-    console.log(`Found ${blockedIds.size} blocked clients via cliente_bloqueado`);
-  }
+  if (bloqueadoWorked) console.log(`Found ${blockedIds.size} blocked via cliente_bloqueado`);
 
-  // 2. Also check cliente_contrato for active contracts with non-active internet
+  // 2. cliente_contrato - active contract but non-active internet
   const contractsUrl = contractsApiUrl || apiUrl;
   page = 1;
-  hasMore = true;
-  const allStatusValues = new Set<string>();
   let contractBlocked = 0;
 
-  while (hasMore) {
+  while (true) {
     try {
       const data = await fetchIxcData(contractsUrl, apiToken, 'cliente_contrato', page, 500);
       const records = data.registros || data.rows || [];
-
-      if (page === 1) {
-        console.log(`cliente_contrato total: ${data.total || 0}`);
-      }
-
       if (!Array.isArray(records) || records.length === 0) break;
 
       for (const record of records) {
         const statusInternet = record.status_internet?.toString() || '';
         const status = record.status?.toString() || '';
-        allStatusValues.add(statusInternet);
-        
         if (status === 'A' && statusInternet !== 'A') {
           const clientId = record.id_cliente?.toString();
           if (clientId && !blockedIds.has(clientId)) {
@@ -185,9 +153,7 @@ async function fetchBlockedClientIds(apiUrl: string, apiToken: string, contracts
     }
   }
 
-  console.log(`All unique status_internet values: ${JSON.stringify([...allStatusValues])}`);
-  console.log(`Additional blocked from cliente_contrato: ${contractBlocked}`);
-  console.log(`Total unique blocked client IDs: ${blockedIds.size}`);
+  console.log(`Additional blocked from contracts: ${contractBlocked}. Total blocked: ${blockedIds.size}`);
   return blockedIds;
 }
 
@@ -196,9 +162,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
   let totalProcessed = 0;
   let totalCreated = 0;
   let totalUpdated = 0;
-  let hasMore = true;
 
-  // Get a user_id for new inserts (fetch once, not per record)
   const { data: orgUser } = await supabaseAdmin
     .from('user_roles')
     .select('user_id')
@@ -212,24 +176,20 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     return { totalProcessed: 0, totalCreated: 0, totalUpdated: 0, cancelled: false };
   }
 
-  // Fetch blocked client IDs from cliente_contrato endpoint
-  console.log('Fetching blocked clients from cliente_contrato...');
+  console.log('Fetching blocked clients...');
   const blockedClientIds = await fetchBlockedClientIds(apiUrl, apiToken, contractsApiUrl);
 
-  while (hasMore) {
-    // Check cancelled once per page
+  while (true) {
     if (await checkCancelled(supabaseAdmin, logId)) {
-      console.log('Sync cancelled by user');
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
     }
 
     const data = await fetchIxcData(apiUrl, apiToken, 'cliente', page, 500);
     const records = data.registros || data.rows || [];
 
-    // On first page, save total_records for progress tracking
     if (page === 1) {
       const totalRecords = parseInt(data.total) || 0;
-      console.log(`[DIAG] API reports total clients: ${totalRecords} (data.total=${data.total})`);
+      console.log(`API reports total clients: ${totalRecords}`);
       if (logId) {
         await supabaseAdmin.from('integration_sync_log')
           .update({ total_records: totalRecords })
@@ -237,19 +197,14 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
     
-    if (!Array.isArray(records) || records.length === 0) {
-      hasMore = false;
-      break;
-    }
+    if (!Array.isArray(records) || records.length === 0) break;
 
-    // Collect all valid client IDs from this page
     const pageClients = records
       .map((r: IXCClient) => ({ ...r, _clientId: r.id?.toString() }))
       .filter((r: any) => r._clientId);
 
     const clientIds = pageClients.map((r: any) => r._clientId);
 
-    // 1 query: fetch all existing clients for this page
     const { data: existingClients } = await supabaseAdmin
       .from('client_timelines')
       .select('id, client_id')
@@ -259,7 +214,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     const existingMap = new Map<string, string>();
     (existingClients || []).forEach((e: any) => existingMap.set(e.client_id, e.id));
 
-    // Separate into updates and inserts
     const toUpdate: any[] = [];
     const toInsert: any[] = [];
 
@@ -268,7 +222,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       const existingId = existingMap.get(clientId);
       const isContractActive = client.ativo === 'S';
       const isBlocked = blockedClientIds.has(clientId);
-      // is_active = contrato ativo E acesso não bloqueado
       const isActive = isContractActive && !isBlocked;
       const status = !isContractActive ? 'archived' : 'active';
 
@@ -278,7 +231,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
           client_name: client.razao || `Cliente ${clientId}`,
           is_active: isActive,
           status: status,
-          updated_at: new Date().toISOString(),
         });
       } else {
         toInsert.push({
@@ -293,40 +245,27 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
 
-    // Batch update existing records via SQL function (single query!)
     if (toUpdate.length > 0) {
-      try {
-        const { error } = await supabaseAdmin.rpc('batch_upsert_clients', {
-          p_ids: toUpdate.map(r => r.id),
-          p_names: toUpdate.map(r => r.client_name),
-          p_active: toUpdate.map(r => r.is_active),
-          p_statuses: toUpdate.map(r => r.status),
-        });
-        if (error) {
-          console.error('Batch client update error:', error.message);
-        } else {
-          totalUpdated += toUpdate.length;
-        }
-      } catch (err) {
-        console.error('Batch client update exception:', err);
-      }
+      const { error } = await supabaseAdmin.rpc('batch_upsert_clients', {
+        p_ids: toUpdate.map(r => r.id),
+        p_names: toUpdate.map(r => r.client_name),
+        p_active: toUpdate.map(r => r.is_active),
+        p_statuses: toUpdate.map(r => r.status),
+      });
+      if (error) console.error('Batch client update error:', error.message);
+      else totalUpdated += toUpdate.length;
     }
 
-    // Batch insert new records (single query!)
     if (toInsert.length > 0) {
       const { error } = await supabaseAdmin
         .from('client_timelines')
         .insert(toInsert);
-      if (error) {
-        console.error('Batch insert error:', error.message);
-      } else {
-        totalCreated += toInsert.length;
-      }
+      if (error) console.error('Batch insert error:', error.message);
+      else totalCreated += toInsert.length;
     }
 
     totalProcessed += pageClients.length;
 
-    // Update progress after each page
     if (logId) {
       await supabaseAdmin.from('integration_sync_log')
         .update({ records_processed: totalProcessed })
@@ -335,36 +274,23 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
 
     console.log(`Page ${page}: ${toInsert.length} created, ${toUpdate.length} updated (${totalProcessed} total)`);
 
-    if (records.length < 500) {
-      hasMore = false;
-    }
+    if (records.length < 500) break;
     page++;
   }
 
-  // === STEP 2: Discover additional clients from cliente_contrato ===
-  // Some clients may not appear in the `cliente` endpoint but have contracts
-  console.log('[DIAG] Fetching cliente_contrato to discover additional clients...');
+  // === Discover additional clients from cliente_contrato ===
   const contractsUrl = contractsApiUrl || apiUrl;
   const allContractClientIds = new Set<string>();
   const contractClientNames = new Map<string, string>();
   
   let cPage = 1;
-  let cHasMore = true;
-  while (cHasMore) {
+  while (true) {
     if (await checkCancelled(supabaseAdmin, logId)) {
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
     }
     
     const cData = await fetchIxcData(contractsUrl, apiToken, 'cliente_contrato', cPage, 500);
     const cRecords = cData.registros || cData.rows || [];
-    
-    if (cPage === 1) {
-      console.log(`[DIAG] cliente_contrato reports total: ${cData.total || 0}`);
-      if (Array.isArray(cRecords) && cRecords.length > 0) {
-        console.log(`[DIAG] cliente_contrato sample fields: ${JSON.stringify(Object.keys(cRecords[0]))}`);
-      }
-    }
-    
     if (!Array.isArray(cRecords) || cRecords.length === 0) break;
     
     for (const record of cRecords) {
@@ -382,9 +308,7 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     cPage++;
   }
   
-  console.log(`[DIAG] Total unique client IDs from cliente_contrato: ${allContractClientIds.size}`);
-  
-  // Find client IDs from contracts not yet in our DB
+  // Find missing clients
   const contractClientArray = [...allContractClientIds];
   const missingClientIds: string[] = [];
   
@@ -398,13 +322,11 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     
     const existingSet = new Set((existing || []).map((e: any) => e.client_id));
     for (const cid of batch) {
-      if (!existingSet.has(cid)) {
-        missingClientIds.push(cid);
-      }
+      if (!existingSet.has(cid)) missingClientIds.push(cid);
     }
   }
   
-  console.log(`[DIAG] Missing clients (in contracts but not in DB): ${missingClientIds.length}`);
+  console.log(`Missing clients from contracts: ${missingClientIds.length}`);
   
   if (missingClientIds.length > 0) {
     const toInsertMissing: any[] = [];
@@ -415,7 +337,6 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
       
       try {
-        // Fetch individual client details from `cliente` endpoint
         const clientData = await fetchIxcData(apiUrl, apiToken, 'cliente', 1, 1, {
           qtype: 'cliente.id',
           query: clientId,
@@ -441,12 +362,10 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
             user_id: orgUser.user_id,
           });
         } else {
-          // Client not in `cliente` endpoint, use contract data
-          const isBlocked = blockedClientIds.has(clientId);
           toInsertMissing.push({
             client_id: clientId,
             client_name: contractClientNames.get(clientId) || `Cliente ${clientId}`,
-            is_active: !isBlocked,
+            is_active: !blockedClientIds.has(clientId),
             organization_id: organizationId,
             start_date: new Date().toISOString().split('T')[0],
             status: 'active',
@@ -467,21 +386,16 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
       }
     }
     
-    // Batch insert missing clients
     if (toInsertMissing.length > 0) {
       for (let i = 0; i < toInsertMissing.length; i += 100) {
         const batch = toInsertMissing.slice(i, i + 100);
         const { error } = await supabaseAdmin
           .from('client_timelines')
           .insert(batch);
-        if (error) {
-          console.error('Batch insert missing clients error:', error.message);
-        } else {
-          totalCreated += batch.length;
-        }
+        if (error) console.error('Batch insert missing error:', error.message);
+        else totalCreated += batch.length;
       }
       totalProcessed += toInsertMissing.length;
-      console.log(`[DIAG] Inserted ${toInsertMissing.length} additional clients from cliente_contrato`);
     }
     
     if (logId) {
@@ -499,19 +413,15 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
   let totalProcessed = 0;
   let totalCreated = 0;
   let totalUpdated = 0;
-  let hasMore = true;
 
-  while (hasMore) {
-    // Check cancelled once per page
+  while (true) {
     if (await checkCancelled(supabaseAdmin, logId)) {
-      console.log('Sync cancelled by user');
       return { totalProcessed, totalCreated, totalUpdated, cancelled: true };
     }
 
     const data = await fetchIxcData(apiUrl, apiToken, 'fn_areceber', page, 500);
     const records = data.registros || data.rows || [];
 
-    // On first page, save total_records for progress tracking
     if (page === 1 && logId) {
       const totalRecords = parseInt(data.total) || 0;
       await supabaseAdmin.from('integration_sync_log')
@@ -519,65 +429,63 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
         .eq('id', logId);
     }
     
-    if (!Array.isArray(records) || records.length === 0) {
-      hasMore = false;
-      break;
-    }
+    if (!Array.isArray(records) || records.length === 0) break;
 
-    // Collect all unique client IXC IDs from this page
     const validRecords = records
       .map((r: IXCFatura) => ({ ...r, _clientId: r.id_cliente?.toString() }))
       .filter((r: any) => r._clientId);
 
     const uniqueClientIds = [...new Set(validRecords.map((r: any) => r._clientId))];
 
-    // 1 query: fetch only ACTIVE timelines for these clients (avoid duplicating boletos across multiple timelines)
+    // Fetch ALL timelines for these clients (not just active - blocked clients need boletos too)
     const { data: timelines } = await supabaseAdmin
       .from('client_timelines')
       .select('id, client_id')
       .eq('organization_id', organizationId)
-      .in('client_id', uniqueClientIds)
-      .eq('is_active', true);
+      .in('client_id', uniqueClientIds);
 
+    // Map client_id -> first timeline (prefer keeping one per client)
     const timelineMap = new Map<string, string>();
     (timelines || []).forEach((t: any) => {
-      // Only keep first active timeline per client_id
       if (!timelineMap.has(t.client_id)) {
         timelineMap.set(t.client_id, t.id);
       }
     });
 
-    // Build boleto refs for batch lookup, deduplicating by IXC fatura ID
-    const boletoRefs: string[] = [];
+    // Deduplicate by IXC fatura ID
+    const seenFaturaIds = new Set<string>();
     const validFaturas: any[] = [];
-    const seenFaturaRefs = new Set<string>();
+    const ixcBoletoIds: string[] = [];
 
     for (const fatura of validRecords) {
       const timelineId = timelineMap.get(fatura._clientId);
       if (!timelineId) continue;
-      const ixcRef = `Fatura IXC #${fatura.id}`;
       
-      // Deduplicate: skip if we already processed this fatura for this timeline
-      const dedupeKey = `${timelineId}:${ixcRef}`;
-      if (seenFaturaRefs.has(dedupeKey)) continue;
-      seenFaturaRefs.add(dedupeKey);
+      const ixcId = fatura.id?.toString();
+      if (!ixcId) continue;
       
-      boletoRefs.push(ixcRef);
-      validFaturas.push({ ...fatura, _timelineId: timelineId, _ixcRef: ixcRef });
+      const dedupeKey = `${timelineId}:${ixcId}`;
+      if (seenFaturaIds.has(dedupeKey)) continue;
+      seenFaturaIds.add(dedupeKey);
+      
+      ixcBoletoIds.push(ixcId);
+      validFaturas.push({ ...fatura, _timelineId: timelineId, _ixcBoletoId: ixcId });
     }
 
-    // 1 query: fetch all existing boletos by description
-    let existingBoletosMap = new Map<string, string>();
-    if (boletoRefs.length > 0) {
+    // Lookup existing boletos by ixc_boleto_id
+    let existingMap = new Map<string, string>();
+    if (ixcBoletoIds.length > 0) {
       const timelineIds = [...new Set(validFaturas.map((f: any) => f._timelineId))];
       const { data: existingBoletos } = await supabaseAdmin
         .from('client_boletos')
-        .select('id, timeline_id, description')
+        .select('id, timeline_id, ixc_boleto_id')
         .in('timeline_id', timelineIds)
-        .in('description', boletoRefs);
+        .in('ixc_boleto_id', ixcBoletoIds);
 
       (existingBoletos || []).forEach((b: any) => {
-        existingBoletosMap.set(`${b.timeline_id}:${b.description}`, b.id);
+        if (b.ixc_boleto_id) {
+          existingMap.set(`${b.timeline_id}:${b.ixc_boleto_id}`, b.id);
+        }
       });
     }
 
@@ -585,8 +493,8 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
     const toUpdateList: any[] = [];
 
     for (const fatura of validFaturas) {
-      const key = `${fatura._timelineId}:${fatura._ixcRef}`;
-      const existingId = existingBoletosMap.get(key);
+      const key = `${fatura._timelineId}:${fatura._ixcBoletoId}`;
+      const existingId = existingMap.get(key);
 
       if (existingId) {
         toUpdateList.push({
@@ -594,7 +502,6 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
           boleto_value: parseFloat(fatura.valor) || 0,
           due_date: fatura.data_vencimento,
           status: mapIxcStatus(fatura.status),
-          updated_at: new Date().toISOString(),
         });
       } else {
         toInsert.push({
@@ -602,45 +509,33 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
           boleto_value: parseFloat(fatura.valor) || 0,
           due_date: fatura.data_vencimento,
           status: mapIxcStatus(fatura.status),
-          description: fatura._ixcRef,
+          description: `Fatura IXC #${fatura._ixcBoletoId}`,
+          ixc_boleto_id: fatura._ixcBoletoId,
         });
       }
     }
 
-    // Batch update via SQL function (single query!)
     if (toUpdateList.length > 0) {
-      try {
-        const { error } = await supabaseAdmin.rpc('batch_upsert_boletos', {
-          p_ids: toUpdateList.map(r => r.id),
-          p_values: toUpdateList.map(r => r.boleto_value),
-          p_dates: toUpdateList.map(r => r.due_date),
-          p_statuses: toUpdateList.map(r => r.status),
-        });
-        if (error) {
-          console.error('Batch boleto update error:', error.message);
-        } else {
-          totalUpdated += toUpdateList.length;
-        }
-      } catch (err) {
-        console.error('Batch boleto update exception:', err);
-      }
+      const { error } = await supabaseAdmin.rpc('batch_upsert_boletos', {
+        p_ids: toUpdateList.map(r => r.id),
+        p_values: toUpdateList.map(r => r.boleto_value),
+        p_dates: toUpdateList.map(r => r.due_date),
+        p_statuses: toUpdateList.map(r => r.status),
+      });
+      if (error) console.error('Batch boleto update error:', error.message);
+      else totalUpdated += toUpdateList.length;
     }
 
-    // Batch insert (single query!)
     if (toInsert.length > 0) {
       const { error } = await supabaseAdmin
         .from('client_boletos')
         .insert(toInsert);
-      if (error) {
-        console.error('Batch boleto insert error:', error.message);
-      } else {
-        totalCreated += toInsert.length;
-      }
+      if (error) console.error('Batch boleto insert error:', error.message);
+      else totalCreated += toInsert.length;
     }
 
     totalProcessed += validRecords.length;
 
-    // Update progress after each page
     if (logId) {
       await supabaseAdmin.from('integration_sync_log')
         .update({ records_processed: totalProcessed })
@@ -649,13 +544,129 @@ async function syncBoletos(supabaseAdmin: any, organizationId: string, apiUrl: s
 
     console.log(`Boletos page ${page}: ${toInsert.length} created, ${toUpdateList.length} updated (${totalProcessed} total)`);
 
-    if (records.length < 500) {
-      hasMore = false;
-    }
+    if (records.length < 500) break;
     page++;
   }
 
   return { totalProcessed, totalCreated, totalUpdated, cancelled: false };
+}
+
+// Helper: resolve IXC credentials and clean URLs for an organization
+async function resolveIxcCredentials(supabaseAdmin: any, organizationId: string) {
+  const { data: integrationConfig } = await supabaseAdmin
+    .from('organization_integrations')
+    .select('api_url, api_url_contracts, api_token')
+    .eq('organization_id', organizationId)
+    .eq('integration_type', 'ixc')
+    .maybeSingle();
+
+  const ixcApiUrl = integrationConfig?.api_url || Deno.env.get('IXC_API_URL');
+  const ixcApiToken = integrationConfig?.api_token || Deno.env.get('IXC_API_TOKEN');
+
+  if (!ixcApiUrl || !ixcApiToken) return null;
+
+  const cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '');
+  const ixcApiUrlContracts = integrationConfig?.api_url_contracts;
+  const cleanUrlContracts = ixcApiUrlContracts 
+    ? ixcApiUrlContracts.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '')
+    : null;
+
+  // Auto-encode token
+  let finalToken = ixcApiToken;
+  try {
+    const decoded = atob(ixcApiToken);
+    if (!decoded.includes(':')) {
+      finalToken = btoa(ixcApiToken + ':');
+    }
+  } catch {
+    finalToken = ixcApiToken.includes(':') ? btoa(ixcApiToken) : btoa(ixcApiToken + ':');
+  }
+
+  return { cleanUrl, cleanUrlContracts, finalToken };
+}
+
+async function runSyncForOrganization(supabaseAdmin: any, organizationId: string, syncType: string) {
+  const creds = await resolveIxcCredentials(supabaseAdmin, organizationId);
+  if (!creds) {
+    console.log(`No IXC credentials for org ${organizationId}, skipping`);
+    return null;
+  }
+
+  const results: any = {};
+
+  if (syncType === 'clients' || syncType === 'all') {
+    const { data: logEntry } = await supabaseAdmin
+      .from('integration_sync_log')
+      .insert({ organization_id: organizationId, sync_type: 'clients', status: 'running' })
+      .select('id')
+      .single();
+
+    try {
+      const clientResult = await syncClients(supabaseAdmin, organizationId, creds.cleanUrl, creds.finalToken, logEntry?.id, creds.cleanUrlContracts);
+      results.clients = clientResult;
+      
+      if (logEntry && !clientResult.cancelled) {
+        await supabaseAdmin.from('integration_sync_log')
+          .update({
+            status: 'success',
+            records_processed: clientResult.totalProcessed,
+            records_created: clientResult.totalCreated,
+            records_updated: clientResult.totalUpdated,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', logEntry.id);
+      }
+    } catch (err) {
+      if (logEntry) {
+        await supabaseAdmin.from('integration_sync_log')
+          .update({
+            status: 'error',
+            error_message: err instanceof Error ? err.message : 'Unknown error',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', logEntry.id);
+      }
+      throw err;
+    }
+  }
+
+  if (syncType === 'boletos' || syncType === 'all') {
+    const { data: logEntry } = await supabaseAdmin
+      .from('integration_sync_log')
+      .insert({ organization_id: organizationId, sync_type: 'boletos', status: 'running' })
+      .select('id')
+      .single();
+
+    try {
+      const boletoResult = await syncBoletos(supabaseAdmin, organizationId, creds.cleanUrl, creds.finalToken, logEntry?.id);
+      results.boletos = boletoResult;
+      
+      if (logEntry && !boletoResult.cancelled) {
+        await supabaseAdmin.from('integration_sync_log')
+          .update({
+            status: 'success',
+            records_processed: boletoResult.totalProcessed,
+            records_created: boletoResult.totalCreated,
+            records_updated: boletoResult.totalUpdated,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', logEntry.id);
+      }
+    } catch (err) {
+      if (logEntry) {
+        await supabaseAdmin.from('integration_sync_log')
+          .update({
+            status: 'error',
+            error_message: err instanceof Error ? err.message : 'Unknown error',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', logEntry.id);
+      }
+      throw err;
+    }
+  }
+
+  return results;
 }
 
 Deno.serve(async (req) => {
@@ -664,36 +675,64 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify user
+    // === CRON MODE: no auth header = automated cron invocation ===
+    const authHeader = req.headers.get('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // Cron mode: sync ALL organizations that have active IXC integrations
+      console.log('[CRON] Starting automated IXC sync for all organizations');
+      
+      const { data: activeIntegrations } = await supabaseAdmin
+        .from('organization_integrations')
+        .select('organization_id')
+        .eq('integration_type', 'ixc')
+        .eq('is_active', true);
+
+      if (!activeIntegrations || activeIntegrations.length === 0) {
+        return new Response(JSON.stringify({ message: 'No active IXC integrations found' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const allResults: any = {};
+      for (const integration of activeIntegrations) {
+        try {
+          console.log(`[CRON] Syncing org: ${integration.organization_id}`);
+          allResults[integration.organization_id] = await runSyncForOrganization(
+            supabaseAdmin, integration.organization_id, 'all'
+          );
+        } catch (err) {
+          console.error(`[CRON] Error syncing org ${integration.organization_id}:`, err);
+          allResults[integration.organization_id] = { error: err instanceof Error ? err.message : 'Unknown error' };
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, cron: true, results: allResults }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // === MANUAL MODE: user-triggered sync ===
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !user) {
-      console.error('Auth error:', userError?.message);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
     }
 
-    const userId = user.id;
-
-    // Get user's organization
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-    
     const { data: userRole } = await supabaseAdmin
       .from('user_roles')
       .select('organization_id, role')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .limit(1)
       .single();
 
@@ -703,7 +742,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Only owners and admins can sync
     if (!['owner', 'admin'].includes(userRole.role)) {
       return new Response(JSON.stringify({ error: 'Insufficient permissions' }), { 
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -713,166 +751,46 @@ Deno.serve(async (req) => {
     const { syncType } = await req.json();
     
     if (!['clients', 'boletos', 'all', 'test'].includes(syncType)) {
-      return new Response(JSON.stringify({ error: 'Invalid sync type. Use: clients, boletos, all, or test' }), { 
+      return new Response(JSON.stringify({ error: 'Invalid sync type' }), { 
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
 
     const organizationId = userRole.organization_id;
-    const results: any = {};
+    const creds = await resolveIxcCredentials(supabaseAdmin, organizationId);
 
-    // Read IXC credentials from organization_integrations table
-    const { data: integrationConfig } = await supabaseAdmin
-      .from('organization_integrations')
-      .select('api_url, api_url_contracts, api_token')
-      .eq('organization_id', organizationId)
-      .eq('integration_type', 'ixc')
-      .maybeSingle();
-
-    // Fallback to env vars if no DB config
-    const ixcApiUrl = integrationConfig?.api_url || Deno.env.get('IXC_API_URL');
-    const ixcApiToken = integrationConfig?.api_token || Deno.env.get('IXC_API_TOKEN');
-
-    if (!ixcApiUrl || !ixcApiToken) {
-      return new Response(JSON.stringify({ error: 'Credenciais IXC não configuradas. Acesse Configurações → Integrações para configurar.' }), { 
+    if (!creds) {
+      return new Response(JSON.stringify({ error: 'Credenciais IXC não configuradas.' }), { 
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
 
-    // Clean IXC URL
-    const cleanUrl = ixcApiUrl.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '');
-    // Clean contracts URL if available
-    const ixcApiUrlContracts = integrationConfig?.api_url_contracts;
-    const cleanUrlContracts = ixcApiUrlContracts 
-      ? ixcApiUrlContracts.replace(/\/+$/, '').replace(/\/[^\/]*\.(php|html?)$/i, '').replace(/\/(app|admin|adm|webservice).*$/i, '')
-      : null;
-    console.log(`IXC sync. Clean URL: ${cleanUrl}, Contracts URL: ${cleanUrlContracts || 'using base'}, Sync type: ${syncType}, Org: ${organizationId}`);
-
-    // Auto-encode token to Base64 if it's not already base64
-    let finalToken = ixcApiToken;
-    try {
-      // Try decoding - if it works and looks valid, it's already base64
-      const decoded = atob(ixcApiToken);
-      // If decoded contains ':', it's a valid base64-encoded token
-      if (!decoded.includes(':')) {
-        // It decoded but doesn't look like a token, re-encode with ':'
-        finalToken = btoa(ixcApiToken + ':');
-      }
-      // else: already valid base64, use as-is
-    } catch {
-      // Not base64 - encode it. If it already has ':', just encode as-is
-      if (ixcApiToken.includes(':')) {
-        finalToken = btoa(ixcApiToken);
-      } else {
-        finalToken = btoa(ixcApiToken + ':');
-      }
-    }
-    console.log(`Token format: original has colon=${ixcApiToken.includes(':')}, finalToken length=${finalToken.length}`);
-
-    // Test connection mode - just try to fetch 1 client
+    // Test mode
     if (syncType === 'test') {
       try {
-        const testData = await fetchIxcData(cleanUrl, finalToken, 'cliente', 1, 1);
+        const testData = await fetchIxcData(creds.cleanUrl, creds.finalToken, 'cliente', 1, 1);
         const records = testData.registros || testData.rows || [];
         return new Response(JSON.stringify({ 
           success: true, 
-          message: `Conexão estabelecida com sucesso! ${Array.isArray(records) ? records.length : 0} registro(s) retornado(s) no teste.`,
-          totalRecords: testData.total || records.length || 0,
+          message: `Conexão OK! ${Array.isArray(records) ? records.length : 0} registro(s) retornado(s).`,
+          totalRecords: testData.total || 0,
         }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       } catch (err) {
         return new Response(JSON.stringify({ 
           success: false, 
-          error: err instanceof Error ? err.message : 'Erro desconhecido ao testar conexão',
+          error: err instanceof Error ? err.message : 'Erro ao testar conexão',
         }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     }
 
-    if (syncType === 'clients' || syncType === 'all') {
-      // Create log entry
-      const { data: logEntry } = await supabaseAdmin
-        .from('integration_sync_log')
-        .insert({ organization_id: organizationId, sync_type: 'clients', status: 'running' })
-        .select('id')
-        .single();
-
-      try {
-        const clientResult = await syncClients(supabaseAdmin, organizationId, cleanUrl, finalToken, logEntry?.id, cleanUrlContracts);
-        results.clients = clientResult;
-        
-        if (logEntry && !clientResult.cancelled) {
-          await supabaseAdmin
-            .from('integration_sync_log')
-            .update({
-              status: 'success',
-              records_processed: clientResult.totalProcessed,
-              records_created: clientResult.totalCreated,
-              records_updated: clientResult.totalUpdated,
-              completed_at: new Date().toISOString(),
-            })
-            .eq('id', logEntry.id);
-        }
-      } catch (err) {
-        if (logEntry) {
-          await supabaseAdmin
-            .from('integration_sync_log')
-            .update({
-              status: 'error',
-              error_message: err instanceof Error ? err.message : 'Unknown error',
-              completed_at: new Date().toISOString(),
-            })
-            .eq('id', logEntry.id);
-        }
-        throw err;
-      }
-    }
-
-    if (syncType === 'boletos' || syncType === 'all') {
-      const { data: logEntry } = await supabaseAdmin
-        .from('integration_sync_log')
-        .insert({ organization_id: organizationId, sync_type: 'boletos', status: 'running' })
-        .select('id')
-        .single();
-
-      try {
-        const boletoResult = await syncBoletos(supabaseAdmin, organizationId, cleanUrl, finalToken, logEntry?.id);
-        results.boletos = boletoResult;
-        
-        if (logEntry && !boletoResult.cancelled) {
-          await supabaseAdmin
-            .from('integration_sync_log')
-            .update({
-              status: 'success',
-              records_processed: boletoResult.totalProcessed,
-              records_created: boletoResult.totalCreated,
-              records_updated: boletoResult.totalUpdated,
-              completed_at: new Date().toISOString(),
-            })
-            .eq('id', logEntry.id);
-        }
-      } catch (err) {
-        if (logEntry) {
-          await supabaseAdmin
-            .from('integration_sync_log')
-            .update({
-              status: 'error',
-              error_message: err instanceof Error ? err.message : 'Unknown error',
-              completed_at: new Date().toISOString(),
-            })
-            .eq('id', logEntry.id);
-        }
-        throw err;
-      }
-    }
+    const results = await runSyncForOrganization(supabaseAdmin, organizationId, syncType);
 
     return new Response(JSON.stringify({ success: true, results }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -880,8 +798,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
