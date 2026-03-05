@@ -1,34 +1,19 @@
 
 
-## Plano: Destacar clientes bloqueados com fundo avermelhado e tag "BLOQUEADO"
+## Plano: Adicionar campo de URL da API de Contratos na integração IXC
 
 ### O que muda
 
-No arquivo `src/pages/Clients.tsx`, na renderização de cada card de cliente (linhas 547-585):
+1. **Banco de dados** - Adicionar coluna `api_url_contracts` (text, nullable) na tabela `organization_integrations` para armazenar a URL da API de contratos separadamente.
 
-1. **Fundo avermelhado**: Clientes com `is_active === false` (e não finalizados) terão a classe `bg-red-500/10 hover:bg-red-500/15 border border-red-500/30` no card, em vez do `bg-card` padrão.
+2. **UI (`src/components/settings/IXCIntegration.tsx`)** - Adicionar um novo campo de input "URL da API de Contratos" abaixo do campo de URL principal, com placeholder e descrição explicativa. O valor será salvo/carregado junto com as demais configurações.
 
-2. **Tag "BLOQUEADO"**: Substituir o badge atual "Inativo" por um badge mais visível com texto "BLOQUEADO", usando `bg-red-500/20 text-red-400 font-semibold` e um estilo mais destacado.
+3. **Edge Function (`supabase/functions/ixc-sync/index.ts`)** - A função `fetchBlockedClientIds` passará a usar a URL de contratos (quando configurada) para buscar dados do endpoint `cliente_contrato`, ao invés de usar a URL base.
 
-### Alteração pontual
+### Detalhes técnicos
 
-```tsx
-// Card className: adicionar condição para bloqueados
-className={`... ${
-  isCompleted(client.status) 
-    ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' 
-    : !client.is_active 
-      ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' 
-      : 'bg-card hover:bg-card/80'
-}`}
-
-// Badge: trocar "Inativo" por "BLOQUEADO"
-!client.is_active && (
-  <div className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
-    🔒 BLOQUEADO
-  </div>
-)
-```
-
-Apenas 1 arquivo alterado: `src/pages/Clients.tsx`.
+- Migration SQL: `ALTER TABLE organization_integrations ADD COLUMN api_url_contracts text;`
+- Novo state `apiUrlContracts` no componente
+- Salvar/carregar o campo no `fetchConfig` e `handleSaveConfig`
+- Na edge function, ler `api_url_contracts` da config e usar como base para chamadas ao endpoint de contratos
 
