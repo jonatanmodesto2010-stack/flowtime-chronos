@@ -53,6 +53,7 @@ const Calendar = () => {
   } | null>(null);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const shouldListenToChanges = useRef(true);
+  const isInitialLoad = useRef(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -133,9 +134,12 @@ const Calendar = () => {
     };
   }, [user]);
 
+
   const loadEvents = async (userId: string) => {
     try {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+      }
       
       // Buscar organização do usuário
       const { data: userRoles } = await supabaseClient
@@ -211,6 +215,7 @@ const Calendar = () => {
       });
     } finally {
       setLoading(false);
+      isInitialLoad.current = false;
     }
   };
 
