@@ -38,12 +38,12 @@ async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, 
   console.log(`Fetching IXC data from: ${url} (page ${page})`);
   
   const body = new URLSearchParams();
-  body.append('qtype', 'id');
+  body.append('qtype', `${endpoint}.id`);
   body.append('query', '');
-  body.append('ession_limit', perPage.toString());
-  body.append('rp', perPage.toString());
+  body.append('oper', '=');
   body.append('page', page.toString());
-  body.append('sortname', 'id');
+  body.append('rp', perPage.toString());
+  body.append('sortname', `${endpoint}.id`);
   body.append('sortorder', 'asc');
   
   const response = await fetch(url, {
