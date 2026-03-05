@@ -19,6 +19,7 @@ import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 import { groupTimelinesByClient } from '@/lib/client-utils';
 import { getCachedData, setCachedData, CACHE_KEYS } from '@/lib/route-cache';
 import { ClientsListSkeleton } from '@/components/ClientsListSkeleton';
+import { fetchInChunks } from '@/lib/supabase-helpers';
 
 import { CalendarWidget } from '@/components/CalendarWidget';
 import { RetiradaWidget } from '@/components/RetiradaWidget';
@@ -162,46 +163,72 @@ const Clients = () => {
 
       console.log("loadClients: Clientes carregados:", allData.length);
 
+      // Construir mapa client_id -> [timeline UUIDs] ANTES do agrupamento
+      const clientTimelineIdsMap = new Map<string, string[]>();
+      allData.forEach((t: any) => {
+        const key = t.client_id || t.id; // client_id de negócio, fallback para UUID
+        const arr = clientTimelineIdsMap.get(key) || [];
+        arr.push(t.id);
+        clientTimelineIdsMap.set(key, arr);
+      });
+
       // ✅ Agrupar por client_id, mantendo apenas a timeline mais recente de cada cliente
       const uniqueClients = groupTimelinesByClient(allData) as Client[];
       console.log("loadClients: Após agrupamento:", uniqueClients.length);
 
-      // Buscar boletos pendentes para calcular dias em atraso
-      const timelineIds = uniqueClients.map(c => c.id);
+      // Buscar boletos pendentes para TODAS as timelines (não só as agrupadas)
+      const allTimelineIds = allData.map((t: any) => t.id);
       let overdueMap = new Map<string, number>();
-      if (timelineIds.length > 0) {
+      if (allTimelineIds.length > 0) {
         const today = new Date().toISOString().split('T')[0];
-        const { data: overdueBoletos } = await supabaseClient
-          .from('client_boletos')
-          .select('timeline_id, due_date')
-          .in('timeline_id', timelineIds)
-          .not('status', 'in', '("pago","cancelado")')
-          .lt('due_date', today)
-          .order('due_date', { ascending: true });
+        const overdueBoletos = await fetchInChunks(
+          'client_boletos',
+          'timeline_id',
+          allTimelineIds,
+          'timeline_id, due_date, status'
+        );
+
+        // Criar mapa reverso: timeline UUID -> client_id de negócio
+        const timelineToClientMap = new Map<string, string>();
+        allData.forEach((t: any) => {
+          timelineToClientMap.set(t.id, t.client_id || t.id);
+        });
 
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
         (overdueBoletos || []).forEach((b: any) => {
-          if (!overdueMap.has(b.timeline_id)) {
-            const bDate = new Date(b.due_date + 'T00:00:00');
-            const diff = Math.floor((todayDate.getTime() - bDate.getTime()) / (1000 * 60 * 60 * 24));
-            if (diff > 0) overdueMap.set(b.timeline_id, diff);
+          if (b.status === 'pago' || b.status === 'cancelado') return;
+          const bDate = new Date(b.due_date + 'T00:00:00');
+          if (bDate >= todayDate) return;
+          const diff = Math.floor((todayDate.getTime() - bDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (diff > 0) {
+            const clientKey = timelineToClientMap.get(b.timeline_id) || b.timeline_id;
+            const existing = overdueMap.get(clientKey) || 0;
+            if (diff > existing) overdueMap.set(clientKey, diff);
           }
         });
         setOverdueDaysMap(overdueMap);
       }
 
-      // Ordenar com a nova hierarquia: Bloqueados > Vencidos > Ativos > Inativos
+      // Helper para obter chave do cliente no mapa de atraso
+      const getClientKey = (c: any) => c.client_id || c.id;
+
+      // Ordenar: Bloqueados > Vencidos (por dias DESC) > Ativos > Inativos
       const sortWithOverdue = (a: any, b: any) => {
         const getGroup = (c: any) => {
           if (c.status === 'archived' || c.status === 'completed') return 3;
           if (!c.is_active) return 0;
-          if (overdueMap.has(c.id)) return 1;
+          if (overdueMap.has(getClientKey(c))) return 1;
           return 2;
         };
-        const diff = getGroup(a) - getGroup(b);
-        if (diff !== 0) return diff;
-        return new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime();
+        const groupDiff = getGroup(a) - getGroup(b);
+        if (groupDiff !== 0) return groupDiff;
+        // Dentro do mesmo grupo, ordenar por dias em atraso DESC
+        const daysA = overdueMap.get(getClientKey(a)) || 0;
+        const daysB = overdueMap.get(getClientKey(b)) || 0;
+        if (daysA !== daysB) return daysB - daysA;
+        // Desempate por nome ASC
+        return (a.client_name || '').localeCompare(b.client_name || '');
       };
 
       const sortedData = uniqueClients.sort(sortWithOverdue);
@@ -367,9 +394,9 @@ const Clients = () => {
         results = results.filter((c) => idsWithAnalysis.includes(c.id));
       }
 
-      // Aplicar filtro de vencidos (client-side, baseado no overdueDaysMap)
+      // Aplicar filtro de vencidos (client-side, baseado no overdueDaysMap por client_id)
       if (filters.statusFilter === 'overdue') {
-        results = results.filter((c) => overdueDaysMap.has(c.id));
+        results = results.filter((c) => overdueDaysMap.has(c.client_id || c.id));
       }
 
       // Aplicar ordenação por quantidade de eventos
@@ -418,16 +445,20 @@ const Clients = () => {
         });
       } else {
         // Se NÃO há ordenação específica, aplicar ordenação com hierarquia
+        const getClientKey = (c: any) => c.client_id || c.id;
         results.sort((a: any, b: any) => {
           const getGroup = (c: any) => {
             if (c.status === 'archived' || c.status === 'completed') return 3;
             if (!c.is_active) return 0;
-            if (overdueDaysMap.has(c.id)) return 1;
+            if (overdueDaysMap.has(getClientKey(c))) return 1;
             return 2;
           };
-          const diff = getGroup(a) - getGroup(b);
-          if (diff !== 0) return diff;
-          return new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime();
+          const groupDiff = getGroup(a) - getGroup(b);
+          if (groupDiff !== 0) return groupDiff;
+          const daysA = overdueDaysMap.get(getClientKey(a)) || 0;
+          const daysB = overdueDaysMap.get(getClientKey(b)) || 0;
+          if (daysA !== daysB) return daysB - daysA;
+          return (a.client_name || '').localeCompare(b.client_name || '');
         });
       }
 
@@ -695,7 +726,7 @@ const Clients = () => {
                   x: 0
                 }} transition={{
                   duration: 0.2
-                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${client.status === 'archived' ? 'bg-muted/50 hover:bg-muted/60 border border-muted-foreground/20 opacity-70' : isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : client.is_active && overdueDaysMap.has(client.id) ? 'bg-yellow-500/10 hover:bg-yellow-500/15 border border-yellow-500/30' : 'bg-card hover:bg-card/80'}`}>
+                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${client.status === 'archived' ? 'bg-muted/50 hover:bg-muted/60 border border-muted-foreground/20 opacity-70' : isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : client.is_active && overdueDaysMap.has(client.client_id || client.id) ? 'bg-yellow-500/10 hover:bg-yellow-500/15 border border-yellow-500/30' : 'bg-card hover:bg-card/80'}`}>
                       <div className="flex-1 w-full cursor-pointer" onClick={() => handleOpenModal(client)}>
                         <h3 className={`font-bold text-xl uppercase tracking-wide ${isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'}`}>
                           {client.client_name}
@@ -705,13 +736,13 @@ const Clients = () => {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        {/* Dias em atraso - boleto mais antigo vencido */}
+                        {/* Dias em atraso - boleto mais antigo vencido (considera TODAS as timelines do client_id) */}
                         {(() => {
                           if (isCompleted(client.status) || client.status === 'archived') return null;
-                          const days = overdueDaysMap.get(client.id);
+                          const days = overdueDaysMap.get(client.client_id || client.id);
                           if (!days || days <= 0) return null;
                           return (
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-destructive text-destructive text-xs font-bold flex-shrink-0" title={`${days} dias em atraso`}>
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-destructive text-destructive text-xs font-bold flex-shrink-0" title={`Dias de atraso (boleto mais antigo vencido): ${days}d`}>
                               {days}d
                             </div>
                           );
