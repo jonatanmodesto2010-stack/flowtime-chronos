@@ -1,55 +1,81 @@
 
 
-## Problema identificado
+## Problemas Identificados
 
-A query de "Bloqueados" filtra `is_active = false AND status != 'archived'`, o que retorna:
-- **44 clientes** com `status = 'active'` (os verdadeiros bloqueados do IXC)
-- **76 clientes** com `status = 'completed'` (timelines finalizadas que também têm `is_active = false`)
+1. **Erro "Bad Request" no Calendário**: As queries usam `.in('timeline_id', timelineIds)` e `.in('line_id', lineIds)` com 1625+ IDs. O PostgREST tem limite de tamanho de URL para queries GET, e enviar centenas/milhares de IDs no filtro `.in()` excede esse limite.
 
-Total: 120 clientes aparecendo como "bloqueados", quando deveriam ser apenas 44.
+2. **Limite de 1000 registros**: As queries de `client_timelines`, `timeline_lines` e `timeline_events` não implementam paginação, então no máximo 1000 registros são retornados de cada tabela.
+
+3. **Lentidão geral**: Cada mudança em realtime dispara reload completo de TODOS os eventos. Três canais de realtime (events, timelines, lines) recarregam tudo a cada alteração.
 
 ## Solução
 
-Alterar o filtro de "blocked" para buscar apenas clientes com `is_active = false AND status = 'active'`, excluindo os que têm status `completed` ou `archived`.
+### 1. Paginação em lote para todas as queries (Calendar.tsx e CalendarWidget.tsx)
 
-### Detalhes técnicos
+Criar uma função utilitária `fetchAllPaginated` que busca em lotes de 1000 com `.range()`. Aplicar a todas as queries de `client_timelines`, `timeline_lines` e `timeline_events`.
 
-**Arquivo: `src/pages/Clients.tsx`** (linha 178)
+### 2. Dividir `.in()` em chunks para evitar Bad Request
 
-Atual:
+Quando a lista de IDs é grande (ex: 1625 timeline_ids), dividir em chunks de 200 IDs e fazer múltiplas queries menores, concatenando os resultados. Isso resolve o "Bad Request" causado por URLs muito longas.
+
 ```typescript
-query = query.eq('is_active', false).neq('status', 'archived');
+// Exemplo da lógica de chunks
+const chunkSize = 200;
+const allResults = [];
+for (let i = 0; i < ids.length; i += chunkSize) {
+  const chunk = ids.slice(i, i + chunkSize);
+  const { data } = await query.in('column', chunk);
+  allResults.push(...(data || []));
+}
 ```
 
-Corrigir para:
+### 3. Aplicar em ambos os arquivos
+
+**`src/pages/Calendar.tsx`** (loadEvents ~linha 153-245):
+- Paginar busca de `client_timelines` com `.range()`
+- Dividir `timelineIds` em chunks de 200 para buscar `timeline_lines`
+- Dividir `lineIds` em chunks de 200 para buscar `timeline_events`
+
+**`src/components/CalendarWidget.tsx`** (loadEvents ~linha 97-155):
+- Mesma lógica de paginação e chunks
+
+### 4. Reduzir logs de debug excessivos
+
+Remover os `console.log` detalhados dentro de `getEventsForDay` (chamado para cada dia do calendário = 30+ logs por renderização), que contribuem para lentidão.
+
+### Detalhes Técnicos
+
+Criar helper reutilizável em ambos os arquivos (ou extrair para um utilitário):
+
 ```typescript
-query = query.eq('is_active', false).eq('status', 'active');
+async function fetchInChunks(table: string, column: string, ids: string[], select: string) {
+  const chunkSize = 200;
+  const allData: any[] = [];
+  
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    let offset = 0;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const { data } = await supabaseClient
+        .from(table)
+        .select(select)
+        .in(column, chunk)
+        .range(offset, offset + 999);
+      
+      if (data && data.length > 0) {
+        allData.push(...data);
+        offset += 1000;
+        hasMore = data.length === 1000;
+      } else {
+        hasMore = false;
+      }
+    }
+  }
+  return allData;
+}
 ```
 
-Isso garante que apenas os 44 clientes genuinamente bloqueados (contrato ativo mas acesso bloqueado) sejam listados.
-
-Adicionalmente, na lógica de badge/estilo visual (mesma lógica), verificar que clientes com `is_active = false AND status = 'completed'` mostrem badge "FINALIZADO" e nao "BLOQUEADO". Ajustar a prioridade de exibição do badge para considerar `status === 'completed'` antes de `!is_active` quando ambos coincidem.
-
-**Arquivo: `src/pages/Clients.tsx`** (renderização de badges, ~linha 580)
-
-Reordenar a lógica:
-1. `status === 'archived'` → INATIVO
-2. `status === 'completed'` → FINALIZADO  
-3. `!is_active` → BLOQUEADO
-4. default → ATIVO
-
-**Arquivo: `src/lib/client-utils.ts`** (groupTimelinesByClient)
-
-Ajustar prioridade para que `completed` com `is_active=false` seja tratado como finalizado, não bloqueado:
-1. `archived` → 0
-2. `!is_active AND status != completed` → 1 (bloqueado real)
-3. `status != completed` → 2 (ativo)
-4. `completed` → 3 (finalizado)
-
-**Arquivo: `src/lib/client-sort.ts`** (defaultClientSort)
-
-Ajustar para que "bloqueado" = `!is_active AND status !== 'completed'`:
-```typescript
-const aBlocked = !a.is_active && a.status !== 'completed';
-```
+Isso resolve tanto o "Bad Request" (chunks de 200 IDs) quanto o limite de 1000 rows (paginação com `.range()`).
 
