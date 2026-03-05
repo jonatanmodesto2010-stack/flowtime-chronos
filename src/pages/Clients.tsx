@@ -17,6 +17,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 import { groupTimelinesByClient } from '@/lib/client-utils';
+import { getCachedData, setCachedData, CACHE_KEYS } from '@/lib/route-cache';
+import { ClientsListSkeleton } from '@/components/ClientsListSkeleton';
 
 import { CalendarWidget } from '@/components/CalendarWidget';
 import { RetiradaWidget } from '@/components/RetiradaWidget';
