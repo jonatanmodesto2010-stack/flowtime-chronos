@@ -1,28 +1,55 @@
 
 
-## Plano: Garantir bloqueados sempre no topo, mesmo com filtros de ordenação
+## Problema identificado
 
-### Problema
-A função `defaultClientSort` já coloca bloqueados primeiro, mas quando o usuário aplica filtros de ordenação (por quantidade de eventos ou data de atualização), a ordenação padrão é completamente substituída (linhas 300-318 de `Clients.tsx`), fazendo com que os bloqueados percam a prioridade.
+A query de "Bloqueados" filtra `is_active = false AND status != 'archived'`, o que retorna:
+- **44 clientes** com `status = 'active'` (os verdadeiros bloqueados do IXC)
+- **76 clientes** com `status = 'completed'` (timelines finalizadas que também têm `is_active = false`)
 
-### Solução
-Modificar as ordenações alternativas em `Clients.tsx` para sempre manter bloqueados (`is_active === false`) no topo, independente do critério de ordenação selecionado.
+Total: 120 clientes aparecendo como "bloqueados", quando deveriam ser apenas 44.
+
+## Solução
+
+Alterar o filtro de "blocked" para buscar apenas clientes com `is_active = false AND status = 'active'`, excluindo os que têm status `completed` ou `archived`.
 
 ### Detalhes técnicos
 
-**Arquivo: `src/pages/Clients.tsx`** (linhas 299-318)
+**Arquivo: `src/pages/Clients.tsx`** (linha 178)
 
-Nas duas ordenações alternativas (por event count e por update date), adicionar a mesma lógica de prioridade:
-
+Atual:
 ```typescript
-results.sort((a, b) => {
-  // Bloqueados SEMPRE no topo
-  if (!a.is_active !== !b.is_active) return !a.is_active ? -1 : 1;
-  
-  // Dentro do mesmo grupo, aplicar ordenação específica
-  // ... (lógica existente de event count ou update date)
-});
+query = query.eq('is_active', false).neq('status', 'archived');
 ```
 
-Isso garante que, qualquer que seja o filtro ativo, clientes bloqueados apareçam primeiro.
+Corrigir para:
+```typescript
+query = query.eq('is_active', false).eq('status', 'active');
+```
+
+Isso garante que apenas os 44 clientes genuinamente bloqueados (contrato ativo mas acesso bloqueado) sejam listados.
+
+Adicionalmente, na lógica de badge/estilo visual (mesma lógica), verificar que clientes com `is_active = false AND status = 'completed'` mostrem badge "FINALIZADO" e nao "BLOQUEADO". Ajustar a prioridade de exibição do badge para considerar `status === 'completed'` antes de `!is_active` quando ambos coincidem.
+
+**Arquivo: `src/pages/Clients.tsx`** (renderização de badges, ~linha 580)
+
+Reordenar a lógica:
+1. `status === 'archived'` → INATIVO
+2. `status === 'completed'` → FINALIZADO  
+3. `!is_active` → BLOQUEADO
+4. default → ATIVO
+
+**Arquivo: `src/lib/client-utils.ts`** (groupTimelinesByClient)
+
+Ajustar prioridade para que `completed` com `is_active=false` seja tratado como finalizado, não bloqueado:
+1. `archived` → 0
+2. `!is_active AND status != completed` → 1 (bloqueado real)
+3. `status != completed` → 2 (ativo)
+4. `completed` → 3 (finalizado)
+
+**Arquivo: `src/lib/client-sort.ts`** (defaultClientSort)
+
+Ajustar para que "bloqueado" = `!is_active AND status !== 'completed'`:
+```typescript
+const aBlocked = !a.is_active && a.status !== 'completed';
+```
 
