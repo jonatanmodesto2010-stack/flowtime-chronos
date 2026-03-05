@@ -631,7 +631,23 @@ const Clients = () => {
                         {/* Última Atualização - hidden */}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        {/* Dias em atraso - boleto mais antigo vencido */}
+                        {(() => {
+                          if (isCompleted(client.status) || client.status === 'archived') return null;
+                          const dueDate = client.due_date ? new Date(client.due_date + 'T00:00:00') : null;
+                          if (!dueDate || isNaN(dueDate.getTime())) return null;
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const diffDays = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+                          if (diffDays <= 0) return null;
+                          return (
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-red-500 text-red-500 text-xs font-bold flex-shrink-0" title={`${diffDays} dias em atraso`}>
+                              {diffDays}d
+                            </div>
+                          );
+                        })()}
+
                         {/* Badge dinâmico baseado no status */}
                         {client.status === 'archived' ? <div className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded flex-shrink-0 font-semibold uppercase">
                             ⚠️ INATIVO
