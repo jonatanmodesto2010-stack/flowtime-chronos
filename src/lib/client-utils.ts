@@ -21,9 +21,9 @@ export const groupTimelinesByClient = <T extends TimelineRecord>(
   
   const getPriority = (t: T): number => {
     if (t.status === 'archived') return 0; // inativo = maior prioridade
-    if (!t.is_active) return 1; // bloqueado
+    if (!t.is_active && t.status !== 'completed') return 1; // bloqueado real
     if (t.status !== 'completed') return 2; // ativo
-    return 3; // finalizado
+    return 3; // finalizado (inclui completed com is_active=false)
   };
 
   timelines.forEach(timeline => {

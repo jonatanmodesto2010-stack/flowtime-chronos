@@ -11,8 +11,8 @@ export const defaultClientSort = <T extends {
   updated_at?: string | null;
   created_at: string | null;
 }>(a: T, b: T): number => {
-  const aBlocked = !a.is_active;
-  const bBlocked = !b.is_active;
+  const aBlocked = !a.is_active && a.status !== 'completed';
+  const bBlocked = !b.is_active && b.status !== 'completed';
 
   // Bloqueados (is_active === false) sempre no topo
   if (aBlocked !== bBlocked) {

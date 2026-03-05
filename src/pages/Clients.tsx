@@ -175,7 +175,7 @@ const Clients = () => {
     if (filters.statusFilter === 'active') {
       query = query.eq('is_active', true).neq('status', 'completed').neq('status', 'archived');
     } else if (filters.statusFilter === 'blocked') {
-      query = query.eq('is_active', false).neq('status', 'archived');
+      query = query.eq('is_active', false).eq('status', 'active');
     } else if (filters.statusFilter === 'inactive') {
       query = query.eq('status', 'archived');
     } else if (filters.statusFilter === 'completed') {
@@ -579,10 +579,10 @@ const Clients = () => {
                         {/* Badge dinâmico baseado no status */}
                         {client.status === 'archived' ? <div className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
                             ⚠️ INATIVO
-                          </div> : !client.is_active ? <div className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
-                            🔒 BLOQUEADO
                           </div> : isCompleted(client.status) ? <div className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded flex-shrink-0 font-semibold">
                             FINALIZADO
+                          </div> : !client.is_active ? <div className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
+                            🔒 BLOQUEADO
                           </div> : <div className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded flex-shrink-0 font-semibold uppercase">
                             ✅ ATIVO
                           </div>}
