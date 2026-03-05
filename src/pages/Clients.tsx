@@ -648,7 +648,7 @@ const Clients = () => {
                   x: 0
                 }} transition={{
                   duration: 0.2
-                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${client.status === 'archived' ? 'bg-muted/50 hover:bg-muted/60 border border-muted-foreground/20 opacity-70' : isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : 'bg-card hover:bg-card/80'}`}>
+                }} className={`w-full rounded-lg p-4 flex items-center gap-4 transition-colors ${client.status === 'archived' ? 'bg-muted/50 hover:bg-muted/60 border border-muted-foreground/20 opacity-70' : isCompleted(client.status) ? 'bg-muted/50 hover:bg-muted/60 opacity-70 grayscale' : !client.is_active ? 'bg-red-500/10 hover:bg-red-500/15 border border-red-500/30' : client.is_active && overdueDaysMap.has(client.id) ? 'bg-yellow-500/10 hover:bg-yellow-500/15 border border-yellow-500/30' : 'bg-card hover:bg-card/80'}`}>
                       <div className="flex-1 w-full cursor-pointer" onClick={() => handleOpenModal(client)}>
                         <h3 className={`font-bold text-xl uppercase tracking-wide ${isCompleted(client.status) ? 'text-muted-foreground' : 'text-card-foreground'}`}>
                           {client.client_name}
