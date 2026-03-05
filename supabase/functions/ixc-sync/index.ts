@@ -32,15 +32,20 @@ function mapIxcStatus(ixcStatus: string): string {
   return statusMap[ixcStatus] || 'pendente';
 }
 
-async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, page: number = 1, perPage: number = 100) {
+async function fetchIxcData(apiUrl: string, apiToken: string, endpoint: string, page: number = 1, perPage: number = 100, queryOverrides?: { qtype?: string; query?: string; oper?: string }) {
   const url = `${apiUrl}/webservice/v1/${endpoint}`;
   
   console.log(`Fetching IXC data from: ${url} (page ${page})`);
   
+  // Default: oper ">" with query "0" to fetch ALL records (id > 0)
+  const qtype = queryOverrides?.qtype || `${endpoint}.id`;
+  const query = queryOverrides?.query ?? '0';
+  const oper = queryOverrides?.oper || '>';
+  
   const body = new URLSearchParams();
-  body.append('qtype', `${endpoint}.id`);
-  body.append('query', '');
-  body.append('oper', '=');
+  body.append('qtype', qtype);
+  body.append('query', query);
+  body.append('oper', oper);
   body.append('page', page.toString());
   body.append('rp', perPage.toString());
   body.append('sortname', `${endpoint}.id`);
@@ -222,11 +227,14 @@ async function syncClients(supabaseAdmin: any, organizationId: string, apiUrl: s
     const records = data.registros || data.rows || [];
 
     // On first page, save total_records for progress tracking
-    if (page === 1 && logId) {
+    if (page === 1) {
       const totalRecords = parseInt(data.total) || 0;
-      await supabaseAdmin.from('integration_sync_log')
-        .update({ total_records: totalRecords })
-        .eq('id', logId);
+      console.log(`[DIAG] API reports total clients: ${totalRecords} (data.total=${data.total})`);
+      if (logId) {
+        await supabaseAdmin.from('integration_sync_log')
+          .update({ total_records: totalRecords })
+          .eq('id', logId);
+      }
     }
     
     if (!Array.isArray(records) || records.length === 0) {
