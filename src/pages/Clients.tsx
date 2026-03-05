@@ -17,7 +17,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 import { ClientTimelineDialog } from '@/components/ClientTimelineDialog';
 import { groupTimelinesByClient } from '@/lib/client-utils';
-import { defaultClientSort } from '@/lib/client-sort';
+
 import { CalendarWidget } from '@/components/CalendarWidget';
 import { RetiradaWidget } from '@/components/RetiradaWidget';
 interface Client {
@@ -151,13 +151,9 @@ const Clients = () => {
       const uniqueClients = groupTimelinesByClient(allData) as Client[];
       console.log("loadClients: Após agrupamento:", uniqueClients.length);
 
-      // Ordenar: bloqueados no topo (por due_date ASC), ativos no meio, finalizados por último
-      const sortedData = uniqueClients.sort(defaultClientSort);
-      setClients(sortedData);
-      setFilteredClients(sortedData);
-
       // Buscar boletos pendentes para calcular dias em atraso
-      const timelineIds = sortedData.map(c => c.id);
+      const timelineIds = uniqueClients.map(c => c.id);
+      let overdueMap = new Map<string, number>();
       if (timelineIds.length > 0) {
         const today = new Date().toISOString().split('T')[0];
         const { data: overdueBoletos } = await supabaseClient
@@ -168,18 +164,34 @@ const Clients = () => {
           .lt('due_date', today)
           .order('due_date', { ascending: true });
 
-        const map = new Map<string, number>();
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
         (overdueBoletos || []).forEach((b: any) => {
-          if (!map.has(b.timeline_id)) {
+          if (!overdueMap.has(b.timeline_id)) {
             const bDate = new Date(b.due_date + 'T00:00:00');
             const diff = Math.floor((todayDate.getTime() - bDate.getTime()) / (1000 * 60 * 60 * 24));
-            if (diff > 0) map.set(b.timeline_id, diff);
+            if (diff > 0) overdueMap.set(b.timeline_id, diff);
           }
         });
-        setOverdueDaysMap(map);
+        setOverdueDaysMap(overdueMap);
       }
+
+      // Ordenar com a nova hierarquia: Bloqueados > Vencidos > Ativos > Inativos
+      const sortWithOverdue = (a: any, b: any) => {
+        const getGroup = (c: any) => {
+          if (c.status === 'archived' || c.status === 'completed') return 3;
+          if (!c.is_active) return 0;
+          if (overdueMap.has(c.id)) return 1;
+          return 2;
+        };
+        const diff = getGroup(a) - getGroup(b);
+        if (diff !== 0) return diff;
+        return new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime();
+      };
+
+      const sortedData = uniqueClients.sort(sortWithOverdue);
+      setClients(sortedData);
+      setFilteredClients(sortedData);
     } catch (error: any) {
       console.error("loadClients: Erro ao carregar clientes:", error.message);
       toast({
@@ -380,8 +392,18 @@ const Clients = () => {
           return filters.updateDateSort === 'desc' ? dateB - dateA : dateA - dateB;
         });
       } else {
-        // Se NÃO há ordenação específica, aplicar ordenação padrão
-        results.sort(defaultClientSort);
+        // Se NÃO há ordenação específica, aplicar ordenação com hierarquia
+        results.sort((a: any, b: any) => {
+          const getGroup = (c: any) => {
+            if (c.status === 'archived' || c.status === 'completed') return 3;
+            if (!c.is_active) return 0;
+            if (overdueDaysMap.has(c.id)) return 1;
+            return 2;
+          };
+          const diff = getGroup(a) - getGroup(b);
+          if (diff !== 0) return diff;
+          return new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime();
+        });
       }
 
       // ✅ Aplicar agrupamento por client_id nos resultados filtrados
